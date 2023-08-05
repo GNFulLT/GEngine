@@ -2,7 +2,7 @@
 #define GJSON_H
 
 #include "engine/GEngine_EXPORT.h"
-#include <string>
+#include <string_view>
 #include "engine/resource/resource_init_code.h"
 #include "engine/resource/json/igjson_value.h"
 
@@ -14,7 +14,7 @@ class ENGINE_API IGJson
 public:
 	virtual ~IGJson() = default;
 
-	virtual void iterate_in(std::function<void(const IGJsonValue&)> callback) = 0;
+	virtual void iterate_in(std::function<void(std::string_view,const IGJsonValue*)> callback) = 0;
 
 	virtual RESOURCE_INIT_CODE init() = 0;
 

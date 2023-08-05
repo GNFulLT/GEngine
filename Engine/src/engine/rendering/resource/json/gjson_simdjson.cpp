@@ -1,5 +1,5 @@
 #include "internal/engine/resource/json/gjson_simdjson.h"
-
+#include "internal/engine/resource/json/gjson_value_simdjson.h"
 
 RESOURCE_INIT_CODE GJson_SimdJson::init()
 {
@@ -39,7 +39,7 @@ const char* GJson_SimdJson::get_file_path_c_str()
 	return m_filePath.c_str();
 }
 
-void GJson_SimdJson::iterate_in(std::function<void(const IGJsonValue&)> callback)
+void GJson_SimdJson::iterate_in(std::function<void(std::string_view,const IGJsonValue*)> callback)
 {
 	auto objRes = m_doc.get_object();
 	auto err = objRes.error();
@@ -52,7 +52,10 @@ void GJson_SimdJson::iterate_in(std::function<void(const IGJsonValue&)> callback
 
 		simdjson::fallback::ondemand::field f = field.value_unsafe();
 		simdjson::fallback::ondemand::value val = f.value();
-	
+		
+		GJsonValue_SimdJson valueAs(&val);
+		callback(std::string_view(f.key().raw()), &valueAs);
+		
 	}
 
 

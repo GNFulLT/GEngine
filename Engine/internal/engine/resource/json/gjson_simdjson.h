@@ -16,7 +16,7 @@ public:
 
 	virtual const char* get_file_path_c_str() override;
 
-	virtual void iterate_in(std::function<void(const IGJsonValue&)> callback) override;
+	virtual void iterate_in(std::function<void(std::string_view,const IGJsonValue*)> callback) override;
 
 private:
 	simdjson::fallback::ondemand::document m_doc;
