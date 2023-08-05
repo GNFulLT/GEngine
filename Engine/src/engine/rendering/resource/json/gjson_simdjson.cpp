@@ -39,7 +39,7 @@ const char* GJson_SimdJson::get_file_path_c_str()
 	return m_filePath.c_str();
 }
 
-void GJson_SimdJson::iterate_in(std::function<void(std::string_view,const IGJsonValue*)> callback)
+void GJson_SimdJson::iterate_in(std::function<void(std::string_view,IGJsonValue*)> callback)
 {
 	auto objRes = m_doc.get_object();
 	auto err = objRes.error();

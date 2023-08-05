@@ -20,6 +20,8 @@ public:
 	// Inherited via IGImguiTheme
 	virtual const char* get_theme_name() override;
 	virtual void setImGuiTheme(ImGuiStyle& style) override;
+
+	void json_value_key(std::string_view key,IGJsonValue* val);
 private:
 	std::vector<std::pair<ImGuiCol_,double>> m_imguiValueVector;
 

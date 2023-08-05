@@ -79,8 +79,12 @@ bool GImGuiJsonTheme::init()
 {
 	RESOURCE_INIT_CODE res = m_jsonFile->init();
     
+    if (res != RESOURCE_INIT_CODE_OK)
+        return false;
 
-	return res == RESOURCE_INIT_CODE_OK;
+    m_jsonFile->iterate_in(std::bind(&GImGuiJsonTheme::json_value_key, this, std::placeholders::_1, std::placeholders::_2));
+
+    return true;
 }
 
 void GImGuiJsonTheme::destroy()
@@ -98,4 +102,8 @@ const char* GImGuiJsonTheme::get_theme_name()
 void GImGuiJsonTheme::setImGuiTheme(ImGuiStyle& style)
 {
 	
+}
+
+void GImGuiJsonTheme::json_value_key(std::string_view key, IGJsonValue* val)
+{
 }
