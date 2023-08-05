@@ -1,0 +1,16 @@
+[submodule "ThirdParty/glfw"]
+	path = ThirdParty/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "ThirdParty/volk"]
+	path = ThirdParty/volk
+	url = https://github.com/zeux/volk.git
+[submodule "ThirdParty/vulkan"]
+	path = ThirdParty/vulkan
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "ThirdParty/imgui"]
+	path = ThirdParty/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "ThirdParty/simdjson"]
+	path = ThirdParty/simdjson
+	url = https://github.com/simdjson/simdjson.git
