@@ -9,7 +9,7 @@
 #include <vector>
 #include <utility>
 
-class GImGuiJsonTheme : public IGImguiTheme
+class GImGuiJsonTheme : public IGImGuiTheme
 {
 public:
 	GImGuiJsonTheme(const std::string& jsonPath);

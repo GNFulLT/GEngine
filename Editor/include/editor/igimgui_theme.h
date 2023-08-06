@@ -7,7 +7,7 @@
 
 class ImGuiStyle;
 
-class IGImguiTheme
+class IGImGuiTheme
 {
 public:
 	virtual bool is_valid() = 0;

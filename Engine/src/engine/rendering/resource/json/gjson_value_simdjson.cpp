@@ -28,20 +28,23 @@ JSON_VALUE GJsonValue_SimdJson::get_value_type()
 		case ondemand::json_type::string:
 			return JSON_VALUE_STRING;
 		case ondemand::json_type::number:
-			auto res2 = m_valRef->get_number_type();
-			if (res2.error())
-				return JSON_VALUE_UNKNOWN;
-			switch (res2.value_unsafe())
 			{
-			case number_type::unsigned_integer:
-				return JSON_VALUE_UINT64;
-			case number_type::signed_integer:
-				return JSON_VALUE_INT64;
-			case number_type::floating_point_number:
-				return JSON_VALUE_DOUBLE;
-			default:
-				return JSON_VALUE_UNKNOWN;
+				auto res2 = m_valRef->get_number_type();
+				if (res2.error())
+					return JSON_VALUE_UNKNOWN;
+				switch (res2.value_unsafe())
+				{
+				case number_type::unsigned_integer:
+					return JSON_VALUE_UINT64;
+				case number_type::signed_integer:
+					return JSON_VALUE_INT64;
+				case number_type::floating_point_number:
+					return JSON_VALUE_DOUBLE;
+				default:
+					return JSON_VALUE_UNKNOWN;
+				}
 			}
+			
 		default:
 			return JSON_VALUE_UNKNOWN;
 	}
