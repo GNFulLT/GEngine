@@ -3,7 +3,10 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
-
+ImGuiWindowManager::~ImGuiWindowManager()
+{
+	int a = 5;
+}
 
 bool ImGuiWindowManager::create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir)
 {
@@ -44,9 +47,11 @@ bool ImGuiWindowManager::init()
 
 void ImGuiWindowManager::destroy()
 {
-	for (int i = 0; m_menuVector.size()-1; i++)
+	for (int i = 0; i<m_menuVector.size(); i++)
 	{
 		m_menuVector[i]->destroy();
+		//X TODO : CUSTOM
+		delete m_menuVector[i];
 	}
 }
 

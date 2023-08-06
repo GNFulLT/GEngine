@@ -12,7 +12,7 @@ class GThemeMenu : public IGImGuiMenuImpl
 {
 public:
 	//X TODO : Pointer should be unique or shared
-
+	~GThemeMenu();
 	//X Theme name should be unique
 	bool add_theme(IGImGuiTheme* theme);
 
@@ -29,6 +29,8 @@ private:
 	void select_theme(int index);
 
 	void init_built_in_themes();
+
+	void load_json_themes();
 private:
 	//X TODO : Pointer should be unique or shared
 	ankerl::unordered_dense::segmented_map<std::string, IGImGuiTheme*> m_themes;

@@ -144,6 +144,8 @@ bool ImGuiLayer::init()
 void ImGuiLayer::destroy()
 {
 	m_windowManager->destroy();
+	//X TODO : Custom Deleter
+	delete m_windowManager;
 	//vkDestroyDescriptorPool(dev, imguiPool, nullptr);
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();

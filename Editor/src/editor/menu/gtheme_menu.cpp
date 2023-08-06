@@ -4,10 +4,17 @@
 #include "internal/theme/gimgui_bright_dark_theme.h"
 #include "internal/theme/gimgui_theme_1.h"
 #include "internal/theme/gimgui_theme_2.h"
+#include "internal/gimgui_json_theme.h"
 
 #include "editor/files.h"
 
 #include <cassert>
+#include <filesystem>
+
+GThemeMenu::~GThemeMenu()
+{
+	int a = 5;
+}
 
 bool GThemeMenu::add_theme(IGImGuiTheme* theme)
 {
@@ -33,6 +40,9 @@ bool GThemeMenu::init()
 {
 	//X TODO : GDNEWDA
 	init_built_in_themes();
+
+	load_json_themes();
+
 	return true;
 }
 
@@ -96,6 +106,40 @@ void GThemeMenu::init_built_in_themes()
 
 	theme = new GImGuiTheme2();
 	add_theme(theme);
+}
+
+void GThemeMenu::load_json_themes()
+{
+	auto themePath = THEME_FOLDER_FULL_PATH;
+	std::filesystem::path themeFolder(themePath);
+
+
+	using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
+	try
+	{
+		for (const auto& dirEntry : recursive_directory_iterator(themeFolder))
+		{
+			if (!dirEntry.path().has_extension())
+				continue;
+
+			auto extensionAsStr = dirEntry.path().extension().string();
+			if (strcmp(extensionAsStr.c_str(), ".json") != 0)
+				continue;
+
+			GImGuiJsonTheme* jsonTheme = new GImGuiJsonTheme(dirEntry.path().string());
+			bool inited = jsonTheme->init();
+
+			if (!add_theme(jsonTheme))
+			{
+				delete jsonTheme;
+			}
+		}
+	}
+	catch (std::exception& ex)
+	{
+
+	}
+	
 }
 
 void GThemeMenu::destroy()

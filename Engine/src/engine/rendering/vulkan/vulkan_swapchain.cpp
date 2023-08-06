@@ -110,7 +110,7 @@ bool GVulkanSwapchain::init()
 	}
 
 	std::vector<VkClearValue> clearValues;
-	clearValues.push_back({ {1.f,0.f,0.f,1.f} });
+	clearValues.push_back({ {0.f,0.f,0.f,0.f} });
 
 	m_renderpass.create((VkDevice)m_device->get_vk_device(), m_imageViews, sizes, clearValues, this->m_surfaceFormat.format,
 		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);

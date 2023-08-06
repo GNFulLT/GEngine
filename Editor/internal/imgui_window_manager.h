@@ -12,6 +12,7 @@
 class ImGuiWindowManager
 {
 public:
+	~ImGuiWindowManager();
 	// Multi-thread safe
 	bool create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir = GIMGUIWINDOWDIR_LEFT);
 

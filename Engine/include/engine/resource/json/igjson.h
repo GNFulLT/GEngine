@@ -14,7 +14,7 @@ class ENGINE_API IGJson
 public:
 	virtual ~IGJson() = default;
 
-	virtual void iterate_in(std::function<void(std::string_view,IGJsonValue*)> callback) = 0;
+	virtual bool iterate_in(std::function<void(std::string_view,IGJsonValue*)> callback) = 0;
 
 	virtual RESOURCE_INIT_CODE init() = 0;
 

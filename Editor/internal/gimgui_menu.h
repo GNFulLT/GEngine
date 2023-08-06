@@ -6,6 +6,7 @@
 class GImGuiMenu
 {
 public:
+	~GImGuiMenu();
 	GImGuiMenu(IGImGuiMenuImpl* impl);
 
 	bool init();

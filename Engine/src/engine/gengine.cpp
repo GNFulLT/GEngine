@@ -182,7 +182,7 @@ void GEngine::init(GApplicationImpl* impl)
 	VkSurfaceFormatKHR surfaceFormat = {};
 	surfaceFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
 	surfaceFormat.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-	((GVulkanViewport*)m_mainViewport)->init(m_mainSurface, surfaceFormat,(*graphicDevice)->as_logical_device()->get_present_queue());
+	inited = ((GVulkanViewport*)m_mainViewport)->init(m_mainSurface, surfaceFormat,(*graphicDevice)->as_logical_device()->get_present_queue());
 
 #ifdef _DEBUG
 	m_inited = true;

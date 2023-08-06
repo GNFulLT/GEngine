@@ -2,6 +2,11 @@
 
 #include "imgui/imgui.h"
 
+GImGuiMenu::~GImGuiMenu()
+{
+	int a = 5;
+}
+
 GImGuiMenu::GImGuiMenu(IGImGuiMenuImpl* impl)
 {
 	m_impl = impl;
@@ -37,4 +42,6 @@ const char* GImGuiMenu::get_menu_name()
 void GImGuiMenu::destroy()
 {
 	m_impl->destroy();
+	//X TODO : Custom Deleter
+	delete m_impl;
 }

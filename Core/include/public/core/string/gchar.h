@@ -36,7 +36,7 @@ struct GChar : public GCharBase<CHARTYPE,sizeof(CHARTYPE)>
 	static bool is_punct(CHARTYPE chr) noexcept;
 	static bool is_alnum(CHARTYPE chr) noexcept;
 	static bool is_digit(CHARTYPE chr) noexcept;
-	static bool is_hexdegit(CHARTYPE chr) noexcept;
+	static bool is_hexdigit(CHARTYPE chr) noexcept;
 	static bool is_whitespace(CHARTYPE chr) noexcept;
 	static bool is_control(CHARTYPE chr) noexcept;
 	static bool is_blank(CHARTYPE chr) noexcept;
@@ -121,7 +121,7 @@ template <> inline bool GCharWide::is_print(PlatformTypes::_WCHAR chr) noexcept 
 template <> inline bool GCharWide::is_punct(PlatformTypes::_WCHAR chr) noexcept { return ::iswpunct(chr); }
 template <> inline bool GCharWide::is_alnum(PlatformTypes::_WCHAR chr) noexcept { return ::iswalnum(chr); }
 template <> inline bool GCharWide::is_digit(PlatformTypes::_WCHAR chr) noexcept { return ::iswdigit(chr); }
-template <> inline bool GCharWide::is_hexdegit(PlatformTypes::_WCHAR chr) noexcept { return ::iswxdigit(chr); }
+template <> inline bool GCharWide::is_hexdigit(PlatformTypes::_WCHAR chr) noexcept { return ::iswxdigit(chr); }
 template <> inline bool GCharWide::is_whitespace(PlatformTypes::_WCHAR chr) noexcept { return ::iswspace(chr); }
 template <> inline bool GCharWide::is_control(PlatformTypes::_WCHAR chr) noexcept { return ::iswcntrl(chr); }
 template <> inline bool GCharWide::is_blank(PlatformTypes::_WCHAR chr) noexcept { return ::iswblank(chr); }
@@ -134,7 +134,7 @@ template <> inline bool GCharA::is_print(PlatformTypes::_ASCII chr) noexcept { r
 template <> inline bool GCharA::is_punct(PlatformTypes::_ASCII chr) noexcept { return ::ispunct(chr); }
 template <> inline bool GCharA::is_alnum(PlatformTypes::_ASCII chr) noexcept { return ::isalnum(chr); }
 template <> inline bool GCharA::is_digit(PlatformTypes::_ASCII chr) noexcept { return ::isdigit(chr); }
-template <> inline bool GCharA::is_hexdegit(PlatformTypes::_ASCII chr) noexcept { return ::isxdigit(chr); }
+template <> inline bool GCharA::is_hexdigit(PlatformTypes::_ASCII chr) noexcept { return ::isxdigit(chr); }
 template <> inline bool GCharA::is_whitespace(PlatformTypes::_ASCII chr) noexcept { return ::isspace(chr); }
 template <> inline bool GCharA::is_control(PlatformTypes::_ASCII chr) noexcept { return ::iscntrl(chr); }
 template <> inline bool GCharA::is_blank(PlatformTypes::_ASCII chr) noexcept { return ::isblank(chr); }

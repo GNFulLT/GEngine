@@ -10,6 +10,7 @@ class ImGuiStyle;
 class IGImGuiTheme
 {
 public:
+	virtual ~IGImGuiTheme() = default;
 	virtual bool is_valid() = 0;
 	virtual const char* get_theme_name() = 0;
 	virtual void setImGuiTheme(ImGuiStyle& style) = 0;

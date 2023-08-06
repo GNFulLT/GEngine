@@ -16,11 +16,11 @@ public:
 
 	virtual const char* get_file_path_c_str() override;
 
-	virtual void iterate_in(std::function<void(std::string_view,IGJsonValue*)> callback) override;
+	virtual bool iterate_in(std::function<void(std::string_view,IGJsonValue*)> callback) override;
 
 private:
-	simdjson::fallback::ondemand::document m_doc;
 	simdjson::ondemand::parser m_parser;
+	simdjson::padded_string m_paddedStr;
 	bool m_is_valid = false;
 	std::string m_filePath;
 };

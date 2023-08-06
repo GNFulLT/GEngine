@@ -4,14 +4,17 @@
 #include "editor/igimgui_theme.h"
 #include "engine/resource/json/igjson.h"
 #include <imgui/imgui.h>
+#include "public/core/templates/unordered_dense.h"
 
 #include <string>
 #include <vector>
 #include <utility>
+#include <tuple>
 
 class GImGuiJsonTheme : public IGImGuiTheme
 {
 public:
+	~GImGuiJsonTheme();
 	GImGuiJsonTheme(const std::string& jsonPath);
 
 	virtual bool is_valid() override;
@@ -23,10 +26,11 @@ public:
 
 	void json_value_key(std::string_view key,IGJsonValue* val);
 private:
-	std::vector<std::pair<ImGuiCol_,double>> m_imguiValueVector;
-
+	std::vector<std::pair<ImGuiCol_,std::tuple<float,float,float,float>>> m_imguiValueVector;
+	ankerl::unordered_dense::segmented_set<ImGuiCol_> m_colSet;
 	bool m_is_valid = false;
 	IGJson* m_jsonFile;
+	std::string m_fileName;
 };
 
 #endif // GIMGUI_JSON_THEME_H
