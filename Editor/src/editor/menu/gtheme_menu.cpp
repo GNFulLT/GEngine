@@ -3,6 +3,7 @@
 #include "internal/theme/gimgui_default_theme.h"
 #include "internal/theme/gimgui_bright_dark_theme.h"
 #include "internal/theme/gimgui_theme_1.h"
+#include "internal/theme/gimgui_theme_2.h"
 
 #include "editor/files.h"
 
@@ -93,6 +94,8 @@ void GThemeMenu::init_built_in_themes()
 	theme = new GImGuiTheme1();
 	add_theme(theme);
 
+	theme = new GImGuiTheme2();
+	add_theme(theme);
 }
 
 void GThemeMenu::destroy()
