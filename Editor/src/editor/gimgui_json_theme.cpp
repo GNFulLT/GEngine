@@ -7,7 +7,6 @@
 #define IMGUI_PAIR(element) {#element, ImGuiCol_##element} 
 
 static ankerl::unordered_dense::segmented_map<std::string, ImGuiCol_> m_strToImGuiCol = {
-
     IMGUI_PAIR(Text),
     IMGUI_PAIR(TextDisabled),
     IMGUI_PAIR(WindowBg),              // Background of normal windows
@@ -105,5 +104,6 @@ void GImGuiJsonTheme::setImGuiTheme(ImGuiStyle& style)
 }
 
 void GImGuiJsonTheme::json_value_key(std::string_view key, IGJsonValue* val)
-{
+{  
+    
 }

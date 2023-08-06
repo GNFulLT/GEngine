@@ -5,13 +5,35 @@
 
 
 
-void ImGuiWindowManager::create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir)
+bool ImGuiWindowManager::create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir)
 {
 	std::lock_guard guard(m_windowCreationMutex);
 	
 	//X TODO : GDNEWDA
 	assert(false);
+	return true;
 
+}
+
+bool ImGuiWindowManager::create_imgui_menu(IGImGuiMenuImpl* impl)
+{
+	if (auto menu = m_menuMap.find(impl->get_menu_name()); menu != m_menuMap.end())
+		return false;
+
+	//X GDNEWDA
+	GImGuiMenu* newMenu = new GImGuiMenu(impl);
+
+	bool inited = newMenu->init();
+	
+	if (!inited)
+	{
+		delete newMenu;
+		return false;
+	}
+	m_menuMap.emplace(impl->get_menu_name(),newMenu);
+	m_menuVector.push_back(newMenu);
+
+	return true;
 }
 
 bool ImGuiWindowManager::init()
@@ -29,22 +51,8 @@ void ImGuiWindowManager::render_windows()
 	render_main_dockspace();
 	ImGuiViewportP* viewport = (ImGuiViewportP*)(void*)ImGui::GetMainViewport();
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar;
-
-	if (ImGui::BeginViewportSideBar("Leftim", viewport, ImGuiDir_Left, 10, window_flags))
-	{
-		if (ImGui::BeginMenuBar())
-		{
-			if (ImGui::BeginMenu("Logging"))
-			{
-
-				ImGui::EndMenu();
-			}
-			ImGui::EndMenuBar();
-		}
-
-		ImGui::End();
-	}
-
+	
+	draw_main_menu_bar();
 
 	ImGui::ShowDemoWindow();
 
@@ -120,4 +128,19 @@ void ImGuiWindowManager::build_nodes()
 		ImGui::DockBuilderFinish(m_dock_id);
 
 		m_isDockDirty = false;
+}
+
+void ImGuiWindowManager::draw_main_menu_bar()
+{
+	if (ImGui::BeginMainMenuBar())
+	{
+		for (int i = 0; i < m_menuVector.size(); i++)
+		{
+			if (m_menuVector[i]->need_render())
+			{
+				m_menuVector[i]->render();
+			}
+		}
+		ImGui::EndMainMenuBar();
+	}
 }

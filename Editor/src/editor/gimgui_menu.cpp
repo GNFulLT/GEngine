@@ -16,9 +16,11 @@ bool GImGuiMenu::init()
 void GImGuiMenu::render()
 {
 	m_menuId = ImGui::GetID(get_menu_name());
-	if (ImGui::BeginMenu(get_menu_name()))
+	auto name = get_menu_name();
+	if (ImGui::BeginMenu(name))
 	{
-		ImGui::End();
+		m_impl->render();
+		ImGui::EndMenu();
 	}
 }
 
