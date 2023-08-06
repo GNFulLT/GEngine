@@ -8,11 +8,6 @@
 
 #include <cassert>
 
-GThemeMenu::~GThemeMenu()
-{
-
-}
-
 bool GThemeMenu::add_theme(IGImGuiTheme* theme)
 {
 	std::string themeName = theme->get_theme_name();

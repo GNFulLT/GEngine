@@ -3,6 +3,8 @@
 
 #include <string>
 #include "public/typedefs.h"
+#include <stdexcept>
+#include <vector>
 
 _INLINE_ std::string string32_to_string(const std::u32string& str)
 {
