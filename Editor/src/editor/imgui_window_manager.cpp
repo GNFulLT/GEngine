@@ -44,7 +44,7 @@ bool ImGuiWindowManager::init()
 
 void ImGuiWindowManager::destroy()
 {
-	for (int i = 0; m_menuVector.size(); i++)
+	for (int i = 0; m_menuVector.size()-1; i++)
 	{
 		m_menuVector[i]->destroy();
 	}
