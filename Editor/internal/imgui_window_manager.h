@@ -3,16 +3,19 @@
 
 #include "public/core/templates/unordered_dense.h"
 #include "internal/gimgui_window.h"
+#include "internal/gimgui_menu.h"
 
 #include <mutex>
-
-class IGImGuiWindowImpl;
+#include <string>
+#include <vector>
 
 class ImGuiWindowManager
 {
 public:
 	// Multi-thread safe
-	void create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir = GIMGUIWINDOWDIR_LEFT);
+	bool create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir = GIMGUIWINDOWDIR_LEFT);
+
+	bool create_imgui_menu(IGImGuiMenuImpl* impl);
 
 	bool init();
 
@@ -25,8 +28,15 @@ private:
 	void render_main_dockspace();
 
 	void build_nodes();
+
+	void draw_main_menu_bar();
 private:
-	ankerl::unordered_dense::segmented_map<uint32_t, GImGuiWindow*> m_windowMap;
+	//X TODO : USE SHARED OR UNIQUE PTR
+	ankerl::unordered_dense::segmented_map<std::string, GImGuiWindow*> m_windowMap;
+
+	ankerl::unordered_dense::segmented_map<std::string,GImGuiMenu*> m_menuMap;
+	std::vector<GImGuiMenu*> m_menuVector;
+
 	uint32_t m_dock_id;
 
 	// Nodes
