@@ -15,6 +15,8 @@ public:
 	bool need_render();
 
 	const char* get_menu_name();
+
+	void destroy();
 private:
 	IGImGuiMenuImpl* m_impl;
 

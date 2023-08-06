@@ -19,6 +19,8 @@ public:
 	virtual void on_data_update() = 0;
 
 	virtual const char* get_menu_name() = 0;
+
+	virtual void destroy() = 0;
 private:
 };
 

@@ -1,5 +1,6 @@
 #include "internal/theme/gimgui_default_theme.h"
 #include "imgui/imgui.h"
+#include "public/core/string/gstring_utils.h"
 GImGuiDefaultTheme::GImGuiDefaultTheme()
 {
 	m_name = "Default Theme";

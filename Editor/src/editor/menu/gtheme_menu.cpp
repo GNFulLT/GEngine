@@ -4,14 +4,12 @@
 #include "internal/theme/gimgui_bright_dark_theme.h"
 #include "internal/theme/gimgui_theme_1.h"
 
+#include "editor/files.h"
+
 #include <cassert>
 
 GThemeMenu::~GThemeMenu()
 {
-	for (int i = 0; i < m_themesVector.size(); i++)
-	{
-		delete m_themesVector[i].second;
-	}
 
 }
 
@@ -100,4 +98,14 @@ void GThemeMenu::init_built_in_themes()
 	theme = new GImGuiTheme1();
 	add_theme(theme);
 
+}
+
+void GThemeMenu::destroy()
+{
+
+	for (int i = 0; i < m_themesVector.size(); i++)
+	{
+		m_themesVector[i].second->destroy();
+		delete m_themesVector[i].second;
+	}
 }

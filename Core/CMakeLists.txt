@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_library(GEngine_Core SHARED "${CMAKE_CURRENT_SOURCE_DIR}/src/public/gstring.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/public/platform/window.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/public/core/globals.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/src/public/os_str.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/internal/platform/window_glfw.cpp" "include/public/globals.h" "include/public/core/templates/signal/gsignal.h" "include/public/core/templates/better_enum.h")
+"${CMAKE_CURRENT_SOURCE_DIR}/src/public/os_str.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/internal/platform/window_glfw.cpp" "include/public/globals.h" "include/public/core/templates/signal/gsignal.h" "include/public/core/templates/better_enum.h" "include/public/core/string/gstring_utils.h")
 
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)

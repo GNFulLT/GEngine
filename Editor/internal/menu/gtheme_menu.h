@@ -11,7 +11,6 @@
 class GThemeMenu : public IGImGuiMenuImpl
 {
 public:
-	~GThemeMenu();
 	//X TODO : Pointer should be unique or shared
 
 	//X Theme name should be unique
@@ -24,6 +23,7 @@ public:
 	virtual void on_resize() override;
 	virtual void on_data_update() override;
 	virtual const char* get_menu_name() override;
+	
 
 private:
 	void select_theme(int index);
@@ -34,6 +34,9 @@ private:
 	ankerl::unordered_dense::segmented_map<std::string, IGImGuiTheme*> m_themes;
 	std::vector<std::pair<bool, IGImGuiTheme*>> m_themesVector;
 	std::pair<bool, IGImGuiTheme*>* m_selectedTheme = nullptr;
+
+	// Inherited via IGImGuiMenuImpl
+	virtual void destroy() override;
 };
 
 

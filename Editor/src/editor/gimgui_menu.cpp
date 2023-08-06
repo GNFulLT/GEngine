@@ -33,3 +33,8 @@ const char* GImGuiMenu::get_menu_name()
 {
 	return m_impl->get_menu_name();
 }
+
+void GImGuiMenu::destroy()
+{
+	m_impl->destroy();
+}
