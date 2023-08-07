@@ -18,6 +18,9 @@ public:
 	virtual void log_w(const char* tag, const char* msg) override;
 	virtual void log_e(const char* tag, const char* msg) override;
 	virtual void log_c(const char* tag, const char* msg) override;
+
+
+	void enable_file_logging(const char* fileName,LOG_LEVEL level);
 private:
 	
 };

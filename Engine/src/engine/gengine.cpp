@@ -34,7 +34,8 @@ GEngine::GEngine()
 	managerTable->set_manager(ENGINE_MANAGER_GRAPHIC_DEVICE, new GSharedPtr<IGVulkanDevice>(dev));
 	managerTable->set_manager(ENGINE_MANAGER_WINDOW, new GSharedPtr<Window>(m_window));
 	managerTable->set_manager(ENGINE_MANAGER_LOGGER, new GSharedPtr<IGLoggerManager>(s_logger));
-
+	
+	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
 }
 

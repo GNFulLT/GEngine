@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 LOG_LEVEL spd_to_glog(spdlog::level::level_enum level)
 {
@@ -20,6 +21,15 @@ GLoggerManager::GLoggerManager()
 	spdlog::set_level(spdlog::level::trace);
 #endif
 }
+
+void GLoggerManager::enable_file_logging(const char* fileName, LOG_LEVEL level)
+{
+	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName, true);
+	file_sink->set_level(glog_to_spd(level));
+
+	spdlog::default_logger()->sinks().push_back(file_sink);
+}
+
 
 GLoggerManager::~GLoggerManager()
 {
