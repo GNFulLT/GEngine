@@ -15,7 +15,9 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
 "internal/engine/manager_table.h" "src/engine/manager_table.cpp" "internal/engine/rendering/vulkan/vulkan_viewport.h" "src/engine/rendering/vulkan/vulkan_viewport.cpp"
  "internal/engine/rendering/vulkan/vulkan_swapchain.h" "src/engine/rendering/vulkan/vulkan_swapchain.cpp" "internal/engine/rendering/vulkan/vulkan_renderpass.h" "src/engine/rendering/vulkan/vulkan_renderpass.cpp" 
  "include/engine/rendering/vulkan/ivulkan_viewport.h" "internal/engine/rendering/vulkan/vulkan_memory.h" "src/engine/rendering/vulkan/vulkan_memory.cpp" "include/engine/rendering/vulkan/ivulkan_queue.h"
- "include/engine/resource/json/igjson.h" "internal/engine/resource/json/gjson_simdjson.h" "src/engine/rendering/resource/json/gjson_simdjson.cpp" "include/engine/resource/resource_init_code.h" "include/engine/resource/json/gjson_utils.h" "src/engine/rendering/resource/json/gjson_utils.cpp" "include/engine/resource/json/igjson_value.h" "internal/engine/resource/json/gjson_value_simdjson.h" "src/engine/rendering/resource/json/gjson_value_simdjson.cpp")
+ "include/engine/resource/json/igjson.h" "internal/engine/resource/json/gjson_simdjson.h" "src/engine/rendering/resource/json/gjson_simdjson.cpp" "include/engine/resource/resource_init_code.h"
+ "include/engine/resource/json/gjson_utils.h" "src/engine/rendering/resource/json/gjson_utils.cpp" "include/engine/resource/json/igjson_value.h" "internal/engine/resource/json/gjson_value_simdjson.h" 
+ "src/engine/rendering/resource/json/gjson_value_simdjson.cpp" "include/engine/manager/iglogger_manager.h" "internal/engine/manager/glogger_manager.h" "src/engine/manager/glogger_manager.cpp")
 
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Core/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -23,11 +25,13 @@ target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vulkan/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/simdjson/include")
+target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spdlog/include")
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../Core" CORE)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/volk" VOLK)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vulkan" VULKAN)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/simdjson" SIMDJSON)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spdlog" SPDLOG)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 
@@ -35,6 +39,7 @@ target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 target_link_libraries(GEngine_Engine PUBLIC volk)
 target_link_libraries(GEngine_Engine PRIVATE simdjson)
 target_link_libraries(GEngine_Engine PRIVATE GEngine_Core)
+target_link_libraries(GEngine_Engine PRIVATE spdlog)
 
 include(GenerateExportHeader)
 

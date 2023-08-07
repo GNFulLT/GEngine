@@ -7,7 +7,7 @@
 #include <cassert>
 #include "internal/engine/manager_table.h"
 #include "internal/engine/rendering/vulkan/vulkan_viewport.h"
-
+#include "internal/engine/manager/glogger_manager.h"
 
 #include "internal/engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/rendering/vulkan/vulkan_queue.h"
@@ -18,7 +18,7 @@
 #include  <GLFW/glfw3.h>
 
 static GVulkanDevice* s_device;
-
+static GLoggerManager* s_logger;
 GEngine::GEngine()
 {
 	m_window = create_default_window();
@@ -29,8 +29,11 @@ GEngine::GEngine()
 	auto managerTable = gdnew(ManagerTable);
 	m_managerTable = managerTable;
 	auto dev = new GVulkanDevice(m_vulkanApp);
+	s_logger = new GLoggerManager();
+
 	managerTable->set_manager(ENGINE_MANAGER_GRAPHIC_DEVICE, new GSharedPtr<IGVulkanDevice>(dev));
 	managerTable->set_manager(ENGINE_MANAGER_WINDOW, new GSharedPtr<Window>(m_window));
+	managerTable->set_manager(ENGINE_MANAGER_LOGGER, new GSharedPtr<IGLoggerManager>(s_logger));
 
 	s_device = dev;
 }
@@ -67,11 +70,20 @@ void GEngine::run()
 	
 	s_device->get_queue_fence()->wait();
 
+	exit();
+}
+
+
+void GEngine::exit()
+{
+
+	s_logger->log_d("GEngine", "Beginning to destroy application implementation");
 
 	m_impl->destroy();
 	//X Before Uninitialize Game
 
 	//X Destroy global managers
+	s_logger->log_d("GEngine", "Beginning to destroy main viewport");
 
 	((GVulkanViewport*)m_mainViewport)->destroy();
 
@@ -81,11 +93,17 @@ void GEngine::run()
 	//X Destroys main surface
 	vkDestroySurfaceKHR((VkInstance)m_vulkanApp->get_vk_instance(), m_mainSurface, nullptr);
 
-	(*graphicDevice)->destroy();
+	s_logger->log_d("GEngine", "Beginning to destroy graphic device");
+
+	s_device->destroy();
+
+	s_logger->log_d("GEngine", "Beginning to destroy vulkan device");
+
 
 	m_vulkanApp->destroy();
 
 
+	s_logger->log_d("GEngine", "Beginning to destroy global manager containers");
 
 	// X Delete table
 	((ManagerTable*)m_managerTable)->delete_managers();
@@ -160,36 +178,79 @@ void GEngine::init(GApplicationImpl* impl)
 
 	m_impl = impl;
 
+	bool inited = s_logger->init();
+	
+	if (!inited)
+		return;
+
+	s_logger->log_d("GEngine", "Beginning to initialize GLFW");
+
+	auto resglfw = glfwInit();
+
+	if (resglfw != GLFW_TRUE)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing GLFW. Engine shutdown");
+		return;
+	}
+
+	s_logger->log_d("GEngine","Beginning to initialize window");
+
 	uint32_t initedI = m_window->init();
 	
 	if (initedI != 0)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing window. Engine shutdown");
 		return;
+	}
 
-	bool inited = m_vulkanApp->init();
+	s_logger->log_d("GEngine", "Beginning to initialize vulkan app");
+
+	inited = m_vulkanApp->init();
 
 	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing vulkan app. Engine shutdown");
 		return;
+	}
+
+	s_logger->log_d("GEngine", "Beginning to initialize graphic device");
 
 	inited = (*graphicDevice)->init();
 
 	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing graphic device. Engine shutdown");
 		return;
+	}
 
 	m_mainViewport = new GVulkanViewport((GVulkanLogicalDevice*)(*graphicDevice)->as_logical_device().get(), m_window->get_window_props().width, m_window->get_window_props().height);
-	auto resglfw = glfwInit();
 	//X IT WORKS FOR ONLY GLFW WINDOW
 	VkResult res = glfwCreateWindowSurface((VkInstance)m_vulkanApp->get_vk_instance(), (GLFWwindow*)m_window->get_native_handler(), nullptr,&m_mainSurface);
 	VkSurfaceFormatKHR surfaceFormat = {};
 	surfaceFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
 	surfaceFormat.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+
+	s_logger->log_d("GEngine", "Beginning to initialize main viewport");
 	inited = ((GVulkanViewport*)m_mainViewport)->init(m_mainSurface, surfaceFormat,(*graphicDevice)->as_logical_device()->get_present_queue());
+
+	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing main viewport. Engine shutdown");
+		return;
+	}
 
 #ifdef _DEBUG
 	m_inited = true;
 #endif
 
-	m_impl->init(this);
+	s_logger->log_d("GEngine", "Beginning to initialize application implementation");
+	inited = m_impl->init(this);
 
+	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing application implementation. Engine shutdown");
+		return;
+	}
 }
 
 Window* GEngine::get_main_window()
@@ -209,6 +270,8 @@ IGVulkanApp* GEngine::get_app()
 {
 	return m_vulkanApp.get();
 }
+
+
 
 IGVulkanViewport* GEngine::get_viewport()
 {

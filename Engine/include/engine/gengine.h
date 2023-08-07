@@ -33,6 +33,8 @@ public:
 
 	IGVulkanApp* get_app();
 private:
+	void exit();
+
 	void tick();
 	bool before_render();
 	void after_render();

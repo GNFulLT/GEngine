@@ -2,6 +2,7 @@
 #include "public/core/templates/shared_ptr.h"
 #include "public/platform/window.h"
 #include "engine/rendering/vulkan/ivulkan_device.h"
+#include "engine/manager/iglogger_manager.h"
 void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 {
 	if (auto itr = m_manager_map.find((int)manager);itr != m_manager_map.end())
@@ -35,6 +36,12 @@ void ManagerTable::delete_managers()
 	if (auto graphicDevice = get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);graphicDevice != nullptr)
 	{
 		delete (GSharedPtr<IGVulkanDevice>*)graphicDevice;
+	}
+	if (auto logger = get_engine_manager_managed(ENGINE_MANAGER_LOGGER); logger != nullptr)
+	{
+		//X TODO : DELETE LOGGER
+		delete (GSharedPtr<IGLoggerManager>*)logger;
+
 	}
 	
 }

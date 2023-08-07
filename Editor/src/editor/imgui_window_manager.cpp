@@ -30,6 +30,7 @@ bool ImGuiWindowManager::create_imgui_menu(IGImGuiMenuImpl* impl)
 	
 	if (!inited)
 	{
+		//X TODO : CUSTOM DELETER
 		delete newMenu;
 		return false;
 	}

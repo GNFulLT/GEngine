@@ -14,3 +14,6 @@
 [submodule "ThirdParty/simdjson"]
 	path = ThirdParty/simdjson
 	url = https://github.com/simdjson/simdjson.git
+[submodule "ThirdParty/spdlog"]
+	path = ThirdParty/spdlog
+	url = https://github.com/gabime/spdlog.git
