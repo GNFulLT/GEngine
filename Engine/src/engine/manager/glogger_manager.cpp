@@ -3,16 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/basic_file_sink.h>
-
-LOG_LEVEL spd_to_glog(spdlog::level::level_enum level)
-{
-	return (LOG_LEVEL)level;
-}
-
-spdlog::level::level_enum glog_to_spd(LOG_LEVEL level)
-{
-	return (spdlog::level::level_enum)level;
-}
+#include "internal/engine/io/logger_helper.h"
 
 GLoggerManager::GLoggerManager()
 {

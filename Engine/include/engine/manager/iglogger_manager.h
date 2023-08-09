@@ -1,18 +1,7 @@
 #ifndef IGLOGGER_MANAGER_H
 #define IGLOGGER_MANAGER_H
 
-#include "engine/GEngine_EXPORT.h"
-
-enum LOG_LEVEL
-{
-	LOG_LEVEL_TRACE=0,
-	LOG_LEVEL_DEBUG,
-	LOG_LEVEL_INFO,
-	LOG_LEVEL_WARNING,
-	LOG_LEVEL_ERROR,
-	LOG_LEVEL_CRITICAL,
-	LOG_LEVEL_OFF,
-};
+#include "engine/io/iowning_glogger.h"
 
 class ENGINE_API IGLoggerManager
 {
@@ -33,6 +22,8 @@ public:
 	virtual void log_e(const char* tag, const char* msg) = 0;
 	virtual void log_c(const char* tag, const char* msg) = 0;
 
+
+	virtual IOwningGlogger* create_owning_glogger(const char* ownerName) = 0;
 private:
 };
 
