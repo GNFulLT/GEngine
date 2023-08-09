@@ -9,6 +9,10 @@ GOwningGLogger::GOwningGLogger(const char* ownerName)
 	auto logger = new spdlog::logger(ownerName, { console_sink });
 	m_logger = std::shared_ptr<spdlog::logger>(logger);
 
+	m_logger->set_level(spdlog::level::warn);
+#ifdef _DEBUG
+	m_logger->set_level(spdlog::level::trace);
+#endif
 }
 
 void GOwningGLogger::set_log_level(LOG_LEVEL level)
@@ -20,29 +24,29 @@ LOG_LEVEL GOwningGLogger::get_log_level()
 {
 	return spd_to_glog(m_logger->level());
 }
-void GOwningGLogger::log_d(const char* tag, const char* msg)
+void GOwningGLogger::log_d(const char* msg)
 {
-	m_logger->log(spdlog::level::debug, fmt::format("[{}] {}", tag, msg));
+	m_logger->log(spdlog::level::debug, fmt::format("[{}] {}", m_ownerName.c_str(), msg));
 }
 
-void GOwningGLogger::log_i(const char* tag, const char* msg)
+void GOwningGLogger::log_i(const char* msg)
 {
-	m_logger->log(spdlog::level::info, fmt::format("[{}] {}", tag, msg));
+	m_logger->log(spdlog::level::info, fmt::format("[{}] {}", m_ownerName.c_str(), msg));
 }
 
-void GOwningGLogger::log_w(const char* tag, const char* msg)
+void GOwningGLogger::log_w(const char* msg)
 {
-	m_logger->log(spdlog::level::warn, fmt::format("[{}] {}", tag, msg));
+	m_logger->log(spdlog::level::warn, fmt::format("[{}] {}", m_ownerName.c_str(), msg));
 }
 
-void GOwningGLogger::log_e(const char* tag, const char* msg)
+void GOwningGLogger::log_e(const char* msg)
 {
-	m_logger->log(spdlog::level::err, fmt::format("[{}] {}", tag, msg));
+	m_logger->log(spdlog::level::err, fmt::format("[{}] {}", m_ownerName.c_str(), msg));
 }
 
-void GOwningGLogger::log_c(const char* tag, const char* msg)
+void GOwningGLogger::log_c(const char* msg)
 {
-	m_logger->log(spdlog::level::critical, fmt::format("[{}] {}", tag, msg));
+	m_logger->log(spdlog::level::critical, fmt::format("[{}] {}", m_ownerName.c_str(), msg));
 }
 const char* GOwningGLogger::get_owner_name()
 {

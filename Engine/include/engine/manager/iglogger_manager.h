@@ -2,6 +2,7 @@
 #define IGLOGGER_MANAGER_H
 
 #include "engine/io/iowning_glogger.h"
+#include "public/core/templates/shared_ptr.h"
 
 class ENGINE_API IGLoggerManager
 {
@@ -23,7 +24,7 @@ public:
 	virtual void log_c(const char* tag, const char* msg) = 0;
 
 
-	virtual IOwningGlogger* create_owning_glogger(const char* ownerName) = 0;
+	virtual GSharedPtr<IOwningGLogger> create_owning_glogger(const char* ownerName) = 0;
 private:
 };
 

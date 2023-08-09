@@ -9,10 +9,20 @@
 #include <GLFW/glfw3.h>
 #include "imgui/imgui.h"
 #include "internal/imgui_layer.h"
+#include "engine/manager/iglogger_manager.h"
+#include "engine/io/iowning_glogger.h"
+
+
+
+EditorApplicationImpl* EditorApplicationImpl::get_instance()
+{
+    return s_instance;
+}
 
 void EditorApplicationImpl::destroy()
 {
     m_imguiLayer->destroy();
+
 }
 
 bool EditorApplicationImpl::before_update()
@@ -62,21 +72,35 @@ void EditorApplicationImpl::after_render()
 
 bool EditorApplicationImpl::init(GEngine* engine)
 {
+    
     m_engine = engine;
     IManagerTable* table = m_engine->get_manager_table();
+    auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
+    m_logger = (*logger)->create_owning_glogger("EditorLayer");
+    s_instance = this;
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
 
     m_imguiLayer = new ImGuiLayer(engine->get_viewport(),engine->get_main_window(),engine->get_app(),dev->get());
 
+    m_logger->log_d("Initializing Global Pointers");
     glfwInit();
     VkResult res= volkInitialize();
     volkLoadInstance((VkInstance)m_engine->get_app()->get_vk_instance());
     volkLoadDevice((VkDevice)dev->get()->as_logical_device()->get_vk_device());
     
-    
+    m_logger->log_d("Initializing ImGuiLayer");
+
     m_imguiLayer->init();
 
+
+    m_logger->log_d("Editor Initializing Finished");
+
     return true;    
+}
+
+GSharedPtr<IOwningGLogger> EditorApplicationImpl::get_editor_logger()
+{
+    return m_logger;
 }
 
 EDITOR_API GApplicationImpl* create_the_editor()

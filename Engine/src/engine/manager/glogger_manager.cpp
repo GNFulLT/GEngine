@@ -4,7 +4,7 @@
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include "internal/engine/io/logger_helper.h"
-
+#include "internal/engine/io/gowning_glogger.h"
 GLoggerManager::GLoggerManager()
 {
 	spdlog::set_level(spdlog::level::warn);
@@ -19,6 +19,12 @@ void GLoggerManager::enable_file_logging(const char* fileName, LOG_LEVEL level)
 	file_sink->set_level(glog_to_spd(level));
 
 	spdlog::default_logger()->sinks().push_back(file_sink);
+}
+
+GSharedPtr<IOwningGLogger> GLoggerManager::create_owning_glogger(const char* ownerName)
+{
+	//X TODO DONT USE NEW GDNEWDA
+	return GSharedPtr<IOwningGLogger>(new GOwningGLogger(ownerName));
 }
 
 
