@@ -13,12 +13,14 @@
 #include "internal/engine/rendering/vulkan/vulkan_queue.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 
+
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include  <GLFW/glfw3.h>
 
 static GVulkanDevice* s_device;
 static GLoggerManager* s_logger;
+
 GEngine::GEngine()
 {
 	m_window = create_default_window();

@@ -5,6 +5,18 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include "internal/engine/io/logger_helper.h"
 #include "internal/engine/io/gowning_glogger.h"
+#include "gobject/gobject_utils.h"
+
+GOBJECT_ENABLE(GLoggerManager)
+GOBJECT_DEFINE_MEMBER_METHOD("log_d", &GLoggerManager::log_d);
+GOBJECT_DEFINE_MEMBER_METHOD("log_c", &GLoggerManager::log_c);
+GOBJECT_DEFINE_MEMBER_METHOD("log_i", &GLoggerManager::log_i);
+GOBJECT_DEFINE_MEMBER_METHOD("log_e", &GLoggerManager::log_e);
+GOBJECT_DEFINE_MEMBER_METHOD("log_w", &GLoggerManager::log_w);
+
+}
+
+
 GLoggerManager::GLoggerManager()
 {
 	spdlog::set_level(spdlog::level::warn);
@@ -23,7 +35,7 @@ void GLoggerManager::enable_file_logging(const char* fileName, LOG_LEVEL level)
 
 GSharedPtr<IOwningGLogger> GLoggerManager::create_owning_glogger(const char* ownerName)
 {
-	//X TODO DONT USE NEW GDNEWDA
+	//X TODO DONT USE NEW GDNEWDA+
 	return GSharedPtr<IOwningGLogger>(new GOwningGLogger(ownerName));
 }
 

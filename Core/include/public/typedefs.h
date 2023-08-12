@@ -119,5 +119,16 @@ size_t arrlen(T(&)[N]) { return N; }
 #define _Inout_
 #endif
 
+#if defined(__GNUC__)
+#define G_COMPILER G_COMPILER_GNU
+#elif defined(_MSC_VER)
+#define G_COMPILER G_COMPILER_MSVC
+#elif defined(__APPLE__)
+#define G_COMPILER G_COMPILER_MAC
+#else
+#define G_COMPILER G_COMPILER_ELSE
+#endif // __GNUC__
+
+
 
 #endif // TYPEDEFS_H
