@@ -2,12 +2,13 @@
 #include "internal/engine/rendering/vulkan/vulkan_pdevice.h"
 #include "internal/engine/rendering/vulkan/vulkan_utils.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
+#include "internal/engine/manager/glogger_manager.h"
 
 #include <algorithm>
 GVulkanLogicalDevice::GVulkanLogicalDevice(GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
 	m_destroyed = true;
-
+	m_logicalDevice = 0;
 }
 
 GVulkanLogicalDevice::~GVulkanLogicalDevice()
@@ -24,6 +25,10 @@ bool GVulkanLogicalDevice::init()
 	if (!physicalDevice.is_valid())
 		return false;
 
+	m_logger = GLoggerManager::get_instance()->create_owning_glogger("GVulkanLogicalDevice");
+	
+	m_logger->log_d("Creating Queue Info");
+
 	uint32_t queueIndex = physicalDevice->get_default_queue_family_index();
 
 	QueueCreateInf queueCreateInf;
@@ -35,6 +40,9 @@ bool GVulkanLogicalDevice::init()
 	//X All Layers
 	std::vector<VkLayerProperties> allLayerProps;
 	uint32_t propCount = 0;
+	
+	m_logger->log_d("Enumerating Layer Properties");
+
 	if (VK_SUCCESS != vkEnumerateDeviceLayerProperties((VkPhysicalDevice)physicalDevice->get_vk_physical_device(), &propCount, nullptr))
 		return false;
 	allLayerProps.resize(propCount);
@@ -43,10 +51,12 @@ bool GVulkanLogicalDevice::init()
 
 	if (m_debugEnabled)
 	{
+		m_logger->log_d("Debug enabled. Trying to find debug layer");
 		for (int i = 0; i < allLayerProps.size(); i++)
 		{
 			if (strcmp(allLayerProps[i].layerName, VK_LAYER_NAME_DEBUG_LAYER_NAME) == 0)
 			{
+				m_logger->log_d("Debug layer found. Added");
 				m_deviceLayers.push_back(allLayerProps[i]);
 				break;
 			}
@@ -57,16 +67,20 @@ bool GVulkanLogicalDevice::init()
 	{
 		m_debugEnabled = false;
 		//X TODO : LOGGER HERE FORCE CLOSING DEBUG LAYER
+		m_logger->log_d("There is no debug layer. Closing debug mode by force");
 	}
+	m_logger->log_d("Get explicit extensions");
 	std::vector<VkExtensionProperties> implicitExs;
 	get_device_implicit_exs((VkPhysicalDevice)physicalDevice->get_vk_physical_device(), implicitExs);
 
 	//X Try to find swapchain extension
 	int swapchainExsIndex = -1;
+	m_logger->log_d("Trying to find swapchain extension");
 	for (int i = 0; i < implicitExs.size(); i++)
 	{
 		if (strcmp(implicitExs[i].extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
 		{
+			m_logger->log_d("Swapchain extension added");
 			swapchainExsIndex = i;
 			break;
 		}
@@ -76,12 +90,17 @@ bool GVulkanLogicalDevice::init()
 	if (swapchainExsIndex == -1)
 		return false;
 
+	m_logger->log_d("Swapchain extension added to the main extensions");
+
 	//X Push swapchain extension
 	m_deviceExtensions[IMPLICIT_EXTENSIONS_NAME].push_back(implicitExs[swapchainExsIndex]);
 	
 	//X PLUGIN GOES HERE
 
 
+
+
+	m_logger->log_d("Checking duplicates for layers");
 
 	//X Check the array if plugins added same thing more than once
 	
@@ -94,6 +113,8 @@ bool GVulkanLogicalDevice::init()
 
 	//X Check the extension array if plugins added same thing more than once
 
+	m_logger->log_d("Checking duplicates for extensions");
+
 	//X Check the array if plugins added same thing more than once
 	for (auto& exs : m_deviceExtensions)
 	{
@@ -103,6 +124,9 @@ bool GVulkanLogicalDevice::init()
 			}),
 			exs.second.end());
 	}
+
+
+	m_logger->log_d("Creating info layers from selected layers");
 
 	std::vector<const char*> enabledLayers(m_deviceLayers.size());
 
@@ -115,6 +139,8 @@ bool GVulkanLogicalDevice::init()
 		}
 	}
 	
+	m_logger->log_d("Creating info extensions from selected extensions");
+
 	std::vector<const char*> enabledExtensions(vexSize);
 
 	// Make ready data for vulkan
@@ -136,6 +162,8 @@ bool GVulkanLogicalDevice::init()
 
 	// NOW CREATE LOGICAL DEVICE
 
+	m_logger->log_d("Creating device");
+
 
 	VkDeviceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -152,6 +180,7 @@ bool GVulkanLogicalDevice::init()
 	if (auto res = vkCreateDevice((VkPhysicalDevice)physicalDevice->get_vk_physical_device(), &createInfo, nullptr, &(m_logicalDevice)); res != VK_SUCCESS)
 		return false;
 
+	m_logger->log_d("Device created. Getting meta infos");
 
 	m_defaultQueue = GVulkanQueue(this,physicalDevice->get_default_queue_family_index());
 

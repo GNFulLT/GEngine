@@ -1,6 +1,9 @@
 #include "internal/engine/rendering/vulkan/vulkan_pdevice.h"
 #include "internal/engine/rendering/vulkan/vulkan_app.h"
 #include "internal/engine/rendering/vulkan/vulkan_utils.h"
+#include "internal/engine/manager/glogger_manager.h"
+
+constexpr static const char* TAG = "GVulkanPhysicalDevice";
 
 //X This checks surface capability 
 bool surface_check(void* vDev)
@@ -65,6 +68,7 @@ bool GVulkanPhysicalDevice::init()
 	bool restrictedToDiscreteGpu = false;
 
 
+	GLoggerManager::get_instance()->log_d(TAG,"Getting vulkan app from global");
 	auto vulkanApp = m_weakVulkanApp.as_shared();
 	
 	//X TODO : LOGGER
@@ -72,6 +76,8 @@ bool GVulkanPhysicalDevice::init()
 		return false;
 
 	//X Get All VkPhysicalDevice
+
+	GLoggerManager::get_instance()->log_d(TAG, "Enumerating physical devices");
 
 	std::vector<VkPhysicalDevice> physicalDevices;
 	uint32_t physicalDeviceSize;
@@ -81,18 +87,26 @@ bool GVulkanPhysicalDevice::init()
 
 	//X Election
 
+	GLoggerManager::get_instance()->log_d(TAG, "Initializing physical device electors");
+
 	//X Surface check elector
+	GLoggerManager::get_instance()->log_d(TAG, "Surface check elector");
+
 	ElectorInfo inf;
 	inf.who = "GEngine";
 	inf.why = "surface_check";
 	auto t = &surface_check;
 	register_physical_device_elector(&surface_check,&inf);
 	
+	GLoggerManager::get_instance()->log_d(TAG, "Queue elector");
+
 	inf.why = "general_queue_check";
 	register_physical_device_elector(&general_queue_check, &inf);
 
 	if (restrictedToDiscreteGpu)
 	{
+		GLoggerManager::get_instance()->log_d(TAG, "Discrete gpu elector");
+
 		inf.why = "discrete_gpu_check";
 		register_physical_device_elector(&discrete_gpu_check, &inf);
 	}
@@ -104,12 +118,14 @@ bool GVulkanPhysicalDevice::init()
 
 	//X Select device with electors
 
+	GLoggerManager::get_instance()->log_d(TAG, "Selection started.");
+
 	for (int i = 0; i < physicalDevices.size(); i++)
 	{
 		bool isDeviceOk = true;
-		for (int i = 0; i < m_electors.size(); i++)
+		for (int j = 0; j < m_electors.size(); j++)
 		{
-			bool isOk= m_electors[i].fn((void*)physicalDevices[i]);
+			bool isOk= m_electors[j].fn((void*)physicalDevices[i]);
 			if (!isOk)
 			{
 				isDeviceOk = false;
@@ -125,15 +141,21 @@ bool GVulkanPhysicalDevice::init()
 
 	if (m_availableDevices.size() == 0)
 	{
+		GLoggerManager::get_instance()->log_e(TAG, "There is no physical device that meets the requirements.");
+
 		return false;
 	}
 
-	//X Select first physical Device
+	//X Select first physical Device 
+	GLoggerManager::get_instance()->log_d(TAG, "Selecting first device that meets the requirements");
 
 	m_physicalDev = m_availableDevices[0];
 
 
 	//X Save Default Queue index
+
+	GLoggerManager::get_instance()->log_d(TAG, "Getting queues");
+
 
 	auto queueRequirements = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
 

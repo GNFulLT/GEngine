@@ -5,6 +5,8 @@
 #include "internal/engine/rendering/vulkan/vulkan_queue.h"
 
 #include "public/core/templates/shared_ptr.h"
+#include "engine/io/iowning_glogger.h"
+
 #include <unordered_map>
 #include "volk.h"
 #include <string>
@@ -50,7 +52,7 @@ private:
 	bool m_debugEnabled;
 	GWeakPtr<IGVulkanPhysicalDevice> m_physicalDev;
 	GSharedPtr<GVulkanCommandBufferManager> m_defaultCommandManager;
-
+	GSharedPtr<IOwningGLogger> m_logger;
 	GVulkanQueue m_defaultQueue;
 
 	std::vector<VkLayerProperties> m_deviceLayers;

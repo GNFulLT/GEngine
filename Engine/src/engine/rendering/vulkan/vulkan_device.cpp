@@ -3,8 +3,11 @@
 #include "internal/engine/rendering/vulkan/vulkan_pdevice.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include "internal/engine/rendering/vulkan/vulkan_memory.h"
+#include "internal/engine/manager/glogger_manager.h"
 
 static GVulkanLogicalDevice* s_logicalDevice;
+
+constexpr static const char* TAG = "GVulkanDevice";
 
 GVulkanDevice::GVulkanDevice(GWeakPtr<IGVulkanApp> app) : m_vulkanApp(app)
 {
@@ -54,10 +57,13 @@ bool GVulkanDevice::init()
 {
 	//X Needs a initalizer graph and reverse destroy inited objects
 	//X Also needs a logger
+
+	GLoggerManager::get_instance()->log_d(TAG,"Initializing vulkan physical device");
 	bool inited =  m_vulkanPhysicalDevice->init();
 	if (!inited)
 		return inited;
 
+	GLoggerManager::get_instance()->log_d(TAG, "Initializing vulkan logical device");
 	inited = m_vulkanLogicalDevice->init();
 	if (!inited)
 		return inited;
