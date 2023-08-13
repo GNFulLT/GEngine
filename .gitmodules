@@ -17,3 +17,6 @@
 [submodule "ThirdParty/spdlog"]
 	path = ThirdParty/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "ThirdParty/vma"]
+	path = ThirdParty/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

@@ -6,6 +6,10 @@
 class GLoggerManager : public IGLoggerManager
 {
 public:
+	static GLoggerManager* get_instance();
+
+	static void set_instance(GLoggerManager* manager);
+
 	GLoggerManager();
 	~GLoggerManager();
 	// Inherited via IGLoggerManager
@@ -24,7 +28,7 @@ public:
 
 	virtual GSharedPtr<IOwningGLogger> create_owning_glogger(const char* ownerName) override;
 private:
-	
+	inline static GLoggerManager* s_instance = nullptr;;
 };
 
 #endif // GLOGGER_MANAGER_H

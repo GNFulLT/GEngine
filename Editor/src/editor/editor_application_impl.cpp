@@ -11,6 +11,7 @@
 #include "internal/imgui_layer.h"
 #include "engine/manager/iglogger_manager.h"
 #include "engine/io/iowning_glogger.h"
+#include "gobject/gobject.h"
 
 
 
@@ -72,7 +73,7 @@ void EditorApplicationImpl::after_render()
 
 bool EditorApplicationImpl::init(GEngine* engine)
 {
-    
+
     m_engine = engine;
     IManagerTable* table = m_engine->get_manager_table();
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
@@ -81,7 +82,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
 
     m_imguiLayer = new ImGuiLayer(engine->get_viewport(),engine->get_main_window(),engine->get_app(),dev->get());
-
+    
     m_logger->log_d("Initializing Global Pointers");
     glfwInit();
     VkResult res= volkInitialize();
@@ -94,6 +95,30 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
 
     m_logger->log_d("Editor Initializing Finished");
+
+
+    m_logger->log_d("Trying to get type glogger");
+
+    GType type = GTypeUtils::get_type_from_name("GLoggerManager");
+    
+    if (type.is_valid())
+    {
+        m_logger->log_d("Got gtype: Type name is : ");
+
+        m_logger->log_d(type.get_name().data());
+
+        GFunction func = type.get_function_by_name("log_d");
+        if (func.is_valid())
+        {
+            m_logger->log_d("Got function: Function name is : ");
+            m_logger->log_d(func.get_name().data());
+        }
+    }
+    else
+    {
+        m_logger->log_d("Couldn't get GLoggerManager Type");
+
+    }
 
     return true;    
 }

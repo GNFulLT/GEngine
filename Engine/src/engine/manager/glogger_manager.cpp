@@ -17,6 +17,16 @@ GOBJECT_DEFINE_MEMBER_METHOD("log_w", &GLoggerManager::log_w);
 }
 
 
+GLoggerManager* GLoggerManager::get_instance()
+{
+	return s_instance;
+}
+
+void GLoggerManager::set_instance(GLoggerManager* manager)
+{
+	s_instance = manager;
+}
+
 GLoggerManager::GLoggerManager()
 {
 	spdlog::set_level(spdlog::level::warn);

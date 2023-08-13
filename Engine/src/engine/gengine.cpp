@@ -8,6 +8,7 @@
 #include "internal/engine/manager_table.h"
 #include "internal/engine/rendering/vulkan/vulkan_viewport.h"
 #include "internal/engine/manager/glogger_manager.h"
+#include "internal/engine/manager/gresource_manager.h"
 
 #include "internal/engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/rendering/vulkan/vulkan_queue.h"
@@ -20,6 +21,7 @@
 
 static GVulkanDevice* s_device;
 static GLoggerManager* s_logger;
+static GResourceManager* s_resourceManager;
 
 GEngine::GEngine()
 {
@@ -32,13 +34,17 @@ GEngine::GEngine()
 	m_managerTable = managerTable;
 	auto dev = new GVulkanDevice(m_vulkanApp);
 	s_logger = new GLoggerManager();
+	s_resourceManager = new GResourceManager();
 
 	managerTable->set_manager(ENGINE_MANAGER_GRAPHIC_DEVICE, new GSharedPtr<IGVulkanDevice>(dev));
 	managerTable->set_manager(ENGINE_MANAGER_WINDOW, new GSharedPtr<Window>(m_window));
 	managerTable->set_manager(ENGINE_MANAGER_LOGGER, new GSharedPtr<IGLoggerManager>(s_logger));
-	
+	managerTable->set_manager(ENGINE_MANAGER_RESOURCE, new GSharedPtr<IGResourceManager>(s_resourceManager));
+
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
+
+	GLoggerManager::set_instance(s_logger);
 }
 
 void GEngine::run()
@@ -86,6 +92,7 @@ void GEngine::exit()
 	//X Before Uninitialize Game
 
 	//X Destroy global managers
+	//X Destroy inner things
 	s_logger->log_d("GEngine", "Beginning to destroy main viewport");
 
 	((GVulkanViewport*)m_mainViewport)->destroy();
@@ -95,6 +102,11 @@ void GEngine::exit()
 
 	//X Destroys main surface
 	vkDestroySurfaceKHR((VkInstance)m_vulkanApp->get_vk_instance(), m_mainSurface, nullptr);
+
+
+	s_logger->log_d("GEngine", "Beginning to destroy resource manager");
+
+	s_resourceManager->destroy();
 
 	s_logger->log_d("GEngine", "Beginning to destroy graphic device");
 
@@ -225,6 +237,16 @@ void GEngine::init(GApplicationImpl* impl)
 		s_logger->log_c("GEngine", "Unknown error occured while initializing graphic device. Engine shutdown");
 		return;
 	}
+
+	s_logger->log_d("GEngine", "Beginning to initialize resource manager");
+
+	inited = s_resourceManager->init();
+	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing resource manager. Engine shutdown");
+		return;
+	}
+
 
 	m_mainViewport = new GVulkanViewport((GVulkanLogicalDevice*)(*graphicDevice)->as_logical_device().get(), m_window->get_window_props().width, m_window->get_window_props().height);
 	//X IT WORKS FOR ONLY GLFW WINDOW

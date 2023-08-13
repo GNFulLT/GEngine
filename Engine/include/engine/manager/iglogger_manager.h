@@ -1,6 +1,7 @@
 #ifndef IGLOGGER_MANAGER_H
 #define IGLOGGER_MANAGER_H
 
+#include "engine/GEngine_EXPORT.h"
 #include "engine/io/iowning_glogger.h"
 #include "public/core/templates/shared_ptr.h"
 
