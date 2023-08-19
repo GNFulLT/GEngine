@@ -159,8 +159,37 @@ bool GVulkanPhysicalDevice::init()
 
 	auto queueRequirements = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
 
-	bool supported = check_queue_support(m_physicalDev, queueRequirements, (int&)m_defaultQueueFamilyIndex);
+	 m_allQueues = get_all_queue_families_by_device(m_physicalDev);
 
+	 GLoggerManager::get_instance()->log_d(TAG, "Queue Got");
+
+	m_defaultQueueFamilyIndex = -1;
+	m_onlyTransferFamilyIndex = -1;
+	for (int i = 0; i < m_allQueues.size(); i++)
+	{
+		if ((m_allQueues[i].queueFlags & queueRequirements) == queueRequirements)
+		{
+			m_defaultQueueFamilyIndex = i;
+		}
+		// Only for transfer
+		else if ((m_allQueues[i].queueFlags & VK_QUEUE_TRANSFER_BIT))
+		{
+			m_onlyTransferSupport = true;
+			m_onlyTransferFamilyIndex = i;
+		}
+	}
+
+	if (m_defaultQueueFamilyIndex == -1)
+	{
+		GLoggerManager::get_instance()->log_e(TAG, "Couldn't find any default queue.");
+		return false;
+	}
+
+	if (!m_onlyTransferSupport)
+	{
+		GLoggerManager::get_instance()->log_d(TAG, "This physical device doesn't support only transfer queue");
+		m_onlyTransferFamilyIndex = m_defaultQueueFamilyIndex;
+	}
 	//X Get Props of physical device
 	vkGetPhysicalDeviceFeatures(m_physicalDev, &(m_physicalDevFeatures));
 
@@ -203,6 +232,29 @@ void* GVulkanPhysicalDevice::get_vk_physical_device() const noexcept
 const VkPhysicalDeviceFeatures& GVulkanPhysicalDevice::get_vk_features() const noexcept
 {
 	return m_physicalDevFeatures;
+}
+
+IGVulkanApp* GVulkanPhysicalDevice::get_bounded_app()  noexcept
+{
+	auto app = m_weakVulkanApp.as_shared();
+	if (app.is_valid())
+		return app.get();
+	return nullptr;
+}
+
+const std::vector<VkQueueFamilyProperties>& GVulkanPhysicalDevice::get_all_queues() const noexcept
+{
+	return m_allQueues;
+}
+
+bool GVulkanPhysicalDevice::does_support_only_transfer() const noexcept
+{
+	return m_onlyTransferSupport;
+}
+
+uint32_t GVulkanPhysicalDevice::get_only_transfer() const noexcept
+{
+	return m_onlyTransferFamilyIndex;
 }
 
 

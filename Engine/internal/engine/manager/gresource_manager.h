@@ -9,7 +9,7 @@ enum RESOURCE_ERROR
 	RESOURCE_ERROR_NAME_ALREADY_IN_USE,
 };
 
-#include "internal/engine/resource/gresource.h"
+#include "engine/resource/iresource.h"
 #include "public/core/templates/shared_ptr.h"
 #include "engine/io/iowning_glogger.h"
 #include "public/core/templates/unordered_dense.h"
@@ -18,6 +18,8 @@ enum RESOURCE_ERROR
 #include <expected>
 
 
+class GResource;
+
 class GResourceManager : public IGResourceManager
 {
 public:
@@ -25,7 +27,7 @@ public:
 	~GResourceManager();
 
 	//X TODO IResourceImpl must comes with deleter
-	virtual std::expected<GResourcePtr, RESOURCE_ERROR> create_resource(std::string_view name,std::string_view groupName, ResourceImplUniquePtr resourceImpl) override;
+	virtual std::expected<GResource*, RESOURCE_ERROR> create_resource(std::string_view name,std::string_view groupName) override;
 
 	bool init();
 

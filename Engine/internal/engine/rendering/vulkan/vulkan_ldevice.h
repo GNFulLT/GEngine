@@ -8,8 +8,8 @@
 #include "engine/io/iowning_glogger.h"
 
 #include <unordered_map>
-#include "volk.h"
 #include <string>
+#include <vma/vk_mem_alloc.h>
 
 class IGVulkanPhysicalDevice;
 class GVulkanCommandBufferManager;
@@ -41,10 +41,20 @@ public:
 
 	virtual IGVulkanQueue* get_render_queue() override;
 
+	virtual IGVulkanQueue* get_resource_queue() override;
 
 	virtual bool begin_command_buffer_record(GVulkanCommandBuffer* buff) override;
 
 	virtual void end_command_buffer_record(GVulkanCommandBuffer* buff) override;
+
+	virtual std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_buffer(uint64_t size, uint64_t bufferUsageFlag, VmaMemoryUsage memoryUsageFlag ) override;
+
+	virtual std::expected< IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> create_image(const VkImageCreateInfo* imageCreateInfo, VmaMemoryUsage memoryUsageFlag) override;
+
+
+
+private:
+	bool create_vma_allocator();
 
 private:
 	bool m_destroyed;
@@ -53,11 +63,15 @@ private:
 	GWeakPtr<IGVulkanPhysicalDevice> m_physicalDev;
 	GSharedPtr<GVulkanCommandBufferManager> m_defaultCommandManager;
 	GSharedPtr<IOwningGLogger> m_logger;
+
 	GVulkanQueue m_defaultQueue;
+	GVulkanQueue m_transferQueue;
 
 	std::vector<VkLayerProperties> m_deviceLayers;
 	std::unordered_map<std::string, std::vector<VkExtensionProperties>> m_deviceExtensions;
 
 	VkDevice m_logicalDevice;
+	VmaAllocator allocator;
+
 };
 #endif // GVULKAN_LDEVICE_H

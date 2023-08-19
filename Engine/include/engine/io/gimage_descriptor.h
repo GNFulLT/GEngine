@@ -6,12 +6,20 @@
 
 enum VkFormat;
 
+enum GIMAGETYPE
+{
+	GIMAGETYPE_2D,
+	GIMAGETYPE_CUBEMAP
+};
+
 struct GImage_Descriptor
 {
-	size_t      width;
-	size_t      height;
+	std::size_t      width;
+	std::size_t      height;
 	VkFormat format;
-	uint8_t* pixels;
+	std::uint8_t* pixels;
+	std::size_t channelCount;
+	GIMAGETYPE imageType;
 };
 
 #endif // GIMAGE_DESCRIPTOR_H

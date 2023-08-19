@@ -1,7 +1,9 @@
+#include "volk.h"
+
 #include "internal/engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 #include <cassert>
-#include "volk.h"
+
 GVulkanFenceManager::GVulkanFenceManager(GVulkanLogicalDevice* dev)
 {
 	m_device = dev;

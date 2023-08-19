@@ -29,6 +29,15 @@ public:
 	virtual void* get_vk_physical_device() const noexcept override;
 
 	virtual const VkPhysicalDeviceFeatures& get_vk_features() const noexcept override;
+
+	virtual IGVulkanApp* get_bounded_app()  noexcept override;
+
+	virtual const std::vector<VkQueueFamilyProperties>& get_all_queues() const noexcept override;
+
+	virtual bool does_support_only_transfer() const noexcept override;
+
+	// If only transfer dowsn't support it returns default queue
+	virtual uint32_t get_only_transfer() const noexcept override;
 private:
 	struct Elector
 	{
@@ -39,10 +48,14 @@ private:
 	GWeakPtr<IGVulkanApp> m_weakVulkanApp;
 	std::vector<Elector> m_electors;
 
+	std::vector<VkQueueFamilyProperties> m_allQueues;
+
 
 	VkPhysicalDevice m_physicalDev;
 	uint32_t m_defaultQueueFamilyIndex;
+	uint32_t m_onlyTransferFamilyIndex;
 
+	bool m_onlyTransferSupport;
 	//X Cache
 	std::vector<VkPhysicalDevice> m_availableDevices;
 	VkPhysicalDeviceFeatures m_physicalDevFeatures;

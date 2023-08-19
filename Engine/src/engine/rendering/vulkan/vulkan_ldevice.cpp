@@ -1,14 +1,24 @@
+#include "volk.h"
+
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 #include "internal/engine/rendering/vulkan/vulkan_pdevice.h"
 #include "internal/engine/rendering/vulkan/vulkan_utils.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include "internal/engine/manager/glogger_manager.h"
-
+#include "engine/rendering/vulkan/ivulkan_app.h"
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
 #include <algorithm>
+#include <cassert>
+#include "internal/engine/rendering/vulkan/gvulkan_buffer.h"
+#include "internal/engine/rendering/vulkan/gvulkan_image.h"
+#include <spdlog/fmt/fmt.h>
+
 GVulkanLogicalDevice::GVulkanLogicalDevice(GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
 	m_destroyed = true;
 	m_logicalDevice = 0;
+	allocator = nullptr;
 }
 
 GVulkanLogicalDevice::~GVulkanLogicalDevice()
@@ -37,6 +47,12 @@ bool GVulkanLogicalDevice::init()
 
 	queueCreateInf.add_create_info(queueIndex, mainPriority);
 
+
+	if (physicalDevice->does_support_only_transfer())
+	{
+		m_logger->log_d(fmt::format("Support only transfer found family index is : {}. Default Queue were : {}", physicalDevice->get_only_transfer(),queueIndex).c_str());
+		queueCreateInf.add_create_info(physicalDevice->get_only_transfer(), mainPriority);
+	}
 	//X All Layers
 	std::vector<VkLayerProperties> allLayerProps;
 	uint32_t propCount = 0;
@@ -184,11 +200,23 @@ bool GVulkanLogicalDevice::init()
 
 	m_defaultQueue = GVulkanQueue(this,physicalDevice->get_default_queue_family_index());
 
+	if (physicalDevice->does_support_only_transfer())
+	{
+		m_transferQueue = GVulkanQueue(this, physicalDevice->get_only_transfer());
+		m_logger->log_d(fmt::format("All queues for transfer queue : {}",m_transferQueue.get_all_supported_operations_as_string()).c_str());
+	}
 	if (!m_defaultQueue.is_valid())
 	{
 		return false;
 	}
 
+	bool ok = create_vma_allocator();
+
+	if (!ok)
+	{
+		m_logger->log_d("Couldn't create vma allocator. Logical device initialization failed");
+		return false;
+	}
 	m_inited = true;
 	m_destroyed = false;
 
@@ -227,6 +255,13 @@ IGVulkanQueue* GVulkanLogicalDevice::get_render_queue()
 	return &m_defaultQueue;
 }
 
+IGVulkanQueue* GVulkanLogicalDevice::get_resource_queue()
+{
+	if(!m_transferQueue.is_valid())
+		return &m_defaultQueue;
+	return &m_transferQueue;
+}
+
 bool GVulkanLogicalDevice::begin_command_buffer_record(GVulkanCommandBuffer* buff)
 {
 	//X TODO : BUFF RETURN BOOL
@@ -240,4 +275,90 @@ bool GVulkanLogicalDevice::begin_command_buffer_record(GVulkanCommandBuffer* buf
 void GVulkanLogicalDevice::end_command_buffer_record(GVulkanCommandBuffer* buff)
 {
 	buff->end();
+}
+
+std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_buffer(uint64_t size, uint64_t bufferUsageFlag, VmaMemoryUsage memoryUsageFlag)
+{
+	//X TODO : GDNEWDA
+	GVulkanBuffer* buff = new GVulkanBuffer(this, allocator);
+
+	VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	bufferInfo.size = size;
+	bufferInfo.usage = bufferUsageFlag;
+
+	VmaAllocationCreateInfo allocInfo = {};
+	if (memoryUsageFlag == 0)
+		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	else
+		allocInfo.usage = memoryUsageFlag;
+
+	VkBuffer buffer;
+	VmaAllocation allocation;
+
+	if (VK_SUCCESS == vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr))
+	{
+		buff->m_inited = true;
+		buff->m_allocationBlock = allocation;
+		buff->m_buffer = buffer;
+		return buff;
+	}
+	else
+	{
+		delete buff;
+		return std::unexpected(VULKAN_BUFFER_CREATION_ERROR_UNKNOWN);
+	}
+}
+
+std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::create_image(const VkImageCreateInfo* imageCreateInfo, VmaMemoryUsage memoryUsageFlag)
+{
+	GVulkanImage* image = new GVulkanImage(this, allocator);
+
+	VmaAllocationCreateInfo dimg_allocinfo = {};
+	if (memoryUsageFlag == 0)
+		dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	else
+		dimg_allocinfo.usage = memoryUsageFlag;
+	
+
+	VkImage vkImage;
+	VmaAllocation allocation;
+	if (VK_SUCCESS == vmaCreateImage(allocator, imageCreateInfo, &dimg_allocinfo, &vkImage, &allocation, nullptr))
+	{
+		image->m_inited = true;
+		image->m_allocationBlock = allocation;
+		image->m_image = vkImage;
+		image->m_creationInfo = *imageCreateInfo;
+		return image;
+	}
+	else
+	{
+		delete image;
+		return std::unexpected(VULKAN_IMAGE_CREATION_ERROR_UNKNOWN);
+
+	}
+}
+
+bool GVulkanLogicalDevice::create_vma_allocator()
+{
+	m_logger->log_d("Creating VMA Allocator");
+
+	auto physicalDev = m_physicalDev.as_shared();
+
+	IGVulkanApp* app = physicalDev->get_bounded_app();
+
+	assert(app != nullptr);
+
+	VmaVulkanFunctions vulkanFunctions = {};
+	vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+	vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
+
+	VmaAllocatorCreateInfo allocatorCreateInfo = {};
+	allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+	allocatorCreateInfo.physicalDevice = (VkPhysicalDevice)physicalDev->get_vk_physical_device();
+	allocatorCreateInfo.device = m_logicalDevice;
+	allocatorCreateInfo.instance = (VkInstance)app->get_vk_instance();
+	allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+
+	return VK_SUCCESS == vmaCreateAllocator(&allocatorCreateInfo, &allocator);
+
 }

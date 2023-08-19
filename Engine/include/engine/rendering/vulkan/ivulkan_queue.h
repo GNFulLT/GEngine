@@ -12,6 +12,8 @@ public:
 	virtual VkQueue_T* get_queue() const noexcept = 0;
 
 	virtual uint32_t get_queue_index() const noexcept = 0;
+
+	virtual const char* get_all_supported_operations_as_string() const noexcept = 0;
 private:
 };
 

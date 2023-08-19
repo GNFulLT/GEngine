@@ -4,7 +4,6 @@
 
 #include "engine/GEngine_EXPORT.h"
 #include "public/core/templates/shared_ptr.h"
-#include "engine/resource/iresource_impl.h"
 
 #include <string_view>
 #include <expected>
@@ -21,7 +20,7 @@ public:
 	virtual ~IGResourceManager() = default;
 
 
-	virtual std::expected<GResourcePtr, RESOURCE_ERROR> create_resource(std::string_view name, std::string_view groupName, ResourceImplUniquePtr resourceImpl) = 0;
+	virtual std::expected<GResource*, RESOURCE_ERROR> create_resource(std::string_view name, std::string_view groupName) = 0;
 
 private:
 };

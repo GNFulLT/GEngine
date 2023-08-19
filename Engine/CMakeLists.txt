@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(GEngine_Engine LANGUAGES CXX)
+project(GEngine_Engine LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,11 +15,11 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
 "internal/engine/manager_table.h" "src/engine/manager_table.cpp" "internal/engine/rendering/vulkan/vulkan_viewport.h" "src/engine/rendering/vulkan/vulkan_viewport.cpp"
  "internal/engine/rendering/vulkan/vulkan_swapchain.h" "src/engine/rendering/vulkan/vulkan_swapchain.cpp" "internal/engine/rendering/vulkan/vulkan_renderpass.h" "src/engine/rendering/vulkan/vulkan_renderpass.cpp" 
  "include/engine/rendering/vulkan/ivulkan_viewport.h" "internal/engine/rendering/vulkan/vulkan_memory.h" "src/engine/rendering/vulkan/vulkan_memory.cpp" "include/engine/rendering/vulkan/ivulkan_queue.h"
- "include/engine/resource/json/igjson.h" "internal/engine/resource/json/gjson_simdjson.h" "src/engine/rendering/resource/json/gjson_simdjson.cpp" "include/engine/resource/resource_init_code.h"
- "include/engine/resource/json/gjson_utils.h" "src/engine/rendering/resource/json/gjson_utils.cpp" "include/engine/resource/json/igjson_value.h" "internal/engine/resource/json/gjson_value_simdjson.h" 
- "src/engine/rendering/resource/json/gjson_value_simdjson.cpp" "include/engine/manager/iglogger_manager.h" "internal/engine/manager/glogger_manager.h" "src/engine/manager/glogger_manager.cpp" 
- "include/engine/io/iowning_glogger.h" "internal/engine/io/gowning_glogger.h" "src/engine/io/gowning_glogger.cpp" "internal/engine/io/logger_helper.h" "include/engine/resource/iresource_impl.h"
- "include/engine/resource/iresource_listener.h" "internal/engine/resource/gresource.h" "src/engine/resource/gresource.cpp" "internal/engine/manager/gresource_manager.h" "src/engine/manager/gresource_manager.cpp" "include/engine/manager/igresource_manager.h" "include/engine/io/gimage_descriptor.h")
+ "include/engine/resource/json/igjson.h" "internal/engine/resource/json/gjson_simdjson.h" "src/engine/resource/json/gjson_simdjson.cpp" "include/engine/resource/resource_init_code.h"
+ "include/engine/resource/json/gjson_utils.h" "src/engine/resource/json/gjson_utils.cpp" "include/engine/resource/json/igjson_value.h" "internal/engine/resource/json/gjson_value_simdjson.h" 
+ "src/engine/resource/json/gjson_value_simdjson.cpp" "include/engine/manager/iglogger_manager.h" "internal/engine/manager/glogger_manager.h" "src/engine/manager/glogger_manager.cpp" 
+ "include/engine/io/iowning_glogger.h" "internal/engine/io/gowning_glogger.h" "src/engine/io/gowning_glogger.cpp" "internal/engine/io/logger_helper.h" "include/engine/resource/iresource.h"
+ "include/engine/resource/iresource_listener.h"   "internal/engine/manager/gresource_manager.h" "src/engine/manager/gresource_manager.cpp" "include/engine/manager/igresource_manager.h" "include/engine/io/gimage_descriptor.h" "include/engine/resource/igresource_loader.h" "internal/engine/io/stb_image_loader.h" "src/engine/io/stb_image_loader.cpp" "include/engine/resource/igtexture_resource.h" "internal/engine/resource/gtexture_resource.h" "src/engine/resource/gtexture_resource.cpp" "include/engine/io/iimage_loader.h" "src/engine/resource/gresource.cpp" "include/engine/rendering/vulkan/ivulkan_buffer.h" "internal/engine/rendering/vulkan/gvulkan_buffer.h" "src/engine/rendering/vulkan/gvulkan_buffer.cpp" "include/engine/rendering/vulkan/ivulkan_image.h" "internal/engine/rendering/vulkan/gvulkan_image.h" "src/engine/rendering/vulkan/gvulkan_image.cpp")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -44,7 +44,8 @@ target_link_libraries(GEngine_Engine PRIVATE simdjson)
 target_link_libraries(GEngine_Engine PRIVATE GEngine_Core)
 target_link_libraries(GEngine_Engine PUBLIC GEngine_GObject)
 target_link_libraries(GEngine_Engine PRIVATE spdlog)
-target_link_libraries(GEngine_Engine PRIVATE GPUOpen::VulkanMemoryAllocator)
+target_link_libraries(GEngine_Engine PRIVATE GPUOpen::VulkanMemoryAllocator VulkanMemoryAllocator)
+
 include(GenerateExportHeader)
 
 GENERATE_EXPORT_HEADER(GEngine_Engine

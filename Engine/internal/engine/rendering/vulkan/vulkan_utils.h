@@ -24,12 +24,10 @@ struct QueueCreateInf
 public:
 	QueueCreateInf()
 	{
-		m_priorities = new std::vector<float>();
 	}
 	~QueueCreateInf()
 	{
-		if (m_priorities)
-			delete m_priorities;
+
 	}
 
 	_INLINE_ uint32_t get_queue_create_inf_count() const
@@ -44,25 +42,25 @@ public:
 
 	_INLINE_ void add_create_info(uint32_t index, const std::vector<float>& priorities)
 	{
-		for (int i = 0; i < priorities.size(); i++)
-		{
-			m_priorities->push_back(priorities[i]);
-		}
+		m_priorities.push_back(priorities);
+		
 
 		VkDeviceQueueCreateInfo info = {};
 		info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		info.pNext = nullptr;
 		info.queueFamilyIndex = index;
 		info.queueCount = (uint32_t)priorities.size();
-		info.pQueuePriorities = &(*m_priorities)[m_priorities->size() - priorities.size()];
 		infos.push_back(info);
-
+		for (int i = 0; i < infos.size(); i++)
+		{
+			infos[i].pQueuePriorities = m_priorities[i].data();
+		}
 
 	}
 
 private:
 	std::vector<VkDeviceQueueCreateInfo> infos;
-	std::vector<float>* m_priorities;
+	std::vector<std::vector<float>> m_priorities;
 
 };
 
@@ -170,6 +168,14 @@ _IMP_RETURN_ _F_INLINE_  bool check_device_extension_support(VkPhysicalDevice de
 	return requiredExtensions.empty();
 }
 
+_F_INLINE_ std::vector<VkQueueFamilyProperties2> get_all_queue_families_by_device2(VkPhysicalDevice device)
+{
+	uint32_t count;
+	vkGetPhysicalDeviceQueueFamilyProperties2(device, &count, nullptr);
+	std::vector<VkQueueFamilyProperties2> families(count);
+	vkGetPhysicalDeviceQueueFamilyProperties2(device, &count, families.data());
+	return families;
+}
 _F_INLINE_ std::vector<VkQueueFamilyProperties> get_all_queue_families_by_device(VkPhysicalDevice device)
 {
 	uint32_t count;

@@ -4,6 +4,7 @@
 #include "engine/GEngine_EXPORT.h"
 
 #include <string>
+#include <vector>
 
 struct ElectorInfo
 {
@@ -12,6 +13,9 @@ struct ElectorInfo
 };
 
 struct VkPhysicalDeviceFeatures;
+struct VkQueueFamilyProperties;
+
+class IGVulkanApp;
 
 class ENGINE_API IGVulkanPhysicalDevice
 {
@@ -37,6 +41,14 @@ public:
 
 	virtual void destroy() = 0;
 
+	virtual IGVulkanApp* get_bounded_app() noexcept = 0;
+
+	virtual bool does_support_only_transfer() const noexcept = 0;
+	
+	// If only transfer dowsn't support it returns default queue
+	virtual uint32_t get_only_transfer() const noexcept = 0;
+
+	virtual const std::vector<VkQueueFamilyProperties>& get_all_queues() const noexcept = 0;
 private:
 };
 
