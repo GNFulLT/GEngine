@@ -47,7 +47,7 @@ bool GVulkanLogicalDevice::init()
 
 	queueCreateInf.add_create_info(queueIndex, mainPriority);
 
-
+ 
 	if (physicalDevice->does_support_only_transfer())
 	{
 		m_logger->log_d(fmt::format("Support only transfer found family index is : {}. Default Queue were : {}", physicalDevice->get_only_transfer(),queueIndex).c_str());
