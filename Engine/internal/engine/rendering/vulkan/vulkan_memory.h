@@ -37,6 +37,13 @@ private:
 	GVulkanLogicalDevice* m_owner;
 };
 
+enum FENCE_WAIT
+{
+	FENCE_WAIT_SUCCESS,
+	FENCE_WAIT_TIMEOUT,
+	FENCE_WAIT_OUT_OF_MEMORY
+};
+
 class GVulkanFence
 {
 public:
@@ -50,6 +57,7 @@ public:
 	
 	void wait();
 
+	FENCE_WAIT wait_for(uint64_t time);
 
 	VkFence_T* get_fence();
 	~GVulkanFence();

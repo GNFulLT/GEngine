@@ -10,6 +10,7 @@ class IGVulkanQueue;
 class GVulkanCommandBuffer;
 class IVulkanBuffer;
 class IVulkanImage;
+class IGVulkanDevice;
 
 struct VkImageCreateInfo;
 
@@ -26,6 +27,8 @@ enum VULKAN_IMAGE_CREATION_ERROR
 };
 
 enum VmaMemoryUsage;
+class ITransferHandle;
+enum TRANSFER_QUEUE_GET_ERR;
 
 class ENGINE_API IGVulkanLogicalDevice
 {
@@ -42,11 +45,11 @@ public:
 
 	virtual IGVulkanPhysicalDevice* get_bounded_physical_device() = 0;
 
-	virtual IGVulkanQueue* get_present_queue() = 0;
+	virtual IGVulkanQueue* get_present_queue() noexcept = 0;
 
-	virtual IGVulkanQueue* get_render_queue() = 0;
+	virtual IGVulkanQueue* get_render_queue() noexcept = 0;
 
-	virtual IGVulkanQueue* get_resource_queue() = 0;
+	virtual IGVulkanQueue* get_resource_queue() noexcept = 0;
 
 	virtual bool begin_command_buffer_record(GVulkanCommandBuffer* buff) = 0;
 
@@ -57,6 +60,15 @@ public:
 
 
 	virtual std::expected< IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> create_image(const VkImageCreateInfo* imageCreateInfo, VmaMemoryUsage memoryUsageFlag) = 0;
+
+	virtual IGVulkanDevice* get_owner() noexcept = 0;
+
+
+	virtual std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> get_wait_and_begin_transfer_cmd() = 0;
+
+	virtual std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> get_wait_and_begin_transfer_cmd(uint64_t timeout) = 0;
+
+	virtual void finish_execute_and_wait_transfer_cmd(ITransferHandle* handle) = 0;
 private:
 };
 

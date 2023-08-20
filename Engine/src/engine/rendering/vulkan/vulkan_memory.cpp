@@ -56,6 +56,17 @@ void GVulkanFence::wait()
 	vkWaitForFences((VkDevice)m_owner->get_bounded_device()->get_vk_device(), 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
+FENCE_WAIT GVulkanFence::wait_for(uint64_t time)
+{
+	auto t = vkWaitForFences((VkDevice)m_owner->get_bounded_device()->get_vk_device(), 1, &m_fence, VK_TRUE, time);
+	if (t == VK_TIMEOUT)
+		return FENCE_WAIT_TIMEOUT;
+	else if (t == VK_SUCCESS)
+		return FENCE_WAIT_SUCCESS;
+
+	return FENCE_WAIT_OUT_OF_MEMORY;
+}
+
 VkFence_T* GVulkanFence::get_fence()
 {
 	return m_fence;

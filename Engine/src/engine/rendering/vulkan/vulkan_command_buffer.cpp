@@ -4,7 +4,7 @@
 #include "internal/engine/rendering/vulkan/vulkan_queue.h"
 #include "public/core/templates/memnewd.h"
 
-GVulkanCommandPool::GVulkanCommandPool(GVulkanLogicalDevice* inDevice, GVulkanQueue* queue,bool onlyPoolCanReset) : m_device(inDevice)
+GVulkanCommandPool::GVulkanCommandPool(GVulkanLogicalDevice* inDevice, IGVulkanQueue* queue,bool onlyPoolCanReset) : m_device(inDevice)
 {
 	m_boundedQueue = queue;
 	m_commandPool = nullptr;
@@ -124,7 +124,7 @@ void GVulkanCommandBuffer::end()
 	vkEndCommandBuffer(m_cmd);
 }
 
-GVulkanCommandBufferManager::GVulkanCommandBufferManager(GVulkanLogicalDevice* inDevice, GVulkanQueue* queue, bool onlyPoolCanReset)
+GVulkanCommandBufferManager::GVulkanCommandBufferManager(GVulkanLogicalDevice* inDevice, IGVulkanQueue* queue, bool onlyPoolCanReset)
 {
 	m_queue = queue;
 	m_device = inDevice;

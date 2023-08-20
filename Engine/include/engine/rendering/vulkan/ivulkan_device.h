@@ -6,6 +6,10 @@
 #include "ivulkan_pdevice.h"
 #include "public/core/templates/shared_ptr.h"
 
+#include <expected>
+
+class ITransferHandle;
+enum TRANSFER_QUEUE_GET_ERR;
 class GVulkanCommandBuffer;
 
 class ENGINE_API IGVulkanDevice
@@ -29,7 +33,8 @@ public:
 
 	virtual GVulkanCommandBuffer* get_single_time_command_buffer() = 0;
 
-	virtual void execute_single_time_command_buffer_and_wait() = 0;
+	// DEPRECATED
+	virtual void execute_single_time_command_buffer_and_wait() = 0;	
 private:
 };
 

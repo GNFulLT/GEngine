@@ -3,6 +3,8 @@
 
 #include "public/core/templates/shared_ptr.h"
 #include "engine/rendering/vulkan/ivulkan_device.h"
+#include <mutex>
+#include <expected>
 
 class IGVulkanApp;
 class GVulkanCommandBufferManager;
@@ -11,6 +13,21 @@ class GVulkanFence;
 class GVulkanFenceManager;
 class GVulkanSemaphore;
 class GVulkanSemaphoreManager;
+
+#include <queue>
+
+typedef std::pair< GVulkanCommandBuffer*, uint32_t> transfer_handle;
+
+enum TRANSFER_QUEUE_MODE
+{
+	TRANSFER_QUEUE_MODE_DEFAULT,
+	TRANSFER_QUEUE_MODE_TRANSFER
+};
+
+enum TRANSFER_QUEUE_GET_ERR
+{
+	TRANSFER_QUEUE_GET_ERR_TIMEOUT
+};	
 
 class GVulkanDevice : public IGVulkanDevice
 {
@@ -42,8 +59,15 @@ public:
 	GVulkanSemaphore* get_image_acquired_semaphore();
 	GVulkanSemaphore* get_render_complete_semaphore();
 	GVulkanFence* get_queue_fence();
+
+
+	
+
 private:
 	bool reset_things();
+
+
+
 private:
 	GSharedPtr<IGVulkanPhysicalDevice> m_vulkanPhysicalDevice;
 	GSharedPtr<IGVulkanLogicalDevice> m_vulkanLogicalDevice;
@@ -61,6 +85,9 @@ private:
 	GSharedPtr<GVulkanCommandBufferManager> m_defaultCommandManager;
 	GVulkanCommandBuffer* m_mainCommandBuffer;
 	GVulkanCommandBuffer* m_singleTimeCommandBuffer;
+
+
+	TRANSFER_QUEUE_MODE m_transerMode;
 };
 
 #endif // GRAPHIC_DEVICE_H

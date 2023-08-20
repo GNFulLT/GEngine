@@ -7,6 +7,9 @@
 #include "internal/engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/manager/glogger_manager.h"
 
+#include <stdexcept>
+#include <thread>
+
 static GVulkanLogicalDevice* s_logicalDevice;
 
 constexpr static const char* TAG = "GVulkanDevice";
@@ -15,7 +18,7 @@ GVulkanDevice::GVulkanDevice(GWeakPtr<IGVulkanApp> app) : m_vulkanApp(app)
 {
 	is_inited = false;
 	m_vulkanPhysicalDevice = GSharedPtr<IGVulkanPhysicalDevice>(new GVulkanPhysicalDevice(app));
-	auto vulkanLogicalDevice = new GVulkanLogicalDevice(m_vulkanPhysicalDevice);
+	auto vulkanLogicalDevice = new GVulkanLogicalDevice(this,m_vulkanPhysicalDevice);
 	m_vulkanLogicalDevice = GSharedPtr<IGVulkanLogicalDevice>(vulkanLogicalDevice);
 	s_logicalDevice = vulkanLogicalDevice;
 	auto commandManager = new GVulkanCommandBufferManager(vulkanLogicalDevice, vulkanLogicalDevice->get_queue());
@@ -70,9 +73,15 @@ bool GVulkanDevice::init()
 	if (!inited)
 		return inited;
 
+
+	
+	
+
 	inited = m_defaultCommandManager->init();
 	if (!inited)
 		return inited;
+	
+
 
 	m_renderingFence = m_fenceManager->create_fence();
 	m_presentationSemaphore =  m_semaphoreManager->create_semaphore();
@@ -87,7 +96,7 @@ bool GVulkanDevice::init()
 	m_mainCommandBuffer->init();
 	m_singleTimeCommandBuffer->init();
 	
-
+	m_renderingFence->wait();
 	m_destroyed = true;
 	is_inited = true;
 	return true;

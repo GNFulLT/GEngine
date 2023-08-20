@@ -13,12 +13,14 @@
 #include "internal/engine/rendering/vulkan/gvulkan_buffer.h"
 #include "internal/engine/rendering/vulkan/gvulkan_image.h"
 #include <spdlog/fmt/fmt.h>
+#include "internal/engine/rendering/vulkan/transfer/transfer_op_transfer_queue.h"
 
-GVulkanLogicalDevice::GVulkanLogicalDevice(GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
+GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
 	m_destroyed = true;
 	m_logicalDevice = 0;
 	allocator = nullptr;
+	m_owner = owner;
 }
 
 GVulkanLogicalDevice::~GVulkanLogicalDevice()
@@ -203,7 +205,26 @@ bool GVulkanLogicalDevice::init()
 	if (physicalDevice->does_support_only_transfer())
 	{
 		m_transferQueue = GVulkanQueue(this, physicalDevice->get_only_transfer());
-		m_logger->log_d(fmt::format("All queues for transfer queue : {}",m_transferQueue.get_all_supported_operations_as_string()).c_str());
+		m_logger->log_d(fmt::format("All bits for transfer queue : {}",m_transferQueue.get_all_supported_operations_as_string()).c_str());
+
+		uint32_t transferCommandCount = 10;
+		m_logger->log_d(fmt::format("Creating transfer commands. Count is : {}", std::to_string(transferCommandCount)).c_str());
+
+		// 10 is okey for that moment
+		//X TODO : PARAMETERIZE THIS
+		m_transferOps = std::unique_ptr<ITransferOperations>(new TransferOpTransferQueue(this,10));
+
+		if (!m_transferOps->init())
+		{
+			return false;
+		}
+	}
+
+	else
+	{
+		m_logger->log_e("Application doesn't support gpu without transfer optimization");
+		// Doesn't support transfer queue.
+		assert(false);
 	}
 	if (!m_defaultQueue.is_valid())
 	{
@@ -230,6 +251,8 @@ bool GVulkanLogicalDevice::is_valid() const
 
 void GVulkanLogicalDevice::destroy()
 {
+	m_transferOps->destroy();
+
 	vkDestroyDevice(m_logicalDevice, nullptr);
 	m_destroyed = true;
 }
@@ -245,17 +268,17 @@ IGVulkanPhysicalDevice* GVulkanLogicalDevice::get_bounded_physical_device()
 	return physical.get();
 }
 
-IGVulkanQueue* GVulkanLogicalDevice::get_present_queue()
+IGVulkanQueue* GVulkanLogicalDevice::get_present_queue() noexcept
 {
 	return &m_defaultQueue;
 }
 
-IGVulkanQueue* GVulkanLogicalDevice::get_render_queue()
+IGVulkanQueue* GVulkanLogicalDevice::get_render_queue() noexcept
 {
 	return &m_defaultQueue;
 }
 
-IGVulkanQueue* GVulkanLogicalDevice::get_resource_queue()
+IGVulkanQueue* GVulkanLogicalDevice::get_resource_queue() noexcept
 {
 	if(!m_transferQueue.is_valid())
 		return &m_defaultQueue;
@@ -336,6 +359,26 @@ std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::
 		return std::unexpected(VULKAN_IMAGE_CREATION_ERROR_UNKNOWN);
 
 	}
+}
+
+IGVulkanDevice* GVulkanLogicalDevice::get_owner() noexcept
+{
+	return m_owner;
+}
+
+std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> GVulkanLogicalDevice::get_wait_and_begin_transfer_cmd()
+{
+	return m_transferOps->get_wait_and_begin_transfer_cmd();
+}
+
+std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> GVulkanLogicalDevice::get_wait_and_begin_transfer_cmd(uint64_t timeout)
+{
+	return m_transferOps->get_wait_and_begin_transfer_cmd(timeout);
+}
+
+void GVulkanLogicalDevice::finish_execute_and_wait_transfer_cmd(ITransferHandle* handle)
+{
+	m_transferOps->finish_execute_and_wait_transfer_cmd(handle);
 }
 
 bool GVulkanLogicalDevice::create_vma_allocator()
