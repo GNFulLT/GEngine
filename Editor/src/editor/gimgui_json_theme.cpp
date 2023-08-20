@@ -111,7 +111,7 @@ void GImGuiJsonTheme::setImGuiTheme(ImGuiStyle& style)
     auto colors = style.Colors;
     for (int i = 0; i < m_imguiValueVector.size(); i++)
     {
-        const auto [r, g, b, a] = m_imguiValueVector[i].second;
+        const auto& [r, g, b, a] = m_imguiValueVector[i].second;
         colors[m_imguiValueVector[i].first] = ImVec4(r,g,b,a);
     }
 }
