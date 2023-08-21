@@ -16,10 +16,15 @@ public:
 	VmaAllocation* get_allocation();
 	VkBuffer* get_buffer_pptr();
 
+	virtual VkBuffer_T* get_vk_buffer() override;
 
 	// Inherited via IVulkanBuffer
 	virtual void unload() override;
 	virtual IGVulkanLogicalDevice* get_bounded_device() override;
+
+	virtual VkDeviceMemory_T* get_device_memory() override;
+
+	virtual void copy_data_to_device_memory(void* src, uint32_t size) override;
 private:
 	GVulkanLogicalDevice* m_boundedDevice;
 	VmaAllocator m_allocatorRef;

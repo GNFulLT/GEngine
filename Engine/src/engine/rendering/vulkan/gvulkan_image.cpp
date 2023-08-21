@@ -10,6 +10,8 @@ GVulkanImage::GVulkanImage(GVulkanLogicalDevice* owner, VmaAllocator allocator)
 	m_inited = false;
 	m_creationInfo = {};
 	m_image = nullptr;
+	m_imageView = nullptr;
+	m_imageViewCreationInfo = {};
 }
 
 GVulkanImage::~GVulkanImage()
@@ -24,6 +26,10 @@ void GVulkanImage::unload()
 {
 	if (m_inited)
 	{
+		if (m_imageView != nullptr)
+		{
+			vkDestroyImageView((VkDevice)m_boundedDevice->get_vk_device(), m_imageView, nullptr);
+		}
 		vmaDestroyImage(m_allocator, m_image, m_allocationBlock);
 		m_inited = false;
 	}
@@ -42,4 +48,22 @@ VmaAllocation* GVulkanImage::get_pallocation()
 IGVulkanLogicalDevice* GVulkanImage::get_bounded_device()
 {
 	return m_boundedDevice;
+}
+
+bool GVulkanImage::create_image_view(const VkImageViewCreateInfo* info)
+{
+	if (m_imageView != nullptr)
+	{
+		vkDestroyImageView((VkDevice)m_boundedDevice->get_vk_device(), m_imageView, nullptr);
+	}
+
+	m_imageViewCreationInfo = *info;
+	m_imageViewCreationInfo.image = m_image;
+	auto res = vkCreateImageView((VkDevice)m_boundedDevice->get_vk_device(), &m_imageViewCreationInfo, nullptr, &m_imageView);
+	return res == VK_SUCCESS;
+}
+
+VkImage_T* GVulkanImage::get_vk_image()
+{
+	return m_image;
 }

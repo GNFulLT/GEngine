@@ -22,6 +22,9 @@ public:
 	VmaAllocation* get_pallocation();
 	virtual IGVulkanLogicalDevice* get_bounded_device() override;
 
+	virtual bool create_image_view(const VkImageViewCreateInfo* info) override;
+
+	virtual VkImage_T* get_vk_image() override;
 
 private:
 	bool m_inited;
@@ -30,8 +33,8 @@ private:
 	VkImageCreateInfo m_creationInfo;
 	VkImage m_image;
 	GVulkanLogicalDevice* m_boundedDevice;
-
-
+	VkImageView m_imageView;
+	VkImageViewCreateInfo m_imageViewCreationInfo;
 
 
 

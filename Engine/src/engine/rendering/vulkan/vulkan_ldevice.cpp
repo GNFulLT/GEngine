@@ -6,14 +6,13 @@
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include "internal/engine/manager/glogger_manager.h"
 #include "engine/rendering/vulkan/ivulkan_app.h"
-#define VMA_IMPLEMENTATION
-#include <vma/vk_mem_alloc.h>
 #include <algorithm>
 #include <cassert>
 #include "internal/engine/rendering/vulkan/gvulkan_buffer.h"
 #include "internal/engine/rendering/vulkan/gvulkan_image.h"
 #include <spdlog/fmt/fmt.h>
 #include "internal/engine/rendering/vulkan/transfer/transfer_op_transfer_queue.h"
+#include "internal/engine/rendering/vulkan/vma_importer.h"
 
 GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
@@ -300,7 +299,7 @@ void GVulkanLogicalDevice::end_command_buffer_record(GVulkanCommandBuffer* buff)
 	buff->end();
 }
 
-std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_buffer(uint64_t size, uint64_t bufferUsageFlag, VmaMemoryUsage memoryUsageFlag)
+std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_buffer(uint64_t size, uint32_t bufferUsageFlag, VmaMemoryUsage memoryUsageFlag)
 {
 	//X TODO : GDNEWDA
 	GVulkanBuffer* buff = new GVulkanBuffer(this, allocator);
@@ -317,7 +316,7 @@ std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice
 
 	VkBuffer buffer;
 	VmaAllocation allocation;
-
+	
 	if (VK_SUCCESS == vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr))
 	{
 		buff->m_inited = true;
@@ -342,9 +341,9 @@ std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::
 	else
 		dimg_allocinfo.usage = memoryUsageFlag;
 	
-
 	VkImage vkImage;
 	VmaAllocation allocation;
+
 	if (VK_SUCCESS == vmaCreateImage(allocator, imageCreateInfo, &dimg_allocinfo, &vkImage, &allocation, nullptr))
 	{
 		image->m_inited = true;

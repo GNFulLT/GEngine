@@ -3,21 +3,9 @@
 
 #include <expected>
 
-class GVulkanCommandBuffer;
+#include "engine/rendering/vulkan/transfer/itransfer_handle.h"
 
-enum TRANSFER_QUEUE_GET_ERR
-{
-	TRANSFER_QUEUE_GET_ERR_TIMEOUT
-};
 
-class ITransferHandle
-{
-public:
-	virtual ~ITransferHandle() = default;
-
-	virtual GVulkanCommandBuffer* get_command_buffer() = 0;
-private:
-};
 
 class ITransferOperations
 {
