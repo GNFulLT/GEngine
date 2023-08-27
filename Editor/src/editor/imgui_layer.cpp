@@ -34,7 +34,7 @@ ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* a
 	m_textEditorWindow = new GImGuiTextEditorWindow();
 
 	m_windowManager->create_imgui_window(m_textEditorWindow,GIMGUIWINDOWDIR_RIGHT);
-	m_windowManager->create_imgui_window(m_renderViewportWindow);
+	m_windowManager->create_imgui_window(m_renderViewportWindow,GIMGUIWINDOWDIR_MIDDLE);
 
 	m_sceneRenderer = new GSceneRenderer(viewport,dev);
 

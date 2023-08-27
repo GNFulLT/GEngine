@@ -155,7 +155,6 @@ void ImGuiWindowManager::build_nodes()
 		ImGui::DockBuilderDockWindow("Dear ImGui Demo", dock_id_right);
 		ImGui::DockBuilderDockWindow("Helloooo", dock_id_left);
 		ImGui::DockBuilderDockWindow("HellooooB", dock_id_bottom);
-		ImGui::DockBuilderDockWindow("Viewport", dock_id_middle);
 
 		for (const auto& win : m_windowVector)
 		{
