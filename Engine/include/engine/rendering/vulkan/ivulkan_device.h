@@ -11,6 +11,9 @@
 class ITransferHandle;
 enum TRANSFER_QUEUE_GET_ERR;
 class GVulkanCommandBuffer;
+class GVulkanSemaphore;
+class GVulkanFence;
+struct VkSubmitInfo;
 
 class ENGINE_API IGVulkanDevice
 {
@@ -35,6 +38,18 @@ public:
 
 	// DEPRECATED
 	virtual void execute_single_time_command_buffer_and_wait() = 0;	
+
+	virtual GVulkanCommandBuffer* create_cmd_from_main_pool() = 0;
+	virtual void destroy_cmd_main_pool(GVulkanCommandBuffer* cmd) = 0;
+
+	virtual GVulkanSemaphore* create_semaphore(bool isSignaled) = 0;
+
+	virtual void add_wait_semaphore_for_this_frame(GVulkanSemaphore* semaphore,int pipelineStageFlag) = 0;
+
+	virtual void destroy_semaphore(GVulkanSemaphore* semaphore) = 0;
+
+	virtual void execute_cmd_from_main(GVulkanCommandBuffer* buff, const VkSubmitInfo* inf, GVulkanFence* fence) = 0;
+
 private:
 };
 

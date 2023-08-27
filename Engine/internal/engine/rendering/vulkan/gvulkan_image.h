@@ -26,6 +26,10 @@ public:
 
 	virtual VkImage_T* get_vk_image() override;
 
+	virtual VkImageView_T* get_vk_image_view() override;
+
+	virtual void set_image_view(VkImageView_T* view,const VkImageViewCreateInfo* inf) override;
+
 private:
 	bool m_inited;
 	VmaAllocation m_allocationBlock;

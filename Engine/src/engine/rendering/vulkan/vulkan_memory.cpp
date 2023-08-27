@@ -1,10 +1,10 @@
 #include "volk.h"
 
-#include "internal/engine/rendering/vulkan/vulkan_memory.h"
+#include "engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 #include <cassert>
 
-GVulkanFenceManager::GVulkanFenceManager(GVulkanLogicalDevice* dev)
+GVulkanFenceManager::GVulkanFenceManager(IGVulkanLogicalDevice* dev)
 {
 	m_device = dev;
 }
@@ -13,7 +13,7 @@ GVulkanFenceManager::~GVulkanFenceManager()
 {
 }
 
-GVulkanLogicalDevice* GVulkanFenceManager::get_bounded_device()
+IGVulkanLogicalDevice* GVulkanFenceManager::get_bounded_device()
 {
 	return m_device;
 }
@@ -77,12 +77,12 @@ GVulkanFence::~GVulkanFence()
 	assert(m_fence == nullptr);
 }
 
-GVulkanSemaphoreManager::GVulkanSemaphoreManager(GVulkanLogicalDevice* owner)
+GVulkanSemaphoreManager::GVulkanSemaphoreManager(IGVulkanLogicalDevice* owner)
 {
 	m_owner = owner;
 }
 
-GVulkanLogicalDevice* GVulkanSemaphoreManager::get_bounded_device()
+IGVulkanLogicalDevice* GVulkanSemaphoreManager::get_bounded_device()
 {
 	return m_owner;
 }

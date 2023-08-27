@@ -8,7 +8,9 @@
 #include "engine/rendering/vulkan/ivulkan_buffer.h"
 #include "engine/rendering/vulkan/transfer/itransfer_handle.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
-
+#include "engine/rendering/vulkan/ivulkan_sampler_creator.h"
+#include "engine/rendering/vulkan/ivulkan_sampler.h"
+#include "internal/engine/manager/glogger_manager.h"
 VkImageType gtype_to_image_type(GIMAGETYPE type)
 {
 	switch (type)
@@ -35,12 +37,22 @@ VkImageViewType gtype_to_image_view_type(GIMAGETYPE type)
 	}
 }
 
-GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* loader, IGVulkanLogicalDevice* parentDevice)
+GTextureResource::~GTextureResource()
+{
+	if (m_gpuBuffer != nullptr || m_inUsageSampler != nullptr)
+	{
+		GLoggerManager::get_instance()->log_c("GTextureResource","Dont forget to release Texture Resource !!!");
+	}
+}
+
+GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator)
 {	
 	m_filePath = filePath;
 	m_loader = loader;
 	m_boundedDevice = parentDevice;
 	m_gpuBuffer = nullptr;
+	m_samplerCreator = samplerCreator;
+	m_inUsageSampler = nullptr;
 }
 
 RESOURCE_INIT_CODE GTextureResource::prepare_impl()
@@ -144,6 +156,10 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	if (!cmdRes.has_value())
 	{
 		auto err = cmdRes.error();
+		{
+			imageBuffer->unload();
+			delete imageBuffer;
+		}
 		// Timeout
 		return RESOURCE_INIT_CODE::RESOURCE_INIT_CODE_UNKNOWN_EX;
 	}
@@ -239,11 +255,40 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	m_loader->unload(m_imageDescriptor);
 	m_imageDescriptor = nullptr;
 
+
+	// Now try to create sampler
+
+	auto samplerRes = m_samplerCreator->create_sampler(m_boundedDevice);
+
+	if(!samplerRes.has_value())
+	{
+
+		return RESOURCE_INIT_CODE_UNKNOWN_EX;
+	}
+
+	m_inUsageSampler = samplerRes.value();
+
 	return RESOURCE_INIT_CODE_OK;
 }
 
 void GTextureResource::unload_impl()
 {
+	if (m_imageDescriptor != nullptr && m_loader != nullptr)
+	{
+		m_loader->unload(m_imageDescriptor);
+		m_imageDescriptor = nullptr;
+
+	}
+	if (m_gpuBuffer != nullptr)
+	{
+		m_gpuBuffer->unload();
+		m_gpuBuffer = nullptr;
+	}
+	if (m_inUsageSampler != nullptr && m_samplerCreator != nullptr)
+	{
+		m_samplerCreator->destroy_sampler(m_inUsageSampler);
+		m_inUsageSampler = nullptr;
+	}
 }
 
 std::uint64_t GTextureResource::calculateSize() const

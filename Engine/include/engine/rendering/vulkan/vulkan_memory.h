@@ -2,14 +2,16 @@
 #define GVULKAN_FENCE_MANAGER_H
 
 class GVulkanFence;
-class GVulkanLogicalDevice;
+class IGVulkanLogicalDevice;
 class GVulkanFenceManager;
 class GVulkanSemaphore;
 class GVulkanSemaphoreManager;
 struct VkFence_T;
 struct VkSemaphore_T;
 
-class GVulkanSemaphore
+#include "engine/GEngine_EXPORT.h"
+
+class ENGINE_API GVulkanSemaphore
 {
 public:
 	GVulkanSemaphore(GVulkanSemaphoreManager* owner);
@@ -25,16 +27,16 @@ private:
 };
 
 
-class GVulkanSemaphoreManager
+class ENGINE_API GVulkanSemaphoreManager
 {
 public:
-	GVulkanSemaphoreManager(GVulkanLogicalDevice* owner);
+	GVulkanSemaphoreManager(IGVulkanLogicalDevice* owner);
 
-	GVulkanLogicalDevice* get_bounded_device();
+	IGVulkanLogicalDevice* get_bounded_device();
 
 	GVulkanSemaphore* create_semaphore();
 private:
-	GVulkanLogicalDevice* m_owner;
+	IGVulkanLogicalDevice* m_owner;
 };
 
 enum FENCE_WAIT
@@ -44,7 +46,7 @@ enum FENCE_WAIT
 	FENCE_WAIT_OUT_OF_MEMORY
 };
 
-class GVulkanFence
+class ENGINE_API GVulkanFence
 {
 public:
 	GVulkanFence(GVulkanFenceManager* owner);
@@ -66,15 +68,15 @@ private:
 	GVulkanFenceManager* m_owner;
 };
 
-class GVulkanFenceManager
+class ENGINE_API GVulkanFenceManager
 {
 public:
-	GVulkanFenceManager(GVulkanLogicalDevice* dev);
+	GVulkanFenceManager(IGVulkanLogicalDevice* dev);
 	~GVulkanFenceManager();
-	GVulkanLogicalDevice* get_bounded_device();
+	IGVulkanLogicalDevice* get_bounded_device();
 	GVulkanFence* create_fence();
 private:
-	GVulkanLogicalDevice* m_device;
+	IGVulkanLogicalDevice* m_device;
 };
 
 

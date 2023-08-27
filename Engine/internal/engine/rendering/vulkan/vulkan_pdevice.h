@@ -38,6 +38,8 @@ public:
 
 	// If only transfer dowsn't support it returns default queue
 	virtual uint32_t get_only_transfer() const noexcept override;
+
+	virtual const VkPhysicalDeviceProperties* get_vk_properties() const noexcept;
 private:
 	struct Elector
 	{

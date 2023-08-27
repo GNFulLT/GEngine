@@ -1,98 +1,91 @@
-#include "internal/engine/rendering/vulkan/vulkan_viewport.h"
+#include "internal/engine/rendering/vulkan/vulkan_main_viewport.h"
 #include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
-
 #include "public/core/templates/memnewd.h"
+#include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 
 static uint32_t SwapchainImageCount = 3;
 
-GVulkanViewport::GVulkanViewport(GVulkanLogicalDevice* inDevice, uint32_t sizeX, uint32_t sizeY)
+GVulkanMainViewport::GVulkanMainViewport(GVulkanLogicalDevice* inDevice, uint32_t sizeX, uint32_t sizeY)
 {
 	m_device = inDevice;
 	m_sizeX = sizeX;
 	m_sizeY = sizeY;
-	m_swapchain = nullptr;
+	m_currentImage = 0;
+	m_imageViews = nullptr;
 }
 
-GVulkanViewport::~GVulkanViewport()
+GVulkanMainViewport::~GVulkanMainViewport()
 {
 }
 
-bool GVulkanViewport::init(VkSurfaceKHR surface, VkSurfaceFormatKHR format, IGVulkanQueue* presentQueue)
+bool GVulkanMainViewport::init(int width, int height,int format)
 {
+	assert(m_imageViews != nullptr);
 	//X TODO GDNEWDA
-	m_swapchain = new GVulkanSwapchain(m_device, surface, SwapchainImageCount, m_sizeX, m_sizeY, format, presentQueue);
-
-	bool inited = m_swapchain->init();
-	if (!inited)
+	std::vector<C_GVec2> sizes(m_imageViews->size());
+	for (int i = 0; i < sizes.size(); i++)
 	{
-		delete m_swapchain;
-		return false;
+		sizes[i].x = width;
+		sizes[i].y = height;
 	}
 
+	std::vector<VkClearValue> clearValues;
+	clearValues.push_back({ {0.f,0.f,0.f,0.f} });
+
+	m_renderpass.create((VkDevice)m_device->get_vk_device(), *m_imageViews, sizes, clearValues, (VkFormat)format,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	return true;
 }
 
-void GVulkanViewport::destroy()
+void GVulkanMainViewport::set_image_views_ref(const std::vector<VkImageView_T*>* imageViews)
 {
-	if (m_swapchain != nullptr)
-	{
-		m_swapchain->destroy();
-	}
+	m_imageViews = imageViews;
 }
 
-int GVulkanViewport::get_current_image_index() const
+void GVulkanMainViewport::set_current_image(uint32_t index)
 {
-	return m_swapchain->get_current_image_index();
+	m_currentImage = index;
 }
 
-void* GVulkanViewport::get_vk_current_image_renderpass()
+
+void GVulkanMainViewport::destroy()
 {
-	return m_swapchain->get_current_image_renderpass();
+	m_renderpass.destroy((VkDevice)m_device->get_vk_device());
 }
 
-uint32_t GVulkanViewport::get_width() const
+void* GVulkanMainViewport::get_vk_current_image_renderpass()
+{
+	return m_renderpass.get_handle(m_currentImage);
+}
+
+uint32_t GVulkanMainViewport::get_width() const
 {
 	return m_sizeX;
 }
 
-uint32_t GVulkanViewport::get_height() const
+uint32_t GVulkanMainViewport::get_height() const
 {
 	return m_sizeY;
 }
 
-uint32_t GVulkanViewport::get_total_image() const
+void GVulkanMainViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
 {
-	return m_swapchain->get_total_image();
+	m_renderpass.begin(cmd->get_handle(), m_currentImage);
 }
 
-void GVulkanViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
+void GVulkanMainViewport::end_draw_cmd(GVulkanCommandBuffer* cmd)
 {
-	m_swapchain->begin_cmd(cmd->get_handle());
+	m_renderpass.end(cmd->get_handle());
 }
 
-void GVulkanViewport::end_draw_cmd(GVulkanCommandBuffer* cmd)
+bool GVulkanMainViewport::can_be_used_as_texture()
 {
-	m_swapchain->end_cmd(cmd->get_handle());
+	return false;
 }
 
-bool GVulkanViewport::acquire_draw_image(GVulkanSemaphore* waitSemaphore)
+IGVulkanDescriptorSet* GVulkanMainViewport::get_descriptor()
 {
-	return m_swapchain->acquire_draw_image(waitSemaphore);
-}
-
-bool GVulkanViewport::present_image(uint32_t waitSemaphoreCount, GVulkanSemaphore* waitSemaphores)
-{
-	return m_swapchain->present_image(waitSemaphoreCount,waitSemaphores);
-}
-
-bool GVulkanViewport::need_handle()
-{
-	return m_swapchain->need_handle();
-}
-
-bool GVulkanViewport::handle()
-{
-	return m_swapchain->handle();
+	return nullptr;
 }

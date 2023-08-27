@@ -12,11 +12,12 @@
 #include "engine/rendering/vulkan/ivulkan_queue.h"
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
+#include "internal/window/gimgui_viewport_window.h"
 
 #include "public/platform/window.h"
-
+#include "internal/rendering/vulkan/gscene_renderer.h"
 #include "internal/imgui_window_manager.h"
-
+#include "internal/window/gimgui_texteditor_window.h"
 
 #include "internal/menu/gtheme_menu.h"
 
@@ -29,6 +30,14 @@ ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* a
 	m_descriptorPool = nullptr;
 	//X TODO : GDNEWDA
 	m_windowManager = new ImGuiWindowManager();
+	m_renderViewportWindow = new GImGuiViewportWindow();
+	m_textEditorWindow = new GImGuiTextEditorWindow();
+
+	m_windowManager->create_imgui_window(m_textEditorWindow,GIMGUIWINDOWDIR_RIGHT);
+	m_windowManager->create_imgui_window(m_renderViewportWindow);
+
+	m_sceneRenderer = new GSceneRenderer(viewport,dev);
+
 }
 
 ImGuiLayer::~ImGuiLayer()
@@ -99,6 +108,8 @@ bool ImGuiLayer::init()
 
 	IGVulkanQueue* queue = m_dev->as_logical_device()->get_render_queue();
 	
+
+	//X TODO : GET IMGAES FROM SWAPCHAIN
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = ins;
 	init_info.PhysicalDevice =(VkPhysicalDevice)m_dev->as_physical_device()->get_vk_physical_device();
@@ -108,8 +119,8 @@ bool ImGuiLayer::init()
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.DescriptorPool = m_descriptorPool;
 	init_info.Subpass = 0;
-	init_info.MinImageCount = m_viewport->get_total_image() - 1;
-	init_info.ImageCount = m_viewport->get_total_image();
+	init_info.MinImageCount = 2;
+	init_info.ImageCount = 3;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.Allocator = VK_NULL_HANDLE;
 	init_info.CheckVkResultFn = VK_NULL_HANDLE;
@@ -138,11 +149,19 @@ bool ImGuiLayer::init()
 
 	m_windowManager->create_imgui_menu(new GThemeMenu());
 	
+	inited = m_sceneRenderer->init();
+	
+	if (!inited)
+		return false;
+
 	return true;
 }
 
 void ImGuiLayer::destroy()
 {
+	m_sceneRenderer->destroy();
+	delete m_sceneRenderer;
+
 	m_windowManager->destroy();
 	//X TODO : Custom Deleter
 	delete m_windowManager;
@@ -165,10 +184,22 @@ bool ImGuiLayer::before_render()
 void ImGuiLayer::render(GVulkanCommandBuffer* cmd)
 {
 
+
 	m_windowManager->render_windows();
 
 	ImGui::Render();
 
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd->get_handle());
 
+
+	m_sceneRenderer->render_the_scene();
+
+	//X After drawing windows draw the viewport
+
+}
+
+void ImGuiLayer::set_viewport(IGVulkanViewport* viewport)
+{
+	m_renderViewportWindow->set_the_viewport(viewport);
+	m_sceneRenderer->set_the_viewport(viewport);
 }

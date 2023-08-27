@@ -5,6 +5,7 @@
 #include "engine/rendering/vulkan/ivulkan_device.h"
 #include <mutex>
 #include <expected>
+#include <utility>
 
 class IGVulkanApp;
 class GVulkanCommandBufferManager;
@@ -61,8 +62,19 @@ public:
 	GVulkanFence* get_queue_fence();
 
 
+	virtual GVulkanCommandBuffer* create_cmd_from_main_pool() override;
 	
+	virtual void destroy_cmd_main_pool(GVulkanCommandBuffer* cmd) override;
 
+	virtual void add_wait_semaphore_for_this_frame(GVulkanSemaphore* semaphore,int pipelineStageFlag) override;
+
+	virtual GVulkanSemaphore* create_semaphore(bool isSignaled) override;
+
+	virtual void destroy_semaphore(GVulkanSemaphore* semaphore) override;
+
+	virtual void execute_cmd_from_main(GVulkanCommandBuffer* buff, const VkSubmitInfo* inf, GVulkanFence* fence) override;
+
+	const std::vector<std::pair<GVulkanSemaphore*,int>>* get_wait_semaphores();
 private:
 	bool reset_things();
 
@@ -86,6 +98,10 @@ private:
 	GVulkanCommandBuffer* m_mainCommandBuffer;
 	GVulkanCommandBuffer* m_singleTimeCommandBuffer;
 
+
+	// FRAME 
+
+	std::vector<std::pair<GVulkanSemaphore*,int>> m_frameWaitSemaphores;
 
 	TRANSFER_QUEUE_MODE m_transerMode;
 };

@@ -12,7 +12,7 @@
 #include "engine/manager/iglogger_manager.h"
 #include "engine/io/iowning_glogger.h"
 #include "gobject/gobject.h"
-
+#include "internal/rendering/vulkan/gimgui_descriptor_creator.h"
 
 
 EditorApplicationImpl* EditorApplicationImpl::get_instance()
@@ -22,6 +22,12 @@ EditorApplicationImpl* EditorApplicationImpl::get_instance()
 
 void EditorApplicationImpl::destroy()
 {
+    m_renderViewport->destroy();
+    
+    m_engine->destroy_offscreen_viewport(m_renderViewport);
+
+    delete m_imguiDescriptorCreator;
+    
     m_imguiLayer->destroy();
 
 }
@@ -120,6 +126,19 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
     }
 
+    m_logger->log_d("Creating ImGui Descriptor Pool Wrapper");
+
+    //X First create the descriptor pool wrapper for imgui
+    m_imguiDescriptorCreator = new GImGuiDescriptorCreator(dev->get()->as_logical_device().get());
+
+
+    //X Create the game viewport here
+
+    m_logger->log_d("Creating Render Viewport");
+    
+    m_renderViewport = engine->create_offscreen_viewport(m_imguiDescriptorCreator);
+
+    m_imguiLayer->set_viewport(m_renderViewport);
     return true;    
 }
 

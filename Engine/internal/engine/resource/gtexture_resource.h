@@ -6,11 +6,13 @@
 
 class IGVulkanLogicalDevice;
 class IVulkanImage;
-
+class IGVulkanSamplerCreator;
+class IGVulkanSampler;
 class GTextureResource : public IGTextureResource
 {
 public:
-	GTextureResource(std::string_view filePath,IImageLoader* loader, IGVulkanLogicalDevice* parentDevice);
+	~GTextureResource();
+	GTextureResource(std::string_view filePath,IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator);
 	// If system is ready for load operation. This method will be called and ask the resource if there is any internal things prepare them and if u are ready too
 	// return true and load implementation will be started
 
@@ -39,6 +41,9 @@ private:
 	GImage_Descriptor* m_imageDescriptor;
 	bool m_imageIsInCPU;
 	IVulkanImage* m_gpuBuffer;
+
+	IGVulkanSamplerCreator* m_samplerCreator;
+	IGVulkanSampler* m_inUsageSampler;
 };
 
 #endif // GTEXTURE_RESOURCE_H

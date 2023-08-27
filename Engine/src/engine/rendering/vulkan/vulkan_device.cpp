@@ -4,7 +4,7 @@
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 #include "internal/engine/rendering/vulkan/vulkan_pdevice.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
-#include "internal/engine/rendering/vulkan/vulkan_memory.h"
+#include "engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/manager/glogger_manager.h"
 
 #include <stdexcept>
@@ -177,10 +177,53 @@ GVulkanFence* GVulkanDevice::get_queue_fence()
 	return m_renderingFence;
 }
 
+GVulkanCommandBuffer* GVulkanDevice::create_cmd_from_main_pool()
+{
+	auto cmd =  m_defaultCommandManager->create_buffer(true);
+	cmd->init();
+	return cmd;
+}
+
+void GVulkanDevice::destroy_cmd_main_pool(GVulkanCommandBuffer* cmd)
+{
+	cmd->destroy();
+	delete cmd;
+}
+
+void GVulkanDevice::add_wait_semaphore_for_this_frame(GVulkanSemaphore* semaphore,int pipelineStageFlag)
+{
+	m_frameWaitSemaphores.push_back(std::make_pair(semaphore,pipelineStageFlag));
+}
+
+GVulkanSemaphore* GVulkanDevice::create_semaphore(bool isSignaled)
+{
+	GVulkanSemaphore* semaphore = m_semaphoreManager->create_semaphore();
+	semaphore->init();
+	return semaphore;
+}
+
+void GVulkanDevice::destroy_semaphore(GVulkanSemaphore* semaphore)
+{
+	semaphore->destroy();
+	delete semaphore;
+}
+
+void GVulkanDevice::execute_cmd_from_main(GVulkanCommandBuffer* buff,const VkSubmitInfo* inf, GVulkanFence* fence)
+{
+	
+	vkQueueSubmit(m_vulkanLogicalDevice->get_render_queue()->get_queue(), 1, inf , fence == nullptr ? nullptr : fence->get_fence());
+}
+
+const std::vector<std::pair<GVulkanSemaphore*,int>>* GVulkanDevice::get_wait_semaphores()
+{
+	return &m_frameWaitSemaphores;
+}
+
 bool GVulkanDevice::reset_things()
 {
 	m_defaultCommandManager->reset_pool();
 	m_renderingFence->reset();
+	m_frameWaitSemaphores.clear();
 
 	return true;
 }

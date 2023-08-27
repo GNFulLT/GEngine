@@ -1,9 +1,9 @@
 #include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
-#include "internal/engine/rendering/vulkan/vulkan_memory.h"
+#include "engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/rendering/vulkan/vulkan_pdevice.h"
 #include <algorithm>
-
+#include "internal/engine/rendering/vulkan/vulkan_main_viewport.h"
 
 static VkPresentModeKHR presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
@@ -17,6 +17,7 @@ GVulkanSwapchain::GVulkanSwapchain(GVulkanLogicalDevice* inDevice, VkSurfaceKHR 
 	m_presentQueue = presentQueue;
 	m_currentImage = 0;
 	m_needHandle = false;
+	m_viewPort = new GVulkanMainViewport(inDevice,width,height);
 }
 
 bool GVulkanSwapchain::init()
@@ -101,29 +102,21 @@ bool GVulkanSwapchain::init()
 		vkCreateImageView((VkDevice)m_device->get_vk_device(), &createInfo, nullptr, &(m_imageViews[i]));
 	}
 
+	m_viewPort->set_image_views_ref(&m_imageViews);
+	m_viewPort->init( m_surfaceExtent.width, m_surfaceExtent.height, this->m_surfaceFormat.format);
 
-	std::vector<C_GVec2> sizes(m_images.size());
-	for (int i = 0; i < sizes.size(); i++)
-	{
-		sizes[i].x = m_surfaceExtent.width;
-		sizes[i].y = m_surfaceExtent.height;
-	}
-
-	std::vector<VkClearValue> clearValues;
-	clearValues.push_back({ {0.f,0.f,0.f,0.f} });
-
-	m_renderpass.create((VkDevice)m_device->get_vk_device(), m_imageViews, sizes, clearValues, this->m_surfaceFormat.format,
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	
 	m_needHandle = false;
-	return !m_renderpass.is_failed();
+	
+	// CHECK VIEWPORT
+	return true;
 
 }
 
 void GVulkanSwapchain::destroy()
 {
-	m_renderpass.destroy((VkDevice)m_device->get_vk_device());
-
+	m_viewPort->destroy();
+	delete m_viewPort;
 	for (int i = 0; i < m_imageViews.size(); i++)
 	{
 		vkDestroyImageView((VkDevice)m_device->get_vk_device(), m_imageViews[i], nullptr);
@@ -131,9 +124,9 @@ void GVulkanSwapchain::destroy()
 	vkDestroySwapchainKHR((VkDevice)m_device->get_vk_device(),m_swapchain,nullptr);
 }
 
-GVulkanRenderpass* GVulkanSwapchain::get_renderpass()
+IGVulkanViewport* GVulkanSwapchain::get_viewport()
 {
-	return &m_renderpass;
+	return m_viewPort;
 }
 
 bool GVulkanSwapchain::acquire_draw_image(GVulkanSemaphore* semaphore)
@@ -144,6 +137,7 @@ bool GVulkanSwapchain::acquire_draw_image(GVulkanSemaphore* semaphore)
 		m_needHandle = true;
 		return false;
 	}
+	m_viewPort->set_current_image(m_currentImage);
 	return true;
 }
 
@@ -179,7 +173,7 @@ bool GVulkanSwapchain::need_handle()
 
 bool GVulkanSwapchain::handle()
 {
-	m_renderpass.destroy((VkDevice)m_device->get_vk_device());
+	m_viewPort->destroy();
 	for (int i = 0; i < m_imageViews.size(); i++)
 	{
 		vkDestroyImageView((VkDevice)m_device->get_vk_device(), m_imageViews[i], nullptr);

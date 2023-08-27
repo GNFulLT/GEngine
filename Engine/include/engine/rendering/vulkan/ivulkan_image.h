@@ -6,6 +6,7 @@
 class IGVulkanLogicalDevice;
 struct VkImageViewCreateInfo;
 struct VkImage_T;
+struct VkImageView_T;
 class ENGINE_API IVulkanImage
 {
 public:
@@ -19,6 +20,8 @@ public:
 	virtual bool create_image_view(const VkImageViewCreateInfo* info) = 0;
 
 	virtual VkImage_T* get_vk_image() = 0;
+	virtual VkImageView_T* get_vk_image_view() = 0;
+	virtual void set_image_view(VkImageView_T* view, const VkImageViewCreateInfo* inf) = 0;
 private:
 };
 

@@ -29,7 +29,7 @@ enum VULKAN_IMAGE_CREATION_ERROR
 enum VmaMemoryUsage;
 class ITransferHandle;
 enum TRANSFER_QUEUE_GET_ERR;
-
+struct VkDevice_T;
 class ENGINE_API IGVulkanLogicalDevice
 {
 public:
@@ -41,7 +41,7 @@ public:
 
 	virtual void destroy() = 0;
 
-	virtual void* get_vk_device() = 0;
+	virtual VkDevice_T* get_vk_device() = 0;
 
 	virtual IGVulkanPhysicalDevice* get_bounded_physical_device() = 0;
 

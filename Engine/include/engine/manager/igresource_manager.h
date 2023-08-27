@@ -9,8 +9,10 @@
 #include <expected>
 
 class GResource;
+class IResource;
 
 typedef GSharedPtr<GResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> GResourcePtr;
+typedef GSharedPtr<IResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> IResourcePtr;
 
 class ENGINE_API IGResourceManager
 {
@@ -21,6 +23,8 @@ public:
 
 
 	virtual std::expected<GResource*, RESOURCE_ERROR> create_resource(std::string_view name, std::string_view groupName) = 0;
+
+	virtual std::expected<IResourcePtr, RESOURCE_ERROR> create_texture_resource(std::string_view name, std::string_view groupName, std::string_view filePath) = 0;
 
 private:
 };

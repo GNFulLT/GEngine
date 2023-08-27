@@ -30,7 +30,7 @@ public:
 
 	virtual void destroy() override;
 
-	virtual void* get_vk_device() override;
+	virtual VkDevice_T* get_vk_device() override;
 
 	virtual IGVulkanPhysicalDevice* get_bounded_physical_device() override;
 
@@ -63,10 +63,15 @@ public:
 	virtual std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> get_wait_and_begin_transfer_cmd(uint64_t timeout) override;
 
 	virtual void finish_execute_and_wait_transfer_cmd(ITransferHandle* handle) override;
+	
+	static GVulkanLogicalDevice* get_instance();
 private:
 	bool create_vma_allocator();
 
 private:
+
+	inline static GVulkanLogicalDevice* s_instance;
+
 	std::unique_ptr< ITransferOperations> m_transferOps;
 
 	bool m_destroyed;

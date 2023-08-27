@@ -257,4 +257,9 @@ uint32_t GVulkanPhysicalDevice::get_only_transfer() const noexcept
 	return m_onlyTransferFamilyIndex;
 }
 
+const VkPhysicalDeviceProperties* GVulkanPhysicalDevice::get_vk_properties() const noexcept
+{
+	return &m_physicalDevProperties;
+}
+
 

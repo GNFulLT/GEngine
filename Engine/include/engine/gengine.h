@@ -10,7 +10,8 @@ class IGVulkanDevice;
 class IGVulkanApp;
 class IManagerTable;
 class IGVulkanViewport;
-
+class GVulkanSwapchain;
+class IGVulkanDescriptorCreator;
 struct VkSurfaceKHR_T;
 
 class ENGINE_API GEngine
@@ -32,6 +33,10 @@ public:
 	IGVulkanViewport* get_viewport();
 
 	IGVulkanApp* get_app();
+
+	IGVulkanViewport* create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor);
+
+	void destroy_offscreen_viewport(IGVulkanViewport* port);
 private:
 	void exit();
 
@@ -41,9 +46,8 @@ private:
 	Window* m_window;
 	GApplicationImpl* m_impl;
 	IManagerTable* m_managerTable;
-	IGVulkanViewport* m_mainViewport;
 	GSharedPtr<IGVulkanApp> m_vulkanApp;
-
+	GVulkanSwapchain* m_vulkanSwapchain;
 	VkSurfaceKHR_T* m_mainSurface;
 #ifdef _DEBUG
 	bool m_inited = false;

@@ -12,7 +12,6 @@
 #include <vector>
 #include <set>
 
-
 enum RESOURCE_LOADING_STATE
 {
 	RESOURCE_LOADING_STATE_UNLOADED = 0,
@@ -56,7 +55,7 @@ public:
 
 	void unbind_listener(IResourceListener* listener);
 
-	void before_load();
+	bool before_load();
 
 	RESOURCE_INIT_CODE load();
 
@@ -72,7 +71,7 @@ public:
 
 	void unprepare();
 
-	std::string_view get_resource_path() const;
+	virtual std::string_view get_resource_path() const = 0;
 
 protected:
 	// Created by :

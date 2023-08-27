@@ -1,3 +1,5 @@
+#include "volk.h"
+
 #include "internal/engine/rendering/vulkan/gvulkan_image.h"
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 #include "internal/engine/manager/glogger_manager.h"
@@ -22,6 +24,7 @@ GVulkanImage::~GVulkanImage()
 	}
 }
 
+//X TODO : ADD DELETER
 void GVulkanImage::unload()
 {
 	if (m_inited)
@@ -59,11 +62,28 @@ bool GVulkanImage::create_image_view(const VkImageViewCreateInfo* info)
 
 	m_imageViewCreationInfo = *info;
 	m_imageViewCreationInfo.image = m_image;
-	auto res = vkCreateImageView((VkDevice)m_boundedDevice->get_vk_device(), &m_imageViewCreationInfo, nullptr, &m_imageView);
+	auto dev = (VkDevice)m_boundedDevice->get_vk_device();
+	auto res = vkCreateImageView(dev, info, nullptr, &m_imageView);
 	return res == VK_SUCCESS;
 }
 
 VkImage_T* GVulkanImage::get_vk_image()
 {
 	return m_image;
+}
+
+VkImageView_T* GVulkanImage::get_vk_image_view()
+{
+	return m_imageView;
+}
+
+void GVulkanImage::set_image_view(VkImageView_T* view, const VkImageViewCreateInfo* inf)
+{
+	if (m_imageView != nullptr)
+	{
+		vkDestroyImageView((VkDevice)m_boundedDevice->get_vk_device(), m_imageView, nullptr);
+	}
+
+	m_imageViewCreationInfo = *inf;
+	m_imageView = view;
 }

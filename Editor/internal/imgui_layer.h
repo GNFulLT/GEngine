@@ -8,6 +8,10 @@ class IGVulkanViewport;
 struct VkDescriptorPool_T;
 class GVulkanCommandBuffer;
 class ImGuiWindowManager;
+class IGVulkanViewport;
+class GImGuiViewportWindow;
+class GSceneRenderer;
+class GImGuiTextEditorWindow;
 
 class ImGuiLayer
 {
@@ -21,6 +25,8 @@ public:
 
 	bool before_render();
 	void render(GVulkanCommandBuffer* cmd);
+
+	void set_viewport(IGVulkanViewport* viewport);
 private:
 	IGVulkanDevice* m_dev;
 	Window* m_window;
@@ -28,6 +34,12 @@ private:
 	VkDescriptorPool_T* m_descriptorPool;
 	IGVulkanViewport* m_viewport;
 	ImGuiWindowManager* m_windowManager;
+	
+	// Builtin windows
+	GImGuiViewportWindow* m_renderViewportWindow;
+	GImGuiTextEditorWindow* m_textEditorWindow;
+
+	GSceneRenderer* m_sceneRenderer;
 };
 
 #endif // IMGUI_LAYER_H

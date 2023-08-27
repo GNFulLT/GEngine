@@ -34,7 +34,7 @@ private:
 private:
 	//X TODO : USE SHARED OR UNIQUE PTR
 	ankerl::unordered_dense::segmented_map<std::string, GImGuiWindow*> m_windowMap;
-
+	std::vector<GImGuiWindow*> m_windowVector;
 	ankerl::unordered_dense::segmented_map<std::string,GImGuiMenu*> m_menuMap;
 	std::vector<GImGuiMenu*> m_menuVector;
 

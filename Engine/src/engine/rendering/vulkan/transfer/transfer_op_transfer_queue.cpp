@@ -2,7 +2,7 @@
 
 #include "internal/engine/rendering/vulkan/transfer/transfer_op_transfer_queue.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
-#include "internal/engine/rendering/vulkan/vulkan_memory.h"
+#include "engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 #include "engine/rendering/vulkan/ivulkan_queue.h"
 

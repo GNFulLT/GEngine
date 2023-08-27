@@ -100,7 +100,7 @@ void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& vie
 }
 
 
-void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t width, uint32_t height, const std::vector<VkClearValue>& clearValues, VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents)
+void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t width, uint32_t height, const std::vector<VkClearValue>& clearValues, VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents, VkSubpassDependency* dependency, int dependencyCount)
 {
 	_info = {};
 
@@ -145,6 +145,13 @@ void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t wid
 	//connect the subpass to the info
 	create_inf.subpassCount = 1;
 	create_inf.pSubpasses = &subpass;
+
+	if (dependency != nullptr && dependencyCount != 0)
+	{
+		create_inf.dependencyCount = dependencyCount;
+		create_inf.pDependencies = dependency;
+	}
+
 	VkRenderPass handle;
 
 	if (VK_SUCCESS != vkCreateRenderPass(dev, &create_inf, nullptr, &handle))

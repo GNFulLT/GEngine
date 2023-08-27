@@ -25,10 +25,18 @@ public:
 	bool need_render();
 
 	const char* get_window_name();
+
+	void destroy();
+	
+	void set_dock_dir(GIMGUIWINDOWDIR dir);
+
+	bool wants_docking();
+
+	GIMGUIWINDOWDIR get_dock_dir();
 private:
 	IGImGuiWindowImpl* m_impl;
 	GImGuiWindowStorage m_storage;
-
+	GIMGUIWINDOWDIR m_dockDir = GIMGUIWINDOWDIR_NONE;
 	uint32_t m_windowId;
 };
 

@@ -6,18 +6,21 @@
 #include "internal/engine/rendering/vulkan/vulkan_app.h"
 #include <cassert>
 #include "internal/engine/manager_table.h"
-#include "internal/engine/rendering/vulkan/vulkan_viewport.h"
+#include "internal/engine/rendering/vulkan/vulkan_main_viewport.h"
 #include "internal/engine/manager/glogger_manager.h"
 #include "internal/engine/manager/gresource_manager.h"
 
-#include "internal/engine/rendering/vulkan/vulkan_memory.h"
+#include "engine/rendering/vulkan/vulkan_memory.h"
 #include "internal/engine/rendering/vulkan/vulkan_queue.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
-
+#include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
+#include "internal/engine/rendering/vulkan/gvulkan_offscreen_viewport.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include  <GLFW/glfw3.h>
+
+static uint32_t SwapchainImageCount = 3;
 
 static GVulkanDevice* s_device;
 static GLoggerManager* s_logger;
@@ -43,7 +46,6 @@ GEngine::GEngine()
 
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
-
 	GLoggerManager::set_instance(s_logger);
 }
 
@@ -68,11 +70,11 @@ void GEngine::run()
 		{
 			request_exit();
 		}
-		if (m_mainViewport->need_handle())
+		if (m_vulkanSwapchain->need_handle())
 		{
 			s_device->get_queue_fence()->wait();
 
-			m_mainViewport->handle();
+			m_vulkanSwapchain->handle();
 		}
 		tick();
 	}
@@ -85,7 +87,6 @@ void GEngine::run()
 
 void GEngine::exit()
 {
-
 	s_logger->log_d("GEngine", "Beginning to destroy application implementation");
 
 	m_impl->destroy();
@@ -95,9 +96,9 @@ void GEngine::exit()
 	//X Destroy inner things
 	s_logger->log_d("GEngine", "Beginning to destroy main viewport");
 
-	((GVulkanViewport*)m_mainViewport)->destroy();
+	m_vulkanSwapchain->destroy();
 
-	delete m_mainViewport;
+	delete m_vulkanSwapchain;
 
 
 	//X Destroys main surface
@@ -158,7 +159,7 @@ void GEngine::tick()
 bool GEngine::before_render()
 {
 	s_device->get_queue_fence()->wait();
-	return m_mainViewport->acquire_draw_image(s_device->get_image_acquired_semaphore()) && s_device->prepare_for_rendering();
+	return m_vulkanSwapchain->acquire_draw_image(s_device->get_image_acquired_semaphore()) && s_device->prepare_for_rendering();
 	
 }
 
@@ -168,24 +169,46 @@ void GEngine::after_render()
 
 	VkSemaphore semaphores = s_device->get_render_complete_semaphore()->get_semaphore();
 	VkSemaphore waitSemaphore = s_device->get_image_acquired_semaphore()->get_semaphore();
+	auto waitSemaphores = s_device->get_wait_semaphores();
+	
+	std::vector<VkSemaphore> wSemaphores(waitSemaphores->size() + 1);
+	
+	wSemaphores[0] = waitSemaphore;
+	
+	for (int i = 1; i < (*waitSemaphores).size()+1; i++)
+	{
+		wSemaphores[i] = (*waitSemaphores)[i - 1].first->get_semaphore();
+	}
 
 	VkSubmitInfo inf = {};
-	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	
+	std::vector< VkPipelineStageFlags> waitStages(waitSemaphores->size() + 1);
+	waitStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	for (int i = 1; i < (*waitSemaphores).size() + 1; i++)
+	{
+		waitStages[i] = (*waitSemaphores)[i - 1].second;
+	}
+	
 	inf.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	inf.pNext = nullptr;
 	inf.commandBufferCount = 1;
 	inf.pCommandBuffers = &buff;
 	inf.signalSemaphoreCount = 1;
 	inf.pSignalSemaphores = &semaphores;
-	inf.pWaitDstStageMask = &waitStage;
-	inf.waitSemaphoreCount = 1;
-	inf.pWaitSemaphores = &waitSemaphore;
+	inf.pWaitDstStageMask = waitStages.data();
+	inf.waitSemaphoreCount = wSemaphores.size();
+	inf.pWaitSemaphores = wSemaphores.data();
 
 	vkQueueSubmit(s_device->as_logical_device()->get_render_queue()->get_queue(), 1, &inf, s_device->get_queue_fence()->get_fence());
 
-	m_mainViewport->present_image(1,s_device->get_render_complete_semaphore());
+	m_vulkanSwapchain->present_image(1,s_device->get_render_complete_semaphore());
 }
 
+//IGVulkanMainViewport* GEngine::create_viewport(int width, int height)
+//{
+//	return new GVulkanMainViewport();
+//}
 void GEngine::init(GApplicationImpl* impl)
 {
 	GSharedPtr<IGVulkanDevice>* graphicDevice = (GSharedPtr<IGVulkanDevice>*)m_managerTable->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
@@ -247,8 +270,6 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 
-
-	m_mainViewport = new GVulkanViewport((GVulkanLogicalDevice*)(*graphicDevice)->as_logical_device().get(), m_window->get_window_props().width, m_window->get_window_props().height);
 	//X IT WORKS FOR ONLY GLFW WINDOW
 	VkResult res = glfwCreateWindowSurface((VkInstance)m_vulkanApp->get_vk_instance(), (GLFWwindow*)m_window->get_native_handler(), nullptr,&m_mainSurface);
 	VkSurfaceFormatKHR surfaceFormat = {};
@@ -256,13 +277,17 @@ void GEngine::init(GApplicationImpl* impl)
 	surfaceFormat.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 
 	s_logger->log_d("GEngine", "Beginning to initialize main viewport");
-	inited = ((GVulkanViewport*)m_mainViewport)->init(m_mainSurface, surfaceFormat,(*graphicDevice)->as_logical_device()->get_present_queue());
+
+	m_vulkanSwapchain = m_vulkanSwapchain = new GVulkanSwapchain((GVulkanLogicalDevice*)s_device->as_logical_device().get(), m_mainSurface, SwapchainImageCount, m_window->get_window_props().width, m_window->get_window_props().height, surfaceFormat, (*graphicDevice)->as_logical_device()->get_present_queue());
+
+	inited = m_vulkanSwapchain->init();
 
 	if (!inited)
 	{
-		s_logger->log_c("GEngine", "Unknown error occured while initializing main viewport. Engine shutdown");
+		s_logger->log_c("GEngine", "Unknown error occured while initializing swapchain. Engine shutdown");
 		return;
 	}
+
 
 #ifdef _DEBUG
 	m_inited = true;
@@ -296,11 +321,19 @@ IGVulkanApp* GEngine::get_app()
 	return m_vulkanApp.get();
 }
 
-
+IGVulkanViewport* GEngine::create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor)
+{
+	return new GVulkanOffScreenViewport(s_device->as_logical_device().get(), descriptor);
+}
 
 IGVulkanViewport* GEngine::get_viewport()
 {
-	return m_mainViewport;
+	return m_vulkanSwapchain->get_viewport();
+}
+
+void GEngine::destroy_offscreen_viewport(IGVulkanViewport* port)
+{
+	delete port;
 }
 
 ENGINE_API GEngine* create_the_engine()

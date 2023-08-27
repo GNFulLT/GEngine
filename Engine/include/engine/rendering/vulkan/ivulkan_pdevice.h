@@ -14,7 +14,7 @@ struct ElectorInfo
 
 struct VkPhysicalDeviceFeatures;
 struct VkQueueFamilyProperties;
-
+struct VkPhysicalDeviceProperties;
 class IGVulkanApp;
 
 class ENGINE_API IGVulkanPhysicalDevice
@@ -49,6 +49,8 @@ public:
 	virtual uint32_t get_only_transfer() const noexcept = 0;
 
 	virtual const std::vector<VkQueueFamilyProperties>& get_all_queues() const noexcept = 0;
+
+	virtual const VkPhysicalDeviceProperties* get_vk_properties() const noexcept = 0;
 private:
 };
 

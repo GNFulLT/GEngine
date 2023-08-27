@@ -8,7 +8,8 @@
 class GEngine;
 class ImGuiLayer;
 class IOwningGLogger;
-
+class IGVulkanViewport;
+class GImGuiDescriptorCreator;
 class EditorApplicationImpl : public GApplicationImpl
 {
 public:
@@ -34,9 +35,12 @@ public:
 
 	GSharedPtr<IOwningGLogger> get_editor_logger();
 private:
+	IGVulkanViewport* m_renderViewport;
 	ImGuiLayer* m_imguiLayer;
+	GImGuiDescriptorCreator* m_imguiDescriptorCreator;
 	GSharedPtr<IOwningGLogger> m_logger;
 	inline static EditorApplicationImpl* s_instance;
+
 };
 
 

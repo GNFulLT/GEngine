@@ -11,9 +11,20 @@ ImGuiWindowManager::~ImGuiWindowManager()
 bool ImGuiWindowManager::create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir)
 {
 	std::lock_guard guard(m_windowCreationMutex);
-	
-	//X TODO : GDNEWDA
-	assert(false);
+	if (auto menu = m_windowMap.find(impl->get_window_name()); menu != m_windowMap.end())
+		return false;
+
+	GImGuiWindow* window = new GImGuiWindow(impl);
+	bool inited = window->init();
+	if (!inited)
+	{
+		//X TODO : CUSTOM DELETER
+		delete window;
+		return false;
+	}
+	window->set_dock_dir(dir);
+	m_windowMap.emplace(impl->get_window_name(), window);
+	m_windowVector.push_back(window);
 	return true;
 
 }
@@ -54,6 +65,11 @@ void ImGuiWindowManager::destroy()
 		//X TODO : CUSTOM
 		delete m_menuVector[i];
 	}
+	for (int i = 0; i < m_windowVector.size(); i++)
+	{
+		m_windowVector[i]->destroy();
+		delete m_windowVector[i];
+	}
 }
 
 void ImGuiWindowManager::render_windows()
@@ -66,13 +82,19 @@ void ImGuiWindowManager::render_windows()
 
 	ImGui::ShowDemoWindow();
 
+	for (int i = 0; i < m_windowVector.size(); i++)
+	{
+		if (!m_windowVector[i]->need_render())
+			continue;
+
+		m_windowVector[i]->render();
+		
+
+	}
 	ImGui::Begin("Helloooo");
 	ImGui::End();
 
 	ImGui::Begin("HellooooB");
-	ImGui::End();
-
-	ImGui::Begin("HellooooL");
 	ImGui::End();
 }
 
@@ -133,7 +155,40 @@ void ImGuiWindowManager::build_nodes()
 		ImGui::DockBuilderDockWindow("Dear ImGui Demo", dock_id_right);
 		ImGui::DockBuilderDockWindow("Helloooo", dock_id_left);
 		ImGui::DockBuilderDockWindow("HellooooB", dock_id_bottom);
-		ImGui::DockBuilderDockWindow("HellooooL", dock_id_middle);
+		ImGui::DockBuilderDockWindow("Viewport", dock_id_middle);
+
+		for (const auto& win : m_windowVector)
+		{
+			if (win->wants_docking())
+			{
+				auto dir = win->get_dock_dir();
+				int dirId = -1;
+				switch (dir)
+				{
+				case GIMGUIWINDOWDIR_NONE:
+					break;
+				case GIMGUIWINDOWDIR_LEFT:
+					dirId = dock_id_left;
+					break;
+				case GIMGUIWINDOWDIR_RIGHT:
+					dirId = dock_id_right;
+					break;
+				case GIMGUIWINDOWDIR_MIDDLE:
+					dirId = dock_id_middle;
+					break;
+				case GIMGUIWINDOWDIR_BOTTOM:
+					dirId = dock_id_bottom;
+					break;
+				default:
+					break;
+				}
+				if (dirId != -1)
+				{
+					ImGui::DockBuilderDockWindow(win->get_window_name(), dirId);
+
+				}
+			}
+		}
 
 		ImGui::DockBuilderFinish(m_dock_id);
 
