@@ -56,3 +56,7 @@ const char* GImGuiViewportWindow::get_window_name()
 {
 	return m_name.c_str();
 }
+
+void GImGuiViewportWindow::destroy()
+{
+}

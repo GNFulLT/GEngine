@@ -410,6 +410,7 @@ public:
 	virtual void on_resize() override;
 	virtual void on_data_update() override;
 	virtual const char* get_window_name() override;
+	virtual void destroy() override;
 private:
 	std::string m_name;
 	GImGuiWindowStorage* m_storage;

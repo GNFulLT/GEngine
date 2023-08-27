@@ -1,7 +1,10 @@
+#include "volk.h"
+
 #include "internal/engine/rendering/vulkan/gvulkan_default_sampler_creator.h"
 #include "vma/vk_mem_alloc.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "internal/engine/rendering/vulkan/gvulkan_sampler.h"
+
 std::expected<IGVulkanSampler*, std::string> GDefaultSamplerCreator::create_sampler(IGVulkanLogicalDevice* dev)
 {
 	
@@ -37,7 +40,7 @@ std::expected<IGVulkanSampler*, std::string> GDefaultSamplerCreator::create_samp
 
 void GDefaultSamplerCreator::destroy_sampler(IGVulkanSampler* sampler)
 {
-
+	vkDestroySampler(sampler->get_bounded_device()->get_vk_device(), sampler->get_vk_sampler(), nullptr);
 }
 
 const char* GDefaultSamplerCreator::get_name()

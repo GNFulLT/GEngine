@@ -25,10 +25,10 @@ void EditorApplicationImpl::destroy()
     m_renderViewport->destroy();
     
     m_engine->destroy_offscreen_viewport(m_renderViewport);
-
-    delete m_imguiDescriptorCreator;
     
     m_imguiLayer->destroy();
+
+    delete m_imguiDescriptorCreator;
 
 }
 
@@ -87,6 +87,9 @@ bool EditorApplicationImpl::init(GEngine* engine)
     s_instance = this;
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
 
+    m_imguiDescriptorCreator = new GImGuiDescriptorCreator(dev->get()->as_logical_device().get());
+
+
     m_imguiLayer = new ImGuiLayer(engine->get_viewport(),engine->get_main_window(),engine->get_app(),dev->get());
     
     m_logger->log_d("Initializing Global Pointers");
@@ -129,7 +132,6 @@ bool EditorApplicationImpl::init(GEngine* engine)
     m_logger->log_d("Creating ImGui Descriptor Pool Wrapper");
 
     //X First create the descriptor pool wrapper for imgui
-    m_imguiDescriptorCreator = new GImGuiDescriptorCreator(dev->get()->as_logical_device().get());
 
 
     //X Create the game viewport here
@@ -145,6 +147,11 @@ bool EditorApplicationImpl::init(GEngine* engine)
 GSharedPtr<IOwningGLogger> EditorApplicationImpl::get_editor_logger()
 {
     return m_logger;
+}
+
+GImGuiDescriptorCreator* EditorApplicationImpl::get_descriptor_creator()
+{
+    return m_imguiDescriptorCreator;
 }
 
 EDITOR_API GApplicationImpl* create_the_editor()

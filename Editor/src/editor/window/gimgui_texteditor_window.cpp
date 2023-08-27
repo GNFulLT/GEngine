@@ -48,6 +48,10 @@ const char* GImGuiTextEditorWindow::get_window_name()
 	return m_name.c_str();
 }
 
+void GImGuiTextEditorWindow::destroy()
+{
+}
+
 
 template<class InputIt1, class InputIt2, class BinaryPredicate>
 bool equals(InputIt1 first1, InputIt1 last1,

@@ -63,7 +63,7 @@ bool GVulkanImage::create_image_view(const VkImageViewCreateInfo* info)
 	m_imageViewCreationInfo = *info;
 	m_imageViewCreationInfo.image = m_image;
 	auto dev = (VkDevice)m_boundedDevice->get_vk_device();
-	auto res = vkCreateImageView(dev, info, nullptr, &m_imageView);
+	auto res = vkCreateImageView(dev, &m_imageViewCreationInfo, nullptr, &m_imageView);
 	return res == VK_SUCCESS;
 }
 

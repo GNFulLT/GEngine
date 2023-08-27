@@ -1,6 +1,6 @@
 #include "engine/resource/igresource_loader.h"
 #include "engine/resource/iresource.h"
-
+#include "engine/resource/igresource_loader.h"
 
 bool IResource::before_load()
 {
@@ -60,6 +60,14 @@ void IResource::after_load()
 {
 }
 
+IResource::IResource()
+{
+	m_loadingState.store(RESOURCE_LOADING_STATE_UNLOADED);
+	m_size = 0;
+	m_creator = nullptr;
+	m_creatorOwner = nullptr;
+	m_isCreatedByExternal = false;
+}
 
 void IResource::before_unload()
 {
@@ -77,7 +85,7 @@ void IResource::unload()
 
 	before_unload();
 
-	unload();
+	unload_impl();
 
 	m_loadingState.store(RESOURCE_LOADING_STATE_UNPREPARING);
 
@@ -100,4 +108,16 @@ bool IResource::prepare()
 void IResource::unprepare()
 {
 	unprepare_impl();
+}
+
+void IResource::destroy()
+{
+	if (m_creatorOwner == nullptr)
+	{
+		return;
+	}
+
+	destroy_impl();
+
+	unload();
 }

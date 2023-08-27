@@ -13,6 +13,8 @@ class GVulkanFence;
 class GVulkanCommandBufferManager;
 class GVulkanCommandBuffer;
 class GVulkanFenceManager;
+class GVulkanSemaphoreManager;
+class GVulkanSemaphore;
 
 class TransferQueueHandle : public ITransferHandle
 {
@@ -46,20 +48,28 @@ public:
 	virtual void finish_execute_and_wait_transfer_cmd(ITransferHandle* handle) override;
 
 	virtual void destroy() override;
+
+	virtual std::expected<IVulkanImage*, int> init_image_to_the_gpu_from_cpu_sleep(VkImageCreateInfo* inf, VkImageViewCreateInfo* viewInfo,int buffSize,void* pBuff) override;
 private:
 	void on_finish(ITransferHandle* finished);
 private:
 	IGVulkanQueue* m_transferQueue;
 	uint32_t m_transferCmdCount;
 
+	std::mutex m_transferOwnerShipMutex;
 	
-
+	GVulkanLogicalDevice* m_boundedDevice;
 	std::mutex m_transferMutex;
 
 	std::unique_ptr<GVulkanCommandBufferManager> m_transferCommandManager;
+	std::unique_ptr<GVulkanCommandBufferManager> m_transferOwnershipCommandManager;
+
 	std::unique_ptr<GVulkanFenceManager> m_fenceManager;
+	std::unique_ptr<GVulkanSemaphoreManager> m_semaphoreManager;
 
 	std::vector<GVulkanCommandBuffer*> m_transferCommandBuffers;
+	std::vector<GVulkanCommandBuffer*> m_transferOwnershipCommandBuffers;
+
 	std::vector<GVulkanFence*> m_transferCommandBuffersFences;
 
 	// CMD , Index in vector
@@ -68,6 +78,7 @@ private:
 
 	// CMD , Index in vector
 
+	std::vector<GVulkanSemaphore*> m_transferCommandBufferSemaphores;
 	std::vector<TransferQueueHandle*> m_executedTransferCommandBuffersQueue;
 };
 

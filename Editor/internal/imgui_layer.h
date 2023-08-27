@@ -12,6 +12,7 @@ class IGVulkanViewport;
 class GImGuiViewportWindow;
 class GSceneRenderer;
 class GImGuiTextEditorWindow;
+class GImGuiContentBrowserWindow;
 
 class ImGuiLayer
 {
@@ -38,7 +39,7 @@ private:
 	// Builtin windows
 	GImGuiViewportWindow* m_renderViewportWindow;
 	GImGuiTextEditorWindow* m_textEditorWindow;
-
+	GImGuiContentBrowserWindow* m_contentBrowserWindow;
 	GSceneRenderer* m_sceneRenderer;
 };
 

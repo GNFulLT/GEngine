@@ -55,6 +55,7 @@ const char* GImGuiWindow::get_window_name()
 
 void GImGuiWindow::destroy()
 {
+	m_impl->destroy();
 	delete m_impl;
 }
 

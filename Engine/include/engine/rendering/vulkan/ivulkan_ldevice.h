@@ -30,6 +30,8 @@ enum VmaMemoryUsage;
 class ITransferHandle;
 enum TRANSFER_QUEUE_GET_ERR;
 struct VkDevice_T;
+class ITransferOperations;
+
 class ENGINE_API IGVulkanLogicalDevice
 {
 public:
@@ -69,6 +71,9 @@ public:
 	virtual std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> get_wait_and_begin_transfer_cmd(uint64_t timeout) = 0;
 
 	virtual void finish_execute_and_wait_transfer_cmd(ITransferHandle* handle) = 0;
+
+
+	virtual ITransferOperations* get_transfer_operation() = 0;
 private:
 };
 

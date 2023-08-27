@@ -18,6 +18,7 @@
 #include "internal/rendering/vulkan/gscene_renderer.h"
 #include "internal/imgui_window_manager.h"
 #include "internal/window/gimgui_texteditor_window.h"
+#include "internal/window/gimgui_content_browser_window.h"
 
 #include "internal/menu/gtheme_menu.h"
 
@@ -32,9 +33,8 @@ ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* a
 	m_windowManager = new ImGuiWindowManager();
 	m_renderViewportWindow = new GImGuiViewportWindow();
 	m_textEditorWindow = new GImGuiTextEditorWindow();
+	m_contentBrowserWindow = new GImGuiContentBrowserWindow();
 
-	m_windowManager->create_imgui_window(m_textEditorWindow,GIMGUIWINDOWDIR_RIGHT);
-	m_windowManager->create_imgui_window(m_renderViewportWindow,GIMGUIWINDOWDIR_MIDDLE);
 
 	m_sceneRenderer = new GSceneRenderer(viewport,dev);
 
@@ -154,6 +154,26 @@ bool ImGuiLayer::init()
 	if (!inited)
 		return false;
 
+
+
+	bool created = m_windowManager->create_imgui_window(m_textEditorWindow, GIMGUIWINDOWDIR_RIGHT);
+	if (!created)
+	{
+		delete m_textEditorWindow;
+		m_textEditorWindow = nullptr;
+	}
+	created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
+	if (!created)
+	{
+		delete m_renderViewportWindow;
+		m_renderViewportWindow = nullptr;
+	}
+	created = m_windowManager->create_imgui_window(m_contentBrowserWindow, GIMGUIWINDOWDIR_BOTTOM);
+	if (!created)
+	{
+		delete m_contentBrowserWindow;
+		m_contentBrowserWindow = nullptr;
+	}
 	return true;
 }
 

@@ -2,12 +2,7 @@
 #define GRESOURCE_MANAGER_H
 
 
-enum RESOURCE_ERROR
-{
-	RESOURCE_ERROR_UNKNOWN = 0,
-	RESOURCE_ERROR_NAME_OR_GROUP_NAME_IS_NULL,
-	RESOURCE_ERROR_NAME_ALREADY_IN_USE,
-};
+
 
 #include "engine/resource/iresource.h"
 #include "public/core/templates/shared_ptr.h"
@@ -22,6 +17,7 @@ class IGVulkanSamplerCreator;
 class IImageLoader;
 
 class IResource;
+class IGVulkanDescriptorCreator;
 
 class GResourceManager : public IGResourceManager
 {
@@ -32,8 +28,9 @@ public:
 	//X TODO IResourceImpl must comes with deleter
 	virtual std::expected<GResource*, RESOURCE_ERROR> create_resource(std::string_view name,std::string_view groupName) override;
 
-	virtual std::expected<IResourcePtr, RESOURCE_ERROR> create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath) override;
+	virtual std::expected<IGTextureResource*, RESOURCE_ERROR> create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator) override;
 
+	virtual void destroy_texture_resource(IGTextureResource* texture) override;
 
 	bool init();
 

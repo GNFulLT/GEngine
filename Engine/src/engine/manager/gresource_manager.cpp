@@ -5,6 +5,8 @@
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 #include "internal/engine/io/stb_image_loader.h"
 #include "internal/engine/rendering/vulkan/gvulkan_default_sampler_creator.h"
+#include "engine/resource/igtexture_resource.h"
+
 GResourceManager::GResourceManager()
 {
 	//X TODO : GDNEWDA
@@ -61,7 +63,7 @@ std::expected<GResource*, RESOURCE_ERROR> GResourceManager::create_resource(std:
 
 }
 
-std::expected<IResourcePtr, RESOURCE_ERROR> GResourceManager::create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath)
+std::expected<IGTextureResource*, RESOURCE_ERROR> GResourceManager::create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator)
 {
 	if (name.empty() || groupName.empty())
 		return std::unexpected(RESOURCE_ERROR::RESOURCE_ERROR_NAME_OR_GROUP_NAME_IS_NULL);
@@ -69,9 +71,14 @@ std::expected<IResourcePtr, RESOURCE_ERROR> GResourceManager::create_texture_res
 	m_logger->log_d(fmt::format("A Texture resource created by name : [{}]{}", groupName, name).c_str());
 
 
-	GTextureResource* res = new GTextureResource(filePath,m_defaultImageLoader,GVulkanLogicalDevice::get_instance(),m_defaultSamplerCreator);
+	GTextureResource* res = new GTextureResource(filePath,m_defaultImageLoader,GVulkanLogicalDevice::get_instance(),m_defaultSamplerCreator, descriptorCreator);
+	res->m_creatorOwner = this;
+	return res;
+}
+
+void GResourceManager::destroy_texture_resource(IGTextureResource* texture)
+{
 	
-	return GSharedPtr<IResource,GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE>(res);
 }
 
 bool GResourceManager::init()

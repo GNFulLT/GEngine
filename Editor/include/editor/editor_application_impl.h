@@ -34,6 +34,8 @@ public:
 	GEngine* m_engine;
 
 	GSharedPtr<IOwningGLogger> get_editor_logger();
+
+	GImGuiDescriptorCreator* get_descriptor_creator();
 private:
 	IGVulkanViewport* m_renderViewport;
 	ImGuiLayer* m_imguiLayer;

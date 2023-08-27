@@ -22,7 +22,7 @@ enum RESOURCE_LOADING_STATE
 	RESOURCE_LOADING_STATE_UNPREPARING
 };
 
-class GResourceManager;
+class IGResourceManager;
 class IGResourceLoader;
 
 class ENGINE_API IResource
@@ -30,7 +30,7 @@ class ENGINE_API IResource
 public:
 	virtual ~IResource() = default;
 	
-
+	IResource();
 	// If system is ready for load operation. This method will be called and ask the resource if there is any internal things prepare them and if u are ready too
 	// return true and load implementation will be started
 
@@ -73,9 +73,16 @@ public:
 
 	virtual std::string_view get_resource_path() const = 0;
 
+	void destroy();
+
+
+	//X Unbound from the IGResourceManager
+
+	virtual void destroy_impl() = 0;
+
 protected:
 	// Created by :
-	GResourceManager* m_creatorOwner;
+	IGResourceManager* m_creatorOwner;
 
 	IGResourceLoader* m_creator;
 

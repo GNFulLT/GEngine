@@ -56,7 +56,7 @@ public:
 
 	virtual IGVulkanDevice* get_owner() noexcept override;
 
-
+	virtual ITransferOperations* get_transfer_operation() override;
 
 	virtual std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> get_wait_and_begin_transfer_cmd() override;
 

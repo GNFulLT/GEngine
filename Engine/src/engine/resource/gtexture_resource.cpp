@@ -11,6 +11,10 @@
 #include "engine/rendering/vulkan/ivulkan_sampler_creator.h"
 #include "engine/rendering/vulkan/ivulkan_sampler.h"
 #include "internal/engine/manager/glogger_manager.h"
+#include "engine/rendering/vulkan/ivulkan_descriptor_creator.h"
+#include "engine/manager/igresource_manager.h"
+#include "engine/rendering/vulkan/transfer/itransfer_op.h"
+
 VkImageType gtype_to_image_type(GIMAGETYPE type)
 {
 	switch (type)
@@ -45,7 +49,7 @@ GTextureResource::~GTextureResource()
 	}
 }
 
-GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator)
+GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator, IGVulkanDescriptorCreator* descriptorCreator)
 {	
 	m_filePath = filePath;
 	m_loader = loader;
@@ -53,6 +57,8 @@ GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* load
 	m_gpuBuffer = nullptr;
 	m_samplerCreator = samplerCreator;
 	m_inUsageSampler = nullptr;
+	m_descriptorCreator = descriptorCreator;
+	m_descriptorSet = nullptr;
 }
 
 RESOURCE_INIT_CODE GTextureResource::prepare_impl()
@@ -99,21 +105,7 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	info.queueFamilyIndexCount =1;
 	info.pQueueFamilyIndices = &index;
 	info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	// First create memory for the image
-	// After than map the image to the gpu
 
-	auto res = m_boundedDevice->create_image(&info, VMA_MEMORY_USAGE_CPU_ONLY);
-
-	if (!res.has_value())
-	{
-		auto err = res.error();
-		switch (err) {
-		case VULKAN_IMAGE_CREATION_ERROR_UNKNOWN:
-			return RESOURCE_INIT_CODE::RESOURCE_INIT_CODE_UNKNOWN_EX;
-		}
-	}
-
-	m_gpuBuffer = res.value();
 
 	VkImageViewCreateInfo ivinfo = {};
 	ivinfo.pNext = nullptr;
@@ -127,130 +119,16 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	ivinfo.subresourceRange.levelCount = 1;
 	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
-	bool viewCreated = m_gpuBuffer->create_image_view(&ivinfo);
 
-	if (!viewCreated)
-		return RESOURCE_INIT_CODE_UNKNOWN_EX;
-
-	// We are using cached memory
-	// 	VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-	VkBufferUsageFlags flags = VkBufferUsageFlags(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-	auto bufferRes = m_boundedDevice->create_buffer(m_size, flags,VMA_MEMORY_USAGE_CPU_ONLY);
-
-	if (!bufferRes.has_value())
-	{
-		auto err = bufferRes.error();
-		switch (err) {
-		case VULKAN_BUFFER_CREATION_ERROR_UNKNOWN:
-			return RESOURCE_INIT_CODE::RESOURCE_INIT_CODE_UNKNOWN_EX;
-		}
-	}
-
-	auto imageBuffer = bufferRes.value();
-	// Now we are creating buffer that will be copied to the image
-	imageBuffer->copy_data_to_device_memory(m_imageDescriptor->pixels,m_size);
-
-	// Ask a transfer queue from the device
-	auto cmdRes = m_boundedDevice->get_wait_and_begin_transfer_cmd();
-
-	if (!cmdRes.has_value())
-	{
-		auto err = cmdRes.error();
-		{
-			imageBuffer->unload();
-			delete imageBuffer;
-		}
-		// Timeout
-		return RESOURCE_INIT_CODE::RESOURCE_INIT_CODE_UNKNOWN_EX;
-	}
-
-	auto transferHandle = cmdRes.value();
-	auto cmd = transferHandle->get_command_buffer();
-	
-	
-	VkBufferImageCopy region{};
-	region.bufferOffset = 0;
-	region.bufferRowLength = 0;
-	region.bufferImageHeight = 0;
-
-	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	region.imageSubresource.mipLevel = 0;
-	region.imageSubresource.baseArrayLayer = 0;
-	region.imageSubresource.layerCount = 1;
-
-	region.imageOffset = { 0, 0, 0 };
-	region.imageExtent = {
-		(unsigned int)m_imageDescriptor->width,
-		(unsigned int)m_imageDescriptor->height,
-		1
-	};
-
-	VkImageMemoryBarrier barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = m_gpuBuffer->get_vk_image();
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.srcAccessMask = 0;
-	barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-	auto  sourceStage = VK_PIPELINE_STAGE_HOST_BIT;
-	auto destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-	vkCmdPipelineBarrier(
-		cmd->get_handle(),
-		sourceStage, destinationStage,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
-	);
-
-
-	vkCmdCopyBufferToImage(
-		cmd->get_handle(),
-		imageBuffer->get_vk_buffer(),
-		m_gpuBuffer->get_vk_image(),
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		1,
-		&region
-	);
-
-
-	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-	vkCmdPipelineBarrier(
-		cmd->get_handle(),
-		sourceStage,
-		destinationStage,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
-	);
-
-	// Sleeps until command executing
-	m_boundedDevice->finish_execute_and_wait_transfer_cmd(transferHandle);
-	
-	// Destroy the buffer
-	imageBuffer->unload();
-
-	//X TODO : GDNEWDA
-	delete imageBuffer;
-
+	auto imageRes = m_boundedDevice->get_transfer_operation()->init_image_to_the_gpu_from_cpu_sleep(&info,&ivinfo,m_size,m_imageDescriptor->pixels);
 	// Unload the m_imageDescriptor
+
+	if (!imageRes.has_value())
+	{
+		return RESOURCE_INIT_CODE_UNKNOWN_EX;
+	}
+	
+	m_gpuBuffer = imageRes.value();
 
 	m_loader->unload(m_imageDescriptor);
 	m_imageDescriptor = nullptr;
@@ -267,6 +145,17 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	}
 
 	m_inUsageSampler = samplerRes.value();
+
+
+	auto descriptorRes = m_descriptorCreator->create_descriptor_set_for_texture(m_gpuBuffer, m_inUsageSampler->get_vk_sampler());
+
+
+	if (!descriptorRes.has_value())
+	{
+		return RESOURCE_INIT_CODE_UNKNOWN_EX;
+	}
+
+	m_descriptorSet = descriptorRes.value();
 
 	return RESOURCE_INIT_CODE_OK;
 }
@@ -289,6 +178,11 @@ void GTextureResource::unload_impl()
 		m_samplerCreator->destroy_sampler(m_inUsageSampler);
 		m_inUsageSampler = nullptr;
 	}
+	if (m_descriptorSet != nullptr)
+	{
+		m_descriptorCreator->destroy_descriptor_set_dtor(m_descriptorSet);
+		m_descriptorSet = nullptr;
+	}
 }
 
 std::uint64_t GTextureResource::calculateSize() const
@@ -307,6 +201,16 @@ std::uint64_t GTextureResource::calculateSize() const
 std::string_view GTextureResource::get_resource_path() const
 {
 	return m_filePath;
+}
+
+IGVulkanDescriptorSet* GTextureResource::get_descriptor_set() const
+{
+	return m_descriptorSet;
+}
+
+void GTextureResource::destroy_impl()
+{
+	m_creatorOwner->destroy_texture_resource(this);
 }
 
 

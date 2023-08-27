@@ -348,8 +348,8 @@ std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::
 	
 	VkImage vkImage;
 	VmaAllocation allocation;
-
-	if (VK_SUCCESS == vmaCreateImage(allocator, imageCreateInfo, &dimg_allocinfo, &vkImage, &allocation, nullptr))
+	auto code = vmaCreateImage(allocator, imageCreateInfo, &dimg_allocinfo, &vkImage, &allocation, nullptr);
+	if (VK_SUCCESS == code)
 	{
 		image->m_inited = true;
 		image->m_allocationBlock = allocation;
@@ -368,6 +368,11 @@ std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::
 IGVulkanDevice* GVulkanLogicalDevice::get_owner() noexcept
 {
 	return m_owner;
+}
+
+ITransferOperations* GVulkanLogicalDevice::get_transfer_operation()
+{
+	return m_transferOps.get();
 }
 
 std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> GVulkanLogicalDevice::get_wait_and_begin_transfer_cmd()
@@ -415,7 +420,7 @@ bool GVulkanLogicalDevice::create_vma_allocator()
 	vulkanFunctions.vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges;
 	vulkanFunctions.vkFreeMemory = vkFreeMemory;
 	vulkanFunctions.vkGetBufferMemoryRequirements = vkGetBufferMemoryRequirements;
-	vulkanFunctions.vkGetBufferMemoryRequirements2KHR = vkGetBufferMemoryRequirements2KHR;
+	vulkanFunctions.vkGetBufferMemoryRequirements2KHR = vkGetBufferMemoryRequirements2;
 	vulkanFunctions.vkGetDeviceBufferMemoryRequirements = vkGetDeviceBufferMemoryRequirements;
 	vulkanFunctions.vkGetDeviceImageMemoryRequirements = vkGetDeviceImageMemoryRequirements;
 	vulkanFunctions.vkGetImageMemoryRequirements = vkGetImageMemoryRequirements;

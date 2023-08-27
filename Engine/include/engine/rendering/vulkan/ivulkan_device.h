@@ -49,7 +49,6 @@ public:
 	virtual void destroy_semaphore(GVulkanSemaphore* semaphore) = 0;
 
 	virtual void execute_cmd_from_main(GVulkanCommandBuffer* buff, const VkSubmitInfo* inf, GVulkanFence* fence) = 0;
-
 private:
 };
 

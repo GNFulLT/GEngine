@@ -27,7 +27,7 @@ GImage_Descriptor* STBImageLoader::load(std::string_view path)
 	img->channelCount = texChannels;
 	img->width = texWidth;
 	img->height = texHeight;
-	img->format = VK_FORMAT_R8G8B8A8_SRGB;
+	img->format = texChannels == 4 ? VK_FORMAT_B8G8R8A8_SRGB : VK_FORMAT_B8G8R8_SRGB;
 	img->pixels = (uint8_t*)pixels;
 	img->imageType = GIMAGETYPE_2D;
 	return img;

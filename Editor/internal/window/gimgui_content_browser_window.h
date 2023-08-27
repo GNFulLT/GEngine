@@ -1,19 +1,19 @@
-#ifndef GIMGUI_VIEWPORT_WINDOW_H
-#define GIMGUI_VIEWPORT_WINDOW_H
+#ifndef GIMGUI_CONTENT_BROWSER_WINDOW_H
+#define GIMGUI_CONTENT_BROWSER_WINDOW_H
 
 #include "editor/igimgui_window_impl.h"
 
 #include <string>
 class IGVulkanViewport;
 class GImGuiWindowStorage;
+class IGTextureResource;
 
-class GImGuiViewportWindow : public IGImGuiWindowImpl
+#include "public/core/templates/shared_ptr.h"
+
+class GImGuiContentBrowserWindow : public IGImGuiWindowImpl
 {
 public:
-	GImGuiViewportWindow();
-
-	void set_the_viewport(IGVulkanViewport* viewport);
-	
+	GImGuiContentBrowserWindow();
 	// Inherited via IGImGuiWindowImpl
 	virtual bool init() override;
 	virtual void set_storage(GImGuiWindowStorage* storage) override;
@@ -22,13 +22,12 @@ public:
 	virtual void on_resize() override;
 	virtual void on_data_update() override;
 	virtual const char* get_window_name() override;
+
 	virtual void destroy() override;
+
 private:
 	std::string m_name;
-	GImGuiWindowStorage* m_storage;
-	IGVulkanViewport* m_viewport;
-
-	bool m_initedTheViewportFirstTime;
+	GSharedPtr<IGTextureResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> m_textIconResource;
 };
 
-#endif // GIMGUI_VIEWPORT_WINDOW_H
+#endif // GIMGUI_CONTENT_BROWSER_WINDOW_H

@@ -8,11 +8,16 @@ class IGVulkanLogicalDevice;
 class IVulkanImage;
 class IGVulkanSamplerCreator;
 class IGVulkanSampler;
+class IGVulkanDescriptorCreator;
+class IGVulkanDescriptorSet;
+
+class GResourceManager;
 class GTextureResource : public IGTextureResource
 {
+	friend class GResourceManager;
 public:
 	~GTextureResource();
-	GTextureResource(std::string_view filePath,IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator);
+	GTextureResource(std::string_view filePath,IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator, IGVulkanDescriptorCreator* descriptorCreator);
 	// If system is ready for load operation. This method will be called and ask the resource if there is any internal things prepare them and if u are ready too
 	// return true and load implementation will be started
 
@@ -35,6 +40,9 @@ public:
 
 	virtual std::string_view get_resource_path() const override;
 
+	virtual IGVulkanDescriptorSet* get_descriptor_set() const override;
+
+	virtual void destroy_impl() override;
 private:
 	std::string m_filePath;
 	IGVulkanLogicalDevice* m_boundedDevice;
@@ -44,6 +52,8 @@ private:
 
 	IGVulkanSamplerCreator* m_samplerCreator;
 	IGVulkanSampler* m_inUsageSampler;
+	IGVulkanDescriptorCreator* m_descriptorCreator;
+	IGVulkanDescriptorSet* m_descriptorSet;
 };
 
 #endif // GTEXTURE_RESOURCE_H
