@@ -80,6 +80,7 @@ public:
 
 	virtual void destroy_impl() = 0;
 
+	RESOURCE_LOADING_STATE get_resource_state();
 protected:
 	// Created by :
 	IGResourceManager* m_creatorOwner;

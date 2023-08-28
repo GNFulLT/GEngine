@@ -15,6 +15,7 @@
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
 #include "internal/engine/rendering/vulkan/gvulkan_offscreen_viewport.h"
+#include "internal/engine/manager/ginjection_manager.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -230,6 +231,12 @@ void GEngine::init(GApplicationImpl* impl)
 		s_logger->log_c("GEngine", "Unknown error occured while initializing GLFW. Engine shutdown");
 		return;
 	}
+
+	GInjectManagerHelper help;
+
+	help.add_manager_spec(ENGINE_MANAGER_WINDOW,(void*)&m_window->get_window_props());
+
+	m_impl->inject_managers(&help);
 
 	s_logger->log_d("GEngine","Beginning to initialize window");
 

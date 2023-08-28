@@ -4,10 +4,14 @@
 #include "public/core/templates/unordered_dense.h"
 #include "internal/gimgui_window.h"
 #include "internal/gimgui_menu.h"
+#include "public/core/templates/shared_ptr.h"
 
 #include <mutex>
 #include <string>
 #include <vector>
+
+class IGTextureResource;
+class Window;
 
 class ImGuiWindowManager
 {
@@ -51,6 +55,20 @@ private:
 	uint64_t m_windowId = 0;
 
 	std::mutex m_windowCreationMutex;
+
+
+	float m_buttonWidth = 40.f;
+	float m_leftGap = 20.f;
+	float m_leftAlignmentForId = 0;
+	float m_topAlignmentForId = 0;
+
+
+	GSharedPtr<IGTextureResource> m_smallBiggerTexture;
+	GSharedPtr<IGTextureResource> m_minusTexture;
+	GSharedPtr<IGTextureResource> m_xTexture;
+	GSharedPtr<IGTextureResource> m_editorIcon;
+
+	Window* m_window;
 };
 
 #endif // IMGUI_WINDOW_MANAGER_H

@@ -17,6 +17,8 @@ public:
 	
 	virtual void destroy() override;
 	
+	virtual void inject_managers(IInjectManagerHelper* helper) override;
+
 	virtual bool before_update() override;
 
 	virtual void update() override;

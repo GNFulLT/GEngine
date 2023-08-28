@@ -23,3 +23,9 @@
 [submodule "ThirdParty/glslang"]
 	path = ThirdParty/glslang
 	url = https://github.com/KhronosGroup/glslang.git
+[submodule "ThirdParty/spirv-tools"]
+	path = ThirdParty/spirv-tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools.git
+[submodule "ThirdParty/spirv-headers"]
+	path = ThirdParty/spirv-headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git

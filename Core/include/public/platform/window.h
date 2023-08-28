@@ -59,4 +59,8 @@ protected:
 
 
 extern CORE_API Window* create_default_window();
+
+extern CORE_API GSharedPtr<WindowProps> get_default_props();
+
+extern CORE_API Window* create_with_props(GSharedPtr<WindowProps> props);
 #endif // WINDOW_H

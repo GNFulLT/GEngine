@@ -63,15 +63,21 @@ std::expected<GResource*, RESOURCE_ERROR> GResourceManager::create_resource(std:
 
 }
 
-std::expected<IGTextureResource*, RESOURCE_ERROR> GResourceManager::create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator)
+std::expected<IGTextureResource*, RESOURCE_ERROR> GResourceManager::create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator,int format)
 {
 	if (name.empty() || groupName.empty())
 		return std::unexpected(RESOURCE_ERROR::RESOURCE_ERROR_NAME_OR_GROUP_NAME_IS_NULL);
 
 	m_logger->log_d(fmt::format("A Texture resource created by name : [{}]{}", groupName, name).c_str());
-
-
-	GTextureResource* res = new GTextureResource(filePath,m_defaultImageLoader,GVulkanLogicalDevice::get_instance(),m_defaultSamplerCreator, descriptorCreator);
+	GTextureResource* res; 
+	if (format != -1)
+	{
+		res = new GTextureResource(filePath, m_defaultImageLoader, GVulkanLogicalDevice::get_instance(), m_defaultSamplerCreator, descriptorCreator,format);
+	}
+	else
+	{
+		res = new GTextureResource(filePath, m_defaultImageLoader, GVulkanLogicalDevice::get_instance(), m_defaultSamplerCreator, descriptorCreator);
+	}
 	res->m_creatorOwner = this;
 	return res;
 }

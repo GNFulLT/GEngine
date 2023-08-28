@@ -20,6 +20,7 @@ struct WindowProps
 	uint32_t posy;
 	std::string title;
 	WINDOW_MODE mode = WINDOW_MODE_WINDOWED;
+	bool hasCaption = true;
 	bool isVisible = true;
 };
 

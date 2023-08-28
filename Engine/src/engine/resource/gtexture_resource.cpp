@@ -49,7 +49,7 @@ GTextureResource::~GTextureResource()
 	}
 }
 
-GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator, IGVulkanDescriptorCreator* descriptorCreator)
+GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator, IGVulkanDescriptorCreator* descriptorCreator,int format)
 {	
 	m_filePath = filePath;
 	m_loader = loader;
@@ -59,6 +59,7 @@ GTextureResource::GTextureResource(std::string_view filePath, IImageLoader* load
 	m_inUsageSampler = nullptr;
 	m_descriptorCreator = descriptorCreator;
 	m_descriptorSet = nullptr;
+	m_dedicatedFormat = format;
 }
 
 RESOURCE_INIT_CODE GTextureResource::prepare_impl()
@@ -66,7 +67,7 @@ RESOURCE_INIT_CODE GTextureResource::prepare_impl()
 	if (m_loader == nullptr)
 		return RESOURCE_INIT_CODE::RESOURCE_INIT_CODE_UNKNOWN_EX;
 
-	m_imageDescriptor = m_loader->load(m_filePath);
+	m_imageDescriptor = m_loader->load(m_filePath,m_dedicatedFormat);
 	
 	if (m_imageDescriptor == nullptr)
 		return RESOURCE_INIT_CODE::RESOURCE_INIT_CODE_FILE_NOT_FOUND;

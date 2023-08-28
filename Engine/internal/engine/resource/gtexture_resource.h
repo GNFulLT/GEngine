@@ -17,7 +17,7 @@ class GTextureResource : public IGTextureResource
 	friend class GResourceManager;
 public:
 	~GTextureResource();
-	GTextureResource(std::string_view filePath,IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator, IGVulkanDescriptorCreator* descriptorCreator);
+	GTextureResource(std::string_view filePath,IImageLoader* loader, IGVulkanLogicalDevice* parentDevice, IGVulkanSamplerCreator* samplerCreator, IGVulkanDescriptorCreator* descriptorCreator,int format = -1);
 	// If system is ready for load operation. This method will be called and ask the resource if there is any internal things prepare them and if u are ready too
 	// return true and load implementation will be started
 
@@ -54,6 +54,8 @@ private:
 	IGVulkanSampler* m_inUsageSampler;
 	IGVulkanDescriptorCreator* m_descriptorCreator;
 	IGVulkanDescriptorSet* m_descriptorSet;
+
+	int m_dedicatedFormat;
 };
 
 #endif // GTEXTURE_RESOURCE_H

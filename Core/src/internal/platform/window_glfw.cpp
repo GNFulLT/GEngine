@@ -25,6 +25,9 @@ uint32_t WindowGLFW::init()
 	// Vulkan
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+	if(!m_props->hasCaption)
+		glfwWindowHint(GLFW_DECORATED,GLFW_FALSE);
+	
 	switch (m_props->mode)
 	{
 	case WINDOW_MODE_WINDOWED:
@@ -54,10 +57,14 @@ uint32_t WindowGLFW::init()
 		((WindowGLFW*)glfwGetWindowUserPointer(window))->on_move(xpos, ypos);
 	};
 
+	auto maximizeCallback = [](GLFWwindow* window, int maximized)
+	{
+		((WindowGLFW*)glfwGetWindowUserPointer(window))->on_maximized(maximized);
+	};
 	glfwSetWindowIconifyCallback(m_window, iconifyCallback);
 	glfwSetWindowSizeCallback(m_window, resizeCallback);
 	glfwSetWindowPosCallback(m_window,moveCallback);
-
+	glfwSetWindowMaximizeCallback(m_window, maximizeCallback);
 	return 0;
 }
 
@@ -114,6 +121,18 @@ void WindowGLFW::on_move(int x, int y)
 	m_props->posy = y;
 }
 
+void WindowGLFW::on_maximized(int maximized)
+{
+	if (maximized == GLFW_TRUE)
+	{
+		m_props->mode = WINDOW_MODE_WINDOWED_FULLSCREEN;
+	}
+	else
+	{
+		m_props->mode = WINDOW_MODE_WINDOWED;
+	}
+}
+
 void WindowGLFW::resize(uint32_t x, uint32_t y)
 {
 	glfwSetWindowSize(m_window,x, y);
@@ -127,11 +146,13 @@ void WindowGLFW::move_to(uint32_t x, uint32_t y)
 void WindowGLFW::maximize()
 {
 	glfwMaximizeWindow(m_window);
+	m_props->mode = WINDOW_MODE_WINDOWED_FULLSCREEN;
 }
 
 void WindowGLFW::minimize()
 {
 	glfwIconifyWindow(m_window);
+	m_props->mode = WINDOW_MODE_MINIMIZED;
 }
 
 void WindowGLFW::restore()

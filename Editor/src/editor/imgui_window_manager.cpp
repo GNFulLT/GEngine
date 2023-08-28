@@ -1,8 +1,16 @@
-#include "internal/imgui_window_manager.h"
+﻿#include "internal/imgui_window_manager.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
-
+#include "engine/globals.h"
+#include "engine/imanager_table.h"
+#include "editor/editor_application_impl.h"
+#include "engine/gengine.h"
+#include "engine/manager/igresource_manager.h"
+#include "internal/rendering/vulkan/gimgui_descriptor_creator.h"
+#include "engine/resource/igtexture_resource.h"
+#include "engine/rendering/vulkan/ivulkan_descriptor.h"
+#include "public/platform/window.h"
 ImGuiWindowManager::~ImGuiWindowManager()
 {
 	int a = 5;
@@ -53,12 +61,55 @@ bool ImGuiWindowManager::create_imgui_menu(IGImGuiMenuImpl* impl)
 
 bool ImGuiWindowManager::init()
 {
-	
+	auto table = EditorApplicationImpl::get_instance()->m_engine->get_manager_table();
+	auto resourceManager = (GSharedPtr<IGResourceManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE);
+	m_window = (*(GSharedPtr<Window>*)table->get_engine_manager_managed(ENGINE_MANAGER_WINDOW)).get();
+	auto res  = (*resourceManager)->create_texture_resource("MaximizeMinimize","EditorResources","assets/squares.png",EditorApplicationImpl::get_instance()->get_descriptor_creator());
+	auto res2 = (*resourceManager)->create_texture_resource("Minus", "EditorResources", "assets/minus.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
+	auto res3 = (*resourceManager)->create_texture_resource("XIcon", "EditorResources", "assets/x.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
+	auto res4 = (*resourceManager)->create_texture_resource("EditorIcon", "EditorResources", "assets/GEngine.png", EditorApplicationImpl::get_instance()->get_descriptor_creator(),43);
+	if (res.has_value())
+	{
+		m_smallBiggerTexture = GSharedPtr<IGTextureResource>(res.value());
+		m_smallBiggerTexture->load();
+	}
+	if (res2.has_value())
+	{
+		m_minusTexture = GSharedPtr<IGTextureResource>(res2.value());
+		m_minusTexture->load();
+	}
+	if (res3.has_value())
+	{
+		m_xTexture = GSharedPtr<IGTextureResource>(res3.value());
+		m_xTexture->load();
+	}
+	if (res4.has_value())
+	{
+		m_editorIcon = GSharedPtr<IGTextureResource>(res4.value());
+		m_editorIcon->load();
+	}
 	return true;
 }
 
 void ImGuiWindowManager::destroy()
 {
+	if (m_smallBiggerTexture.is_valid())
+	{
+		m_smallBiggerTexture->destroy();
+	}
+	if (m_xTexture.is_valid())
+	{
+		m_xTexture->destroy();
+	}
+	if (m_minusTexture.is_valid())
+	{
+		m_minusTexture->destroy();
+	}
+	if (m_editorIcon.is_valid())
+	{
+		m_editorIcon->destroy();
+	}
+
 	for (int i = 0; i<m_menuVector.size(); i++)
 	{
 		m_menuVector[i]->destroy();
@@ -124,8 +175,8 @@ void ImGuiWindowManager::render_main_dockspace()
 	ImGui::SetNextWindowViewport(viewport->ID);
 	ImGui::Begin("DockSpace", nullptr, window_flags);
 	ImGui::PopStyleVar(2);
-	ImGui::DockSpace(m_dock_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_::ImGuiDockNodeFlags_NoResize
-			| ImGuiDockNodeFlags_PassthruCentralNode);
+	ImGui::DockSpace(m_dock_id, ImVec2(0.0f, 0.0f),
+			ImGuiDockNodeFlags_PassthruCentralNode);
 
 	ImGui::End();
 }
@@ -196,8 +247,113 @@ void ImGuiWindowManager::build_nodes()
 
 void ImGuiWindowManager::draw_main_menu_bar()
 {
+	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x,16.f));
 	if (ImGui::BeginMainMenuBar())
 	{
+		// First draw the icon
+
+		ImGui::SameLine(ImGui::GetWindowSize().x - (19*m_buttonWidth)/6);
+		ImGui::SetCursorPosY(0.f);
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, {0,0,0,0});
+		// Right Icons
+		// Draw minimize button
+		if (m_minusTexture.is_valid() && m_minusTexture->get_resource_state() == RESOURCE_LOADING_STATE_LOADED)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
+			if (ImGui::ImageButton(m_minusTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
+			{
+
+			}
+			ImGui::PopStyleVar();
+
+		}
+		else
+		{
+			if (ImGui::Button("-", { m_buttonWidth,0 }))
+			{
+
+			}
+		}
+	
+		ImGui::SetCursorPosY(0.f);
+		if (m_smallBiggerTexture.is_valid() && m_smallBiggerTexture->get_resource_state() == RESOURCE_LOADING_STATE_LOADED)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
+			if (ImGui::ImageButton(m_smallBiggerTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
+			{
+				if (m_window->get_window_mode() == WINDOW_MODE_WINDOWED_FULLSCREEN)
+				{
+					m_window->restore();
+				}
+				else if(m_window->get_window_mode() == WINDOW_MODE_WINDOWED)
+				{
+					m_window->maximize();
+				}
+				else
+				{
+					int a = 5;
+				}
+			}
+			ImGui::PopStyleVar();
+		}
+		else
+		{
+			if (ImGui::Button("A", { m_buttonWidth,0 }))
+			{
+				if (m_window->get_window_mode() == WINDOW_MODE_WINDOWED_FULLSCREEN)
+				{
+					m_window->restore();
+				}
+				else if (m_window->get_window_mode() == WINDOW_MODE_WINDOWED)
+				{
+					m_window->maximize();
+				}
+				else
+				{
+					int a = 5;
+				}
+			}
+		}
+		ImGui::SetCursorPosY(0.f);
+		if (m_xTexture.is_valid() && m_xTexture->get_resource_state() == RESOURCE_LOADING_STATE_LOADED)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
+			if (ImGui::ImageButton(m_xTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
+			{
+				request_exit();
+			}
+			ImGui::PopStyleVar();
+		}
+		else
+		{
+			if (ImGui::Button("X", { m_buttonWidth,0 }))
+			{
+				request_exit();
+			}
+		}
+
+		
+		
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar();
+		int gap = 0;
+		if (m_editorIcon.is_valid() && m_editorIcon->get_resource_state() == RESOURCE_LOADING_STATE_LOADED)
+		{
+			ImGui::SameLine(-32.f);
+			ImGui::Spacing();
+			ImGui::SetCursorPosY(-32.f);
+			
+			ImGui::Image(m_editorIcon->get_descriptor_set()->get_vk_descriptor(), {162.f,129.f});
+
+		}
+		
+
+
+		ImGui::Spacing();
+		ImGui::SetCursorPosY(24.f);
+
 		for (int i = 0; i < m_menuVector.size(); i++)
 		{
 			if (m_menuVector[i]->need_render())
@@ -207,4 +363,5 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		}
 		ImGui::EndMainMenuBar();
 	}
+	ImGui::PopStyleVar();
 }

@@ -13,7 +13,8 @@
 #include "engine/io/iowning_glogger.h"
 #include "gobject/gobject.h"
 #include "internal/rendering/vulkan/gimgui_descriptor_creator.h"
-
+#include "engine/manager/iinject_manager_helper.h"
+#include "public/platform/window_props.h"
 
 EditorApplicationImpl* EditorApplicationImpl::get_instance()
 {
@@ -30,6 +31,13 @@ void EditorApplicationImpl::destroy()
 
     delete m_imguiDescriptorCreator;
 
+}
+
+void EditorApplicationImpl::inject_managers(IInjectManagerHelper* helper)
+{
+    auto prop = (WindowProps*)helper->get_manager_spec(ENGINE_MANAGER_WINDOW);
+    if(prop != nullptr)
+        prop->hasCaption = false;
 }
 
 bool EditorApplicationImpl::before_update()

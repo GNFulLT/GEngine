@@ -121,3 +121,8 @@ void IResource::destroy()
 
 	unload();
 }
+
+RESOURCE_LOADING_STATE IResource::get_resource_state()
+{
+	return m_loadingState.load();
+}

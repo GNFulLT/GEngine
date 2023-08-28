@@ -68,6 +68,7 @@ private:
 	void on_resize(int width, int height);
 	void on_iconify_changed(int iconified);
 	void on_move(int x, int y);
+	void on_maximized(int maximized);
 
 };
 

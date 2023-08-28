@@ -12,7 +12,7 @@ public:
 
 	virtual std::string_view get_loader_name() = 0;
 
-	virtual GImage_Descriptor* load(std::string_view path) = 0;
+	virtual GImage_Descriptor* load(std::string_view path,int dedicatedFormat) = 0;
 
 	virtual void unload(GImage_Descriptor* img) = 0;
 private:

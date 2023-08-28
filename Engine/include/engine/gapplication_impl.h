@@ -4,6 +4,7 @@
 #include "GEngine_EXPORT.h"
 
 class GEngine;
+class IInjectManagerHelper;
 
 class ENGINE_API GApplicationImpl
 {
@@ -25,6 +26,8 @@ public:
 	virtual bool init(GEngine* engine) = 0;
 
 	virtual void destroy() = 0;
+
+	virtual void inject_managers(IInjectManagerHelper* helper) {}
 private:
 };
 
