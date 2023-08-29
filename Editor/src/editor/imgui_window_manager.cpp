@@ -17,7 +17,7 @@
 #include <spdlog/fmt/fmt.h>
 #include "internal/window/gimgui_texteditor_window.h"
 #include "internal/utils.h"
-
+#include "imgui/imgui_internal.h"
 ImGuiWindowManager::~ImGuiWindowManager()
 {
 	int a = 5;
@@ -26,8 +26,11 @@ ImGuiWindowManager::~ImGuiWindowManager()
 bool ImGuiWindowManager::create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir)
 {
 	std::lock_guard guard(m_windowCreationMutex);
-	if (auto menu = m_windowMap.find(impl->get_window_name()); menu != m_windowMap.end())
+	if (auto menu = m_windowMap.find(GImGuiWindow::generate_id_for_impl(impl)); menu != m_windowMap.end())
+	{
+		ImGui::SetWindowFocus(menu->second->get_window_name());
 		return false;
+	}
 
 	GImGuiWindow* window = new GImGuiWindow(impl);
 	bool inited = window->init();

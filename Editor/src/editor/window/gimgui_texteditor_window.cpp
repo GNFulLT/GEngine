@@ -8,6 +8,8 @@
 #include <cmath>
 #include <fstream>
 #include <streambuf>
+#include "editor/editor_application_impl.h"
+#include "engine/io/iowning_glogger.h"
 
 GImGuiTextEditorWindow::GImGuiTextEditorWindow(std::filesystem::path path,FILE_TYPE type,bool isReadOnly)
 {
@@ -87,6 +89,26 @@ bool GImGuiTextEditorWindow::need_render()
 void GImGuiTextEditorWindow::render()
 {
 	m_editor.Render(m_name.c_str());
+	
+	ImGuiIO& io = ImGui::GetIO();
+	auto shift = io.KeyShift;
+	auto ctrl = io.ConfigMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
+	auto alt = io.ConfigMacOSXBehaviors ? io.KeyCtrl : io.KeyAlt;
+
+	if (ctrl && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S),false))
+	{
+		if (!m_firstSavePress && m_editor.GetEditState())
+		{
+			EditorApplicationImpl::get_instance()->get_editor_logger()->log_d("Pressed save");
+			m_firstSavePress = true;
+			m_editor.Saved();
+		}
+	}
+	else
+	{
+		m_firstSavePress = false;
+
+	}
 }
 
 void GImGuiTextEditorWindow::on_resize()
@@ -1497,6 +1519,15 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 	m_editState = true;
 	Colorize(coord.mLine - 1, 3);
 	EnsureCursorVisible();
+}
+
+void TextEditor::Saved()
+{
+	m_editState = false;
+	for (int i = 0; i < mUndoBuffer.size(); i++)
+	{
+		mUndoBuffer[i].m_editState = true;
+	}
 }
 
 void TextEditor::SetReadOnly(bool aValue)

@@ -25,6 +25,8 @@ public:
 
 	bool need_render();
 
+	static std::string generate_id_for_impl(IGImGuiWindowImpl* impl);
+
 	const char* get_window_name();
 
 	void destroy();

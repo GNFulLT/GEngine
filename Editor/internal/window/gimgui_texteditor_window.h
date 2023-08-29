@@ -217,6 +217,8 @@ public:
 	{
 		return m_editState;
 	}
+	void Saved();
+
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() const { return mReadOnly; }
 	bool IsTextChanged() const { return mTextChanged; }
@@ -432,6 +434,8 @@ private:
 	std::filesystem::path m_filePath;
 	bool m_saved = true;
 	std::string m_fileFullPath;
+
+	bool m_firstSavePress = false;
 };
 
 #endif // GIMGUI_TEXTEDITOR_WINDOW_H

@@ -63,6 +63,21 @@ bool GImGuiWindow::need_render()
 	return m_impl->need_render();
 }
 
+std::string GImGuiWindow::generate_id_for_impl(IGImGuiWindowImpl* impl)
+{
+	std::string m_id = impl->get_window_name();
+	if (impl->can_open_multiple())
+	{
+		if (impl->get_window_id() == nullptr)
+		{
+			return m_id;
+		}
+		m_id += "##";
+		m_id += impl->get_window_id();
+	}
+	return m_id;
+}
+
 const char* GImGuiWindow::get_window_name()
 {
 	return m_id.c_str();
