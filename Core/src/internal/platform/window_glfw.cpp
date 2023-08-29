@@ -1,5 +1,6 @@
 #include "internal/platform/window_glfw.h"
 #include "public/core/templates/memnewd.h"
+
 WINDOW_MODE WindowGLFW::get_window_mode() const noexcept
 {
 	return m_props->mode;
@@ -39,6 +40,8 @@ uint32_t WindowGLFW::init()
 		break;
 	}
 
+	m_mouseManager = std::unique_ptr<GLFWMouseManager>(new GLFWMouseManager(m_window));
+
 	glfwSetWindowUserPointer(m_window, this);
 
 	auto resizeCallback = [](GLFWwindow* window, int width, int height) {
@@ -61,10 +64,23 @@ uint32_t WindowGLFW::init()
 	{
 		((WindowGLFW*)glfwGetWindowUserPointer(window))->on_maximized(maximized);
 	};
+
+	auto mouseMove = [](GLFWwindow* window, double x,double y)
+	{
+		((WindowGLFW*)glfwGetWindowUserPointer(window))->on_mouse_move(x,y);
+	};
+
+	auto mouseClick = [](GLFWwindow* window, int button, int action, int mods)
+	{
+		((WindowGLFW*)glfwGetWindowUserPointer(window))->on_mouse_click(button,action,mods);
+	};
+
 	glfwSetWindowIconifyCallback(m_window, iconifyCallback);
 	glfwSetWindowSizeCallback(m_window, resizeCallback);
 	glfwSetWindowPosCallback(m_window,moveCallback);
 	glfwSetWindowMaximizeCallback(m_window, maximizeCallback);
+	glfwSetCursorPosCallback(m_window, mouseMove);
+	glfwSetMouseButtonCallback(m_window, mouseClick);
 	return 0;
 }
 
@@ -81,6 +97,16 @@ const WindowProps& WindowGLFW::get_window_props() const noexcept
 bool WindowGLFW::wants_close() const
 {
 	return glfwWindowShouldClose(m_window);
+}
+
+GLFWMouseManager* WindowGLFW::get_glfw_mouse()
+{
+	return m_mouseManager.get();
+}
+
+IMouseManager* WindowGLFW::get_mouse_manager() const
+{
+	return m_mouseManager.get();
 }
 
 Window* WindowGLFW::create_default_window()
@@ -133,6 +159,16 @@ void WindowGLFW::on_maximized(int maximized)
 	}
 }
 
+void WindowGLFW::on_mouse_move(int x, int y)
+{
+	m_mouseManager->on_mouse_move(x, y);
+}
+
+void WindowGLFW::on_mouse_click(int button, int action, int mods)
+{
+	m_mouseManager->on_mouse_click(button, action, mods);
+}
+
 void WindowGLFW::resize(uint32_t x, uint32_t y)
 {
 	glfwSetWindowSize(m_window,x, y);
@@ -141,6 +177,14 @@ void WindowGLFW::resize(uint32_t x, uint32_t y)
 void WindowGLFW::move_to(uint32_t x, uint32_t y)
 {
 	glfwSetWindowPos(m_window, x, y);
+}
+
+void WindowGLFW::move_by(uint32_t x, uint32_t y)
+{
+	int w_posx, w_posy;
+	glfwGetWindowPos(m_window, &w_posx, &w_posy);
+	glfwSetWindowPos(m_window, w_posx + x, w_posy + y);
+
 }
 
 void WindowGLFW::maximize()

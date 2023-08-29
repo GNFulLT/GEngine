@@ -1,0 +1,10 @@
+#ifndef FILE_TYPE_H
+#define FILE_TYPE_H
+
+enum FILE_TYPE
+{
+	FILE_TYPE_FOLDER,
+	FILE_TYPE_TXT
+};
+
+#endif // FILE_TYPE_H

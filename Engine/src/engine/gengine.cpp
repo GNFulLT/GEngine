@@ -26,7 +26,7 @@ static uint32_t SwapchainImageCount = 3;
 static GVulkanDevice* s_device;
 static GLoggerManager* s_logger;
 static GResourceManager* s_resourceManager;
-
+static GEngine* s_engine;
 GEngine::GEngine()
 {
 	m_window = create_default_window();
@@ -343,7 +343,13 @@ void GEngine::destroy_offscreen_viewport(IGVulkanViewport* port)
 	delete port;
 }
 
+GEngine* GEngine::get_instance()
+{
+	return s_engine;
+}
+
 ENGINE_API GEngine* create_the_engine()
 {
-	return new GEngine();
+	s_engine = new GEngine();
+	return s_engine;
 }

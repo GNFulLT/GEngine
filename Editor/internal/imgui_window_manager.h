@@ -5,6 +5,7 @@
 #include "internal/gimgui_window.h"
 #include "internal/gimgui_menu.h"
 #include "public/core/templates/shared_ptr.h"
+#include "public/platform/imouse_manager.h"
 
 #include <mutex>
 #include <string>
@@ -45,10 +46,11 @@ private:
 	uint32_t m_dock_id;
 
 	// Nodes
-	uint32_t dock_id_left;
+	uint32_t dock_id_left_top;
 	uint32_t dock_id_right;
 	uint32_t dock_id_bottom;
 	uint32_t dock_id_middle;
+	uint32_t dock_id_left_bottom;
 
 	bool m_isDockDirty = true;
 
@@ -69,6 +71,13 @@ private:
 	GSharedPtr<IGTextureResource> m_editorIcon;
 
 	Window* m_window;
+	bool m_isDragging = false;
+	bool m_isClickedOutside = false;
+
+	int cp_x = 0;
+	int cp_y = 0 ;
+	int offset_cpx = 0 ;
+	int offset_cpy = 0;
 };
 
 #endif // IMGUI_WINDOW_MANAGER_H

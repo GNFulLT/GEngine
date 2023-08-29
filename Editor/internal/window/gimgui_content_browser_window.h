@@ -4,12 +4,15 @@
 #include "editor/igimgui_window_impl.h"
 
 #include <string>
+#include <filesystem>
+
 class IGVulkanViewport;
 class GImGuiWindowStorage;
 class IGTextureResource;
 
 #include "public/core/templates/shared_ptr.h"
 
+class IMouseManager;
 class GImGuiContentBrowserWindow : public IGImGuiWindowImpl
 {
 public:
@@ -26,8 +29,14 @@ public:
 	virtual void destroy() override;
 
 private:
+	GImGuiWindowStorage* m_storage;
+	std::filesystem::path m_currentPath;
+	std::filesystem::path m_rightClickedFile;
+
 	std::string m_name;
-	GSharedPtr<IGTextureResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> m_textIconResource;
+	GSharedPtr<IGTextureResource> m_folderIcon;
+	GSharedPtr<IGTextureResource> m_txtIcon;
+	IMouseManager* m_mouse;
 };
 
 #endif // GIMGUI_CONTENT_BROWSER_WINDOW_H

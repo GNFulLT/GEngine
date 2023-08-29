@@ -11,6 +11,11 @@
 #include "engine/resource/igtexture_resource.h"
 #include "engine/rendering/vulkan/ivulkan_descriptor.h"
 #include "public/platform/window.h"
+#include "public/platform/imouse_manager.h"
+#include "editor/editor_application_impl.h"
+#include "engine/io/iowning_glogger.h"
+#include <spdlog/fmt/fmt.h>
+
 ImGuiWindowManager::~ImGuiWindowManager()
 {
 	int a = 5;
@@ -192,19 +197,21 @@ void ImGuiWindowManager::build_nodes()
 	
 	
 		dock_id_right = ImGui::DockBuilderSplitNode(m_dock_id, ImGuiDir_Right,
-			0.3f, nullptr, &dock_id_left);
+			0.3f, nullptr, &dock_id_left_top);
 	
 	
-		dock_id_left = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Left,
-			0.2f, nullptr, &dock_id_middle);
+		dock_id_left_top = ImGui::DockBuilderSplitNode(dock_id_left_top, ImGuiDir_Left,
+			0.3f, nullptr, &dock_id_middle);
 		
+		dock_id_left_top = ImGui::DockBuilderSplitNode(dock_id_left_top, ImGuiDir_Up,0.6,nullptr,&dock_id_left_bottom);
+
 		
 		dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_middle, ImGuiDir_Down,
 			0.2f, nullptr, &dock_id_middle);
 
 		
 		ImGui::DockBuilderDockWindow("Dear ImGui Demo", dock_id_right);
-		ImGui::DockBuilderDockWindow("Helloooo", dock_id_left);
+		ImGui::DockBuilderDockWindow("Helloooo", dock_id_left_top);
 		ImGui::DockBuilderDockWindow("HellooooB", dock_id_bottom);
 
 		for (const auto& win : m_windowVector)
@@ -218,7 +225,7 @@ void ImGuiWindowManager::build_nodes()
 				case GIMGUIWINDOWDIR_NONE:
 					break;
 				case GIMGUIWINDOWDIR_LEFT:
-					dirId = dock_id_left;
+					dirId = dock_id_left_top;
 					break;
 				case GIMGUIWINDOWDIR_RIGHT:
 					dirId = dock_id_right;
@@ -247,12 +254,25 @@ void ImGuiWindowManager::build_nodes()
 
 void ImGuiWindowManager::draw_main_menu_bar()
 {
+	IMouseManager* mouse = m_window->get_mouse_manager();
+	bool isClicking = mouse->get_mouse_button_state(MOUSE_BUTTON_LEFT);
+	bool isInsideMainBar = false;
+	auto pos = mouse->get_mouse_pos();
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x,16.f));
 	if (ImGui::BeginMainMenuBar())
 	{
+		auto windowSize = ImGui::GetWindowSize();
+		if (m_isDragging)
+		{
+			offset_cpx = pos.first - cp_x;
+			offset_cpy = pos.second - cp_y;
+		}
+		
 		// First draw the icon
 
-		ImGui::SameLine(ImGui::GetWindowSize().x - (19*m_buttonWidth)/6);
+		int buttonsBegin = ImGui::GetWindowSize().x - (19 * m_buttonWidth) / 6;
+
+		ImGui::SameLine(buttonsBegin);
 		ImGui::SetCursorPosY(0.f);
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 
@@ -264,7 +284,7 @@ void ImGuiWindowManager::draw_main_menu_bar()
 			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
 			if (ImGui::ImageButton(m_minusTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
 			{
-
+				isInsideMainBar = false;
 			}
 			ImGui::PopStyleVar();
 
@@ -273,7 +293,7 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		{
 			if (ImGui::Button("-", { m_buttonWidth,0 }))
 			{
-
+				isInsideMainBar = false;
 			}
 		}
 	
@@ -283,6 +303,8 @@ void ImGuiWindowManager::draw_main_menu_bar()
 			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
 			if (ImGui::ImageButton(m_smallBiggerTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
 			{
+				isInsideMainBar = false;
+
 				if (m_window->get_window_mode() == WINDOW_MODE_WINDOWED_FULLSCREEN)
 				{
 					m_window->restore();
@@ -302,6 +324,8 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		{
 			if (ImGui::Button("A", { m_buttonWidth,0 }))
 			{
+				isInsideMainBar = false;
+
 				if (m_window->get_window_mode() == WINDOW_MODE_WINDOWED_FULLSCREEN)
 				{
 					m_window->restore();
@@ -322,6 +346,8 @@ void ImGuiWindowManager::draw_main_menu_bar()
 			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
 			if (ImGui::ImageButton(m_xTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
 			{
+				isInsideMainBar = false;
+
 				request_exit();
 			}
 			ImGui::PopStyleVar();
@@ -330,6 +356,8 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		{
 			if (ImGui::Button("X", { m_buttonWidth,0 }))
 			{
+				isInsideMainBar = false;
+
 				request_exit();
 			}
 		}
@@ -353,6 +381,7 @@ void ImGuiWindowManager::draw_main_menu_bar()
 
 		ImGui::Spacing();
 		ImGui::SetCursorPosY(24.f);
+		int iconBegin = ImGui::GetCursorPosX();
 
 		for (int i = 0; i < m_menuVector.size(); i++)
 		{
@@ -361,7 +390,70 @@ void ImGuiWindowManager::draw_main_menu_bar()
 				m_menuVector[i]->render();
 			}
 		}
+
+		int yPos = ImGui::GetCursorPosY();
+
+
+		int lastMenu = ImGui::GetCursorPosX();
+
+		if (pos.first > iconBegin && pos.first < buttonsBegin)
+		{
+			if (pos.first > lastMenu && pos.first < windowSize.x)
+			{
+				isInsideMainBar = pos.second > 0.f && pos.second < windowSize.y;
+			}
+			else
+				isInsideMainBar = pos.second > 0.f && pos.second < 24.f;
+		}
+
+
 		ImGui::EndMainMenuBar();
 	}
 	ImGui::PopStyleVar();
+
+	// Movement
+
+	if (isClicking)
+	{
+		if (isInsideMainBar)
+		{
+
+			if (!m_isDragging)
+			{
+				if (!m_isClickedOutside)
+				{
+					cp_x = pos.first;
+					cp_y = pos.second;
+					m_isDragging = true;
+				}
+				// It is first clickig state just get the prev
+			
+			}
+			else
+			{
+				if (m_isDragging)
+				{
+					m_window->move_by(offset_cpx, offset_cpy);
+					offset_cpx = 0;
+					offset_cpy = 0;
+					cp_x += offset_cpx;
+					cp_y += offset_cpy;
+				}
+			}
+		}
+		else
+		{
+			m_isClickedOutside = true;
+		}
+
+	}
+	else
+	{
+		m_isClickedOutside = false;
+		m_isDragging = false;
+		offset_cpx = 0;
+		offset_cpy = 0;
+		cp_x = 0;
+		cp_y = 0;
+	}
 }

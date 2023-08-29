@@ -13,7 +13,6 @@ GOBJECT_DEFINE_MEMBER_METHOD("log_c", &GLoggerManager::log_c);
 GOBJECT_DEFINE_MEMBER_METHOD("log_i", &GLoggerManager::log_i);
 GOBJECT_DEFINE_MEMBER_METHOD("log_e", &GLoggerManager::log_e);
 GOBJECT_DEFINE_MEMBER_METHOD("log_w", &GLoggerManager::log_w);
-
 }
 
 

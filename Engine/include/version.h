@@ -22,6 +22,7 @@ struct VersionInfo
 	uint32_t major;
 	uint32_t minor;
 	uint32_t hex;
+	uint32_t vulkanVersion;
 };
 
 #endif // VERSION_H

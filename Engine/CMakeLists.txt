@@ -28,7 +28,11 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
  "src/engine/rendering/vulkan/vma_importer.cpp" "include/engine/rendering/vulkan/ivulkan_sampler.h" "include/engine/rendering/vulkan/ivulkan_sampler_creator.h"
  "internal/engine/rendering/vulkan/gvulkan_default_sampler_creator.h" "src/engine/rendering/vulkan/gvulkan_default_sampler_creator.cpp" "src/engine/rendering/vulkan/gvulkan_sampler.cpp"
  "internal/engine/rendering/vulkan/gvulkan_sampler.h" "internal/engine/rendering/vulkan/gvulkan_offscreen_viewport.h" "src/engine/rendering/vulkan/gvulkan_offscreen_viewport.cpp" 
- "include/engine/rendering/vulkan/ivulkan_descriptor_creator.h" "include/engine/rendering/vulkan/ivulkan_descriptor.h" "include/engine/manager/iinject_manager_helper.h" "internal/engine/manager/ginjection_manager.h" "src/engine/manager/ginjection_manager.cpp")
+ "include/engine/rendering/vulkan/ivulkan_descriptor_creator.h" "include/engine/rendering/vulkan/ivulkan_descriptor.h" "include/engine/manager/iinject_manager_helper.h" 
+ "internal/engine/manager/ginjection_manager.h" "src/engine/manager/ginjection_manager.cpp" "include/engine/shader/ispirv_shader.h" "include/engine/resource/igshader_resource.h" 
+ "include/engine/manager/igshader_manager.h" "internal/engine/manager/gshader_manager.h" "src/engine/manager/gshader_manager.cpp" "internal/engine/shader/spirv_shader_utils.h" "src/engine/utils.cpp"
+ "internal/engine/utils.h" "src/engine/shader/spirv_shader_utils.cpp" "internal/engine/resource/gshader_resource.h" "src/engine/resource/gshader_resource.cpp" "internal/engine/shader/gspirv_shader.h" 
+ "src/engine/shader/gspirv_shader.cpp")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -38,7 +42,7 @@ target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/"
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/simdjson/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spdlog/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vma/include")
-target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/")
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glslang/glslang/Include")
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../GObject" GOBJECT)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/volk" VOLK)
@@ -47,6 +51,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/simdjson" SIMDJSON)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spdlog" SPDLOG)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vma" VMA)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glslang" GLSLANG)
+
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-headers" SPIRV_HEADERS)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-tools" SPIRV-TOOLS)
 
@@ -60,7 +65,7 @@ target_link_libraries(GEngine_Engine PRIVATE GEngine_Core)
 target_link_libraries(GEngine_Engine PUBLIC GEngine_GObject)
 target_link_libraries(GEngine_Engine PRIVATE spdlog)
 target_link_libraries(GEngine_Engine PRIVATE GPUOpen::VulkanMemoryAllocator VulkanMemoryAllocator)
-target_link_libraries(GEngine_Engine PRIVATE glslang)
+target_link_libraries(GEngine_Engine PRIVATE glslang glslang-default-resource-limits SPIRV)
 
 include(GenerateExportHeader)
 

@@ -5,6 +5,8 @@
 #include "public/core/templates/shared_ptr.h"
 #include "public/platform/window_props.h"
 
+class IMouseManager;
+
 class CORE_API Window
 {
 public:
@@ -18,6 +20,8 @@ public:
 
 	//X Move window to the X, Y coordinate system
 	virtual void move_to(uint32_t x, uint32_t y) = 0;
+
+	virtual void move_by(uint32_t x, uint32_t y) = 0;
 
 
 	//X Maximize / Minimize / Restore
@@ -52,6 +56,8 @@ public:
 	virtual void pump_messages() = 0;
 
 	virtual bool wants_close() const = 0;
+
+	virtual IMouseManager* get_mouse_manager() const = 0;
 
 protected:
 	GSharedPtr<WindowProps> m_props;

@@ -2,6 +2,8 @@
 #define WINDOW_GLFW_H
 
 #include "public/platform/window.h"
+#include <memory>
+#include "internal/platform/mouse_glfw.h"
 
 //X GLFW 
 
@@ -20,6 +22,8 @@ public:
 
 	//X Move window to the X, Y coordinate system
 	virtual void move_to(uint32_t x, uint32_t y) override;
+
+	virtual void move_by(uint32_t x, uint32_t y) override;
 
 	//X Maximize / Minimize / Restore
 	virtual void maximize() override;
@@ -54,11 +58,15 @@ public:
 	
 	virtual bool wants_close() const override;
 
+	GLFWMouseManager* get_glfw_mouse();
+
+	virtual IMouseManager* get_mouse_manager() const override;
+
 	static Window* create_default_window();
 private:
 	GLFWwindow* m_window = nullptr;
 	GLFWmonitor* m_monitor = nullptr;
-
+	std::unique_ptr<GLFWMouseManager> m_mouseManager;
 
 
 private:
@@ -69,7 +77,8 @@ private:
 	void on_iconify_changed(int iconified);
 	void on_move(int x, int y);
 	void on_maximized(int maximized);
-
+	void on_mouse_move(int x, int y);
+	void on_mouse_click(int button,int action,int mods);
 };
 
 #endif // WINDOW_GLFW_H

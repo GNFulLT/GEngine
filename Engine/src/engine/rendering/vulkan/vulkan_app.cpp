@@ -60,7 +60,7 @@ GVulkanApp::GVulkanApp()
 	m_vinfo.major = GNF_VERSION_MAJOR;
 	m_vinfo.minor = GNF_VERSION_MINOR;
 	m_vinfo.hex = GNF_VERSION_AS_HEX;
-
+	m_vinfo.vulkanVersion = VK_API_VERSION_1_2;
 	m_appName = std::string(_STR_XDEF(GNF_APP_NAME_FULL));
 }
 
@@ -94,7 +94,7 @@ bool GVulkanApp::init()
 	applicationInfo.pApplicationName = m_appName.c_str();
 	applicationInfo.pEngineName = "GEngine";
 	applicationInfo.engineVersion = m_vinfo.hex;
-	applicationInfo.apiVersion = VK_API_VERSION_1_2;
+	applicationInfo.apiVersion = m_vinfo.vulkanVersion;
 
 	//X This will set the instance layer vector
 	bool succeeded = layer_selection(m_instanceLayers,m_instanceExtensions, isDebugEnabled);
