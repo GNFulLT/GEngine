@@ -32,7 +32,6 @@ ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* a
 	//X TODO : GDNEWDA
 	m_windowManager = new ImGuiWindowManager();
 	m_renderViewportWindow = new GImGuiViewportWindow();
-	m_textEditorWindow = new GImGuiTextEditorWindow();
 	m_contentBrowserWindow = new GImGuiContentBrowserWindow();
 
 
@@ -155,14 +154,7 @@ bool ImGuiLayer::init()
 		return false;
 
 
-
-	bool created = m_windowManager->create_imgui_window(m_textEditorWindow, GIMGUIWINDOWDIR_RIGHT);
-	if (!created)
-	{
-		delete m_textEditorWindow;
-		m_textEditorWindow = nullptr;
-	}
-	created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
+	bool created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
 	if (!created)
 	{
 		delete m_renderViewportWindow;
@@ -222,4 +214,9 @@ void ImGuiLayer::set_viewport(IGVulkanViewport* viewport)
 {
 	m_renderViewportWindow->set_the_viewport(viewport);
 	m_sceneRenderer->set_the_viewport(viewport);
+}
+
+ImGuiWindowManager* ImGuiLayer::get_window_manager()
+{
+	return m_windowManager;
 }

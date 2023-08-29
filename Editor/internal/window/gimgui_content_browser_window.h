@@ -36,6 +36,9 @@ private:
 	std::string m_name;
 	GSharedPtr<IGTextureResource> m_folderIcon;
 	GSharedPtr<IGTextureResource> m_txtIcon;
+	GSharedPtr<IGTextureResource> m_hlslIcon;
+	GSharedPtr<IGTextureResource> m_glslIcon;
+
 	IMouseManager* m_mouse;
 };
 

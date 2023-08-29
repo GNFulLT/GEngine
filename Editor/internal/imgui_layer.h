@@ -28,6 +28,8 @@ public:
 	void render(GVulkanCommandBuffer* cmd);
 
 	void set_viewport(IGVulkanViewport* viewport);
+
+	ImGuiWindowManager* get_window_manager();
 private:
 	IGVulkanDevice* m_dev;
 	Window* m_window;
@@ -38,7 +40,6 @@ private:
 	
 	// Builtin windows
 	GImGuiViewportWindow* m_renderViewportWindow;
-	GImGuiTextEditorWindow* m_textEditorWindow;
 	GImGuiContentBrowserWindow* m_contentBrowserWindow;
 	GSceneRenderer* m_sceneRenderer;
 };

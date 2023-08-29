@@ -14,6 +14,8 @@
 #include <map>
 #include <regex>
 #include <imgui.h>
+#include <filesystem>
+#include "internal/file_type.h"
 
 class TextEditor
 {
@@ -211,7 +213,10 @@ public:
 
 	int GetTotalLines() const { return (int)mLines.size(); }
 	bool IsOverwrite() const { return mOverwrite; }
-
+	bool GetEditState() const
+	{
+		return m_editState;
+	}
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() const { return mReadOnly; }
 	bool IsTextChanged() const { return mTextChanged; }
@@ -310,6 +315,8 @@ private:
 		Coordinates mRemovedStart;
 		Coordinates mRemovedEnd;
 
+		bool m_editState;
+
 		EditorState mBefore;
 		EditorState mAfter;
 	};
@@ -323,6 +330,7 @@ private:
 	float TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
 	int GetPageSize() const;
+	
 	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
 	Coordinates GetActualCursorCoordinates() const;
 	Coordinates SanitizeCoordinates(const Coordinates& aValue) const;
@@ -358,7 +366,7 @@ private:
 	EditorState mState;
 	UndoBuffer mUndoBuffer;
 	int mUndoIndex;
-
+	bool m_editState = false;
 	int mTabSize;
 	bool mOverwrite;
 	bool mReadOnly;
@@ -400,7 +408,9 @@ class GImGuiWindowStorage;
 class GImGuiTextEditorWindow : public IGImGuiWindowImpl
 {
 public:
-	GImGuiTextEditorWindow();
+	GImGuiTextEditorWindow(std::filesystem::path path,FILE_TYPE type,bool isReadOnly = true);
+
+	static bool can_open(FILE_TYPE type);
 
 	// Inherited via IGImGuiWindowImpl
 	virtual bool init() override;
@@ -411,10 +421,17 @@ public:
 	virtual void on_data_update() override;
 	virtual const char* get_window_name() override;
 	virtual void destroy() override;
+	virtual int get_flag() override;
+
+	virtual bool can_open_multiple() const override;
+	virtual const char* get_window_id() override;
 private:
 	std::string m_name;
 	GImGuiWindowStorage* m_storage;
 	TextEditor m_editor;
+	std::filesystem::path m_filePath;
+	bool m_saved = true;
+	std::string m_fileFullPath;
 };
 
 #endif // GIMGUI_TEXTEDITOR_WINDOW_H

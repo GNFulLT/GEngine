@@ -11,6 +11,9 @@
 #include "internal/utils.h"
 #include "public/platform/window.h"
 #include "public/platform/imouse_manager.h"
+#include "internal/imgui_layer.h"
+#include "internal/imgui_window_manager.h"
+#include <stack>
 
 GImGuiContentBrowserWindow::GImGuiContentBrowserWindow()
 {
@@ -27,6 +30,8 @@ bool GImGuiContentBrowserWindow::init()
 	m_mouse = window->get_mouse_manager();
 	auto res = (*resManager)->create_texture_resource("FolderIcon", "EditorResources", "./assets/folder.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
 	auto res2 = (*resManager)->create_texture_resource("TextIcon", "EditorResources", "./assets/txt.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
+	auto res3 = (*resManager)->create_texture_resource("HLSLIcon", "EditorResources", "./assets/hlsl.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
+	auto res4 = (*resManager)->create_texture_resource("GLSLIcon", "EditorResources", "./assets/glsl.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
 
 	if (!res.has_value())
 	{
@@ -37,9 +42,15 @@ bool GImGuiContentBrowserWindow::init()
 	{
 		return false;
 	}
-
+	if (!res3.has_value() || !res4.has_value())
+	{
+		return false;
+	}
+	
 	m_folderIcon = GSharedPtr<IGTextureResource>(res.value());
 	m_txtIcon = GSharedPtr<IGTextureResource>(res2.value());
+	m_hlslIcon= GSharedPtr<IGTextureResource>(res3.value());
+	m_glslIcon = GSharedPtr<IGTextureResource>(res4.value());
 
 	RESOURCE_INIT_CODE code = m_folderIcon->load();
 
@@ -50,6 +61,19 @@ bool GImGuiContentBrowserWindow::init()
 	}
 
 	code = m_txtIcon->load();
+	if (code != RESOURCE_INIT_CODE_OK)
+	{
+		EditorApplicationImpl::get_instance()->get_editor_logger()->log_c("Couldn't load the texture");
+		return false;
+	}
+	code = m_hlslIcon->load();
+	if (code != RESOURCE_INIT_CODE_OK)
+	{
+		EditorApplicationImpl::get_instance()->get_editor_logger()->log_c("Couldn't load the texture");
+		return false;
+	}
+
+	code = m_glslIcon->load();
 	if (code != RESOURCE_INIT_CODE_OK)
 	{
 		EditorApplicationImpl::get_instance()->get_editor_logger()->log_c("Couldn't load the texture");
@@ -71,20 +95,58 @@ bool GImGuiContentBrowserWindow::need_render()
 
 void GImGuiContentBrowserWindow::render()
 {
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+
+	auto iterPath = m_currentPath;
+	std::stack<std::string> strStack;
+	while (iterPath.has_parent_path() && iterPath.has_relative_path())
+	{
+		auto str = iterPath.filename().string();
+		strStack.push(str+="/");
+		iterPath = iterPath.parent_path();
+	}
+
+	if (m_currentPath.has_parent_path() && m_currentPath.has_relative_path())
+	{
+		ImGui::SameLine();
+		if (ImGui::Button("<<"))
+		{
+			m_currentPath = m_currentPath.parent_path();
+		}
+	}
+	
+
+	while (!strStack.empty())
+	{
+		ImGui::SameLine();
+		ImGui::Button(strStack.top().c_str());
+		strStack.pop();
+	}
+
+
+
+	ImGui::PopStyleVar();
+
 	static float padding = 64.f;
-	static float btn_size = 32.f;
+	static float btn_size = 40.f;
+	static int frame = btn_size / 2;
 	float cell_size = padding + btn_size;
 	int column_count =  m_storage->width / cell_size;
 	if (column_count < 1)
 		column_count = 1;
 
-		ImGui::Columns(column_count, 0, false);
+	ImGui::Columns(column_count, 0, false);
 
 
-	using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
-	std::filesystem::directory_entry entry;
+	using directory_iterator = std::filesystem::directory_iterator;
 	
-	for (const auto& dirEntry : recursive_directory_iterator(m_currentPath))
+	std::filesystem::directory_entry entry;
+	std::filesystem::directory_entry pathEntry;
+
+	auto iter = m_currentPath;
+	bool enteredFolder = false;
+
+	for (const auto& dirEntry : directory_iterator(iter))
 	{
 		VkDescriptorSet_T* desc = nullptr;
 		auto str = dirEntry.path().filename().string();
@@ -99,6 +161,12 @@ void GImGuiContentBrowserWindow::render()
 		case FILE_TYPE_TXT:
 			desc = m_txtIcon->get_descriptor_set()->get_vk_descriptor();
 			break;
+		case FILE_TYPE_HLSL:
+			desc = m_hlslIcon->get_descriptor_set()->get_vk_descriptor();
+			break;
+		case FILE_TYPE_GLSL:
+			desc = m_glslIcon->get_descriptor_set()->get_vk_descriptor();
+			break;
 		default:
 			desc = m_txtIcon->get_descriptor_set()->get_vk_descriptor();
 			break;
@@ -109,7 +177,12 @@ void GImGuiContentBrowserWindow::render()
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0.3f));
 		
 
-		ImGui::ImageButton(desc, ImVec2{ btn_size,btn_size },{0,0},{1,1},btn_size/2);
+		if (ImGui::ImageButton(desc, ImVec2{ btn_size,btn_size }, { 0,0 }, { 1,1 }, frame));
+		if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && fileType == FILE_TYPE_FOLDER && !enteredFolder)
+		{
+			enteredFolder = true;
+		}
+		
 
 
 		ImGui::PopStyleColor(3);
@@ -121,7 +194,7 @@ void GImGuiContentBrowserWindow::render()
 
 		auto textWidth = ImGui::CalcTextSize(str.c_str()).x;
 
-		auto textBegin = ImGui::GetCursorPosX() + ((btn_size - textWidth) * 0.5f);
+		auto textBegin = ImGui::GetCursorPosX() + ((btn_size+frame*2 - textWidth) * 0.5f);
 		if (textBegin >= ImGui::GetCursorPosX())
 			ImGui::SetCursorPosX(textBegin);
 
@@ -129,6 +202,7 @@ void GImGuiContentBrowserWindow::render()
 		ImGui::NextColumn();
 		
 	}
+	
 
 	if (m_mouse->get_mouse_button_state(MOUSE_BUTTON_RIGHT) && entry.exists())
 	{
@@ -138,11 +212,20 @@ void GImGuiContentBrowserWindow::render()
 
 	}
 
+	if (enteredFolder)
+	{
+		auto pth = entry.path();
+		if (std::filesystem::is_directory(pth))
+		{
+			m_currentPath = pth;
+		}
+	}
+
 	if (ImGui::BeginPopup("file_popup"))
 	{
 		if (ImGui::Selectable("Open in text editor"))
 		{
-			EditorApplicationImpl::get_instance()->get_editor_logger()->log_d("Selected");
+			EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_open_file_in_new_editor(m_rightClickedFile);
 		}
 		ImGui::EndPopup();
 	}
@@ -174,5 +257,14 @@ void GImGuiContentBrowserWindow::destroy()
 		m_txtIcon->destroy();
 		m_txtIcon = GSharedPtr<IGTextureResource>();
 	}
-
+	if (m_hlslIcon.is_valid())
+	{
+		m_hlslIcon->destroy();
+		m_hlslIcon = GSharedPtr<IGTextureResource>();
+	}
+	if (m_glslIcon.is_valid())
+	{
+		m_glslIcon->destroy();
+		m_glslIcon = GSharedPtr<IGTextureResource>();
+	}
 }

@@ -3,6 +3,8 @@
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
 #include "volk.h"
 #include "engine/rendering/vulkan/ivulkan_descriptor.h"
+#include <algorithm>
+
 GImGuiViewportWindow::GImGuiViewportWindow()
 {
 	m_name = "Viewport";
@@ -39,13 +41,22 @@ bool GImGuiViewportWindow::need_render()
 void GImGuiViewportWindow::render()
 {
 	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-	ImGui::Image(m_viewport->get_descriptor()->get_vk_descriptor(), ImVec2{viewportPanelSize.x, viewportPanelSize.y});
+	int x = std::max(0, int(viewportPanelSize.x));
+	int y = std::max(0, int(viewportPanelSize.y));
+	auto t = m_viewport->get_descriptor();
+	if (t != nullptr)
+	{
+		ImGui::Image(t->get_vk_descriptor(), ImVec2{ float(x),float(y) });
+	}
 }
 
 void GImGuiViewportWindow::on_resize()
 {
 	m_viewport->destroy();
-	m_viewport->init(m_storage->width, m_storage->height, VkFormat::VK_FORMAT_B8G8R8A8_UNORM);
+	if (m_storage->width > 0 && m_storage->width < 1920 && m_storage->height > 0 && m_storage->height < 1080)
+	{
+		m_viewport->init(m_storage->width, m_storage->height, VkFormat::VK_FORMAT_B8G8R8A8_UNORM);
+	}
 }
 
 void GImGuiViewportWindow::on_data_update()

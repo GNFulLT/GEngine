@@ -6,8 +6,8 @@
 
 struct GImGuiWindowStorage
 {
-	uint32_t width;
-	uint32_t height;
+	int width;
+	int height;
 };
 
 
@@ -31,7 +31,13 @@ public:
 	virtual void destroy() = 0;
 
 	virtual const char* get_window_name() = 0;
-private:
+
+	virtual const char* get_window_id() { return nullptr; };
+
+	virtual int get_flag() { return 0; }
+
+	virtual bool can_open_multiple() const { return false; };
+private: 
 };
 
 #endif // IIMGUI_WINDOW_H

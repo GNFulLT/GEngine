@@ -162,6 +162,11 @@ GImGuiDescriptorCreator* EditorApplicationImpl::get_descriptor_creator()
     return m_imguiDescriptorCreator;
 }
 
+ImGuiLayer* EditorApplicationImpl::get_editor_layer()
+{
+    return m_imguiLayer;
+}
+
 EDITOR_API GApplicationImpl* create_the_editor()
 {
     return new EditorApplicationImpl();

@@ -6,13 +6,24 @@
 #include "internal/gimgui_menu.h"
 #include "public/core/templates/shared_ptr.h"
 #include "public/platform/imouse_manager.h"
+#include <filesystem>
 
 #include <mutex>
 #include <string>
 #include <vector>
+#include <atomic>
 
 class IGTextureResource;
 class Window;
+
+#include <queue>
+#include <utility>
+
+enum WINDOW_OP
+{
+	WINDOW_OP_ADD,
+	WINDOW_OP_EXTRACT
+};
 
 class ImGuiWindowManager
 {
@@ -30,12 +41,26 @@ public:
 	void render_windows();
 
 	void render_main_menu();
+
+	void try_to_open_file_in_new_editor(std::filesystem::path path);
 private:
 	void render_main_dockspace();
+
+	void before_render();
 
 	void build_nodes();
 
 	void draw_main_menu_bar();
+
+	void dock_the_window_if_needs(GImGuiWindow* win);
+
+	void extract_window(GImGuiWindow* win);
+
+	void safe_add_window(GImGuiWindow* win);
+
+	void unsafe_add_window(GImGuiWindow* window);
+
+	void safe_extract_window(GImGuiWindow* win);
 private:
 	//X TODO : USE SHARED OR UNIQUE PTR
 	ankerl::unordered_dense::segmented_map<std::string, GImGuiWindow*> m_windowMap;
@@ -71,12 +96,16 @@ private:
 	GSharedPtr<IGTextureResource> m_editorIcon;
 
 	Window* m_window;
+
+
+	std::queue<std::pair<GImGuiWindow*,WINDOW_OP>> m_waitingWindows;
+
 	bool m_isDragging = false;
 	bool m_isClickedOutside = false;
-
+	std::atomic_bool m_isInRender = false;
 	int cp_x = 0;
 	int cp_y = 0 ;
-	int offset_cpx = 0 ;
+	int offset_cpx = 0;
 	int offset_cpy = 0;
 };
 

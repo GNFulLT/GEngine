@@ -12,12 +12,27 @@ GImGuiWindow::GImGuiWindow(IGImGuiWindowImpl* impl)
 }
 bool GImGuiWindow::init()
 {
-	return m_impl->init();
+	bool init =  m_impl->init();
+	if (!init)
+		return false;
+	m_id = m_impl->get_window_name();
+	if (m_impl->can_open_multiple())
+	{
+		m_id += "##";
+		if (m_impl->get_window_id() == nullptr)
+		{
+			m_impl->destroy();
+			return false;
+		}
+		m_id += m_impl->get_window_id();
+	}
+	return true;
 }
 
 void GImGuiWindow::render()
 {
-	if (ImGui::Begin(get_window_name()))
+	
+	if (ImGui::Begin(get_window_name(),&m_isShown,m_impl->get_flag()))
 	{
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 		if (viewportPanelSize.x != m_storage.width || viewportPanelSize.y != m_storage.height)
@@ -50,8 +65,9 @@ bool GImGuiWindow::need_render()
 
 const char* GImGuiWindow::get_window_name()
 {
-	return m_impl->get_window_name();
+	return m_id.c_str();
 }
+
 
 void GImGuiWindow::destroy()
 {
@@ -67,6 +83,11 @@ void GImGuiWindow::set_dock_dir(GIMGUIWINDOWDIR dir)
 bool GImGuiWindow::wants_docking()
 {
 	return m_dockDir != GIMGUIWINDOWDIR_NONE;
+}
+
+bool GImGuiWindow::wants_destroy()
+{
+	return !m_isShown;
 }
 
 GIMGUIWINDOWDIR GImGuiWindow::get_dock_dir()

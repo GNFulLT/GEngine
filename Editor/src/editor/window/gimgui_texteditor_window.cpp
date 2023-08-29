@@ -9,10 +9,64 @@
 #include <fstream>
 #include <streambuf>
 
-
-GImGuiTextEditorWindow::GImGuiTextEditorWindow()
+GImGuiTextEditorWindow::GImGuiTextEditorWindow(std::filesystem::path path,FILE_TYPE type,bool isReadOnly)
 {
-	m_name = "TextEditor";
+	m_filePath = path;
+	m_name = path.filename().string();
+	m_fileFullPath = path.string();
+	switch (type)
+	{
+	case FILE_TYPE_GLSL:
+		m_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
+		break;
+	case FILE_TYPE_HLSL:
+		m_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::HLSL());
+		break;
+	case FILE_TYPE_CPP_SRC:
+		m_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+		break;
+	case FILE_TYPE_C_HEADER:
+	case FILE_TYPE_C_SRC:
+		m_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::C());
+		break;
+	default:
+		break;
+	}
+
+	std::ifstream t(path);
+	if (t.good())
+	{
+		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+		m_editor.SetText(str);
+		m_editor.SetReadOnly(isReadOnly);
+	}
+	
+
+}
+
+bool GImGuiTextEditorWindow::can_open(FILE_TYPE type)
+{
+	switch (type)
+	{
+	case FILE_TYPE_FOLDER:
+		return false;
+	case FILE_TYPE_TXT:
+		return true;
+	case FILE_TYPE_GLSL:
+		return true;
+	case FILE_TYPE_HLSL:
+		return true;
+	case FILE_TYPE_C_HEADER:
+		return true;
+	case FILE_TYPE_C_SRC:
+		return true;
+	case FILE_TYPE_CPP_SRC:
+		return true;
+	case FILE_TYPE_JSON:
+		return true;
+	default:
+		return false;
+	}
 }
 
 bool GImGuiTextEditorWindow::init()
@@ -50,6 +104,22 @@ const char* GImGuiTextEditorWindow::get_window_name()
 
 void GImGuiTextEditorWindow::destroy()
 {
+}
+
+int GImGuiTextEditorWindow::get_flag()
+{
+	int flag = !m_editor.GetEditState() ? 0 : ImGuiWindowFlags_::ImGuiWindowFlags_UnsavedDocument;
+	return flag;
+}
+
+bool GImGuiTextEditorWindow::can_open_multiple() const
+{
+	return true;
+}
+
+const char* GImGuiTextEditorWindow::get_window_id()
+{
+	return m_fileFullPath.c_str();
 }
 
 
@@ -809,7 +879,9 @@ void TextEditor::HandleKeyboardInputs()
 			{
 				auto c = io.InputQueueCharacters[i];
 				if (c != 0 && (c == '\n' || c >= 32))
+				{
 					EnterCharacter(c, shift);
+				}
 			}
 			io.InputQueueCharacters.resize(0);
 		}
@@ -1259,6 +1331,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 	UndoRecord u;
 
 	u.mBefore = mState;
+	u.m_editState = m_editState;
 
 	if (HasSelection())
 	{
@@ -1340,8 +1413,9 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 
 				mState.mSelectionStart = start;
 				mState.mSelectionEnd = end;
+				u.m_editState;
 				AddUndo(u);
-
+				m_editState = true;
 				mTextChanged = true;
 
 				EnsureCursorVisible();
@@ -1418,9 +1492,9 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 
 	u.mAddedEnd = GetActualCursorCoordinates();
 	u.mAfter = mState;
-
+	u.m_editState = m_editState;
 	AddUndo(u);
-
+	m_editState = true;
 	Colorize(coord.mLine - 1, 3);
 	EnsureCursorVisible();
 }
@@ -1851,7 +1925,9 @@ void TextEditor::Delete()
 	}
 
 	u.mAfter = mState;
+	u.m_editState = m_editState;
 	AddUndo(u);
+	m_editState = true;
 }
 
 void TextEditor::Backspace()
@@ -1929,7 +2005,9 @@ void TextEditor::Backspace()
 	}
 
 	u.mAfter = mState;
+	u.m_editState = m_editState;
 	AddUndo(u);
+	m_editState = true;
 }
 
 void TextEditor::SelectWordUnderCursor()
@@ -1987,7 +2065,9 @@ void TextEditor::Cut()
 			DeleteSelection();
 
 			u.mAfter = mState;
+			u.m_editState = m_editState;
 			AddUndo(u);
+			m_editState = true;
 		}
 	}
 }
@@ -2018,7 +2098,9 @@ void TextEditor::Paste()
 
 		u.mAddedEnd = GetActualCursorCoordinates();
 		u.mAfter = mState;
+		u.m_editState = m_editState;
 		AddUndo(u);
+		m_editState = true;
 	}
 }
 
@@ -2537,7 +2619,7 @@ void TextEditor::UndoRecord::Undo(TextEditor* aEditor)
 
 	aEditor->mState = mBefore;
 	aEditor->EnsureCursorVisible();
-
+	aEditor->m_editState = m_editState;
 }
 
 void TextEditor::UndoRecord::Redo(TextEditor* aEditor)

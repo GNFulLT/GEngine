@@ -15,6 +15,8 @@
 #include "editor/editor_application_impl.h"
 #include "engine/io/iowning_glogger.h"
 #include <spdlog/fmt/fmt.h>
+#include "internal/window/gimgui_texteditor_window.h"
+#include "internal/utils.h"
 
 ImGuiWindowManager::~ImGuiWindowManager()
 {
@@ -36,8 +38,11 @@ bool ImGuiWindowManager::create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWIND
 		return false;
 	}
 	window->set_dock_dir(dir);
-	m_windowMap.emplace(impl->get_window_name(), window);
-	m_windowVector.push_back(window);
+	safe_add_window(window);
+	if (!m_isDockDirty)
+	{
+		dock_the_window_if_needs(window);
+	}
 	return true;
 
 }
@@ -130,6 +135,9 @@ void ImGuiWindowManager::destroy()
 
 void ImGuiWindowManager::render_windows()
 {
+	before_render();
+
+	m_isInRender.store(true);
 	render_main_dockspace();
 	ImGuiViewportP* viewport = (ImGuiViewportP*)(void*)ImGui::GetMainViewport();
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar;
@@ -138,20 +146,39 @@ void ImGuiWindowManager::render_windows()
 
 	ImGui::ShowDemoWindow();
 
-	for (int i = 0; i < m_windowVector.size(); i++)
+	auto iterator = m_windowVector.begin();
+
+	while (iterator != m_windowVector.end())
 	{
-		if (!m_windowVector[i]->need_render())
+		if ((*iterator)->wants_destroy())
+		{
+			if (auto win2 = m_windowMap.find((*iterator)->get_window_name()); win2 != m_windowMap.end())
+			{
+				m_windowMap.erase(win2);
+			}
+			(*iterator)->destroy();
+			delete (*iterator);
+			iterator = m_windowVector.erase(iterator);
 			continue;
+		}
+		if (!(*iterator)->need_render())
+		{
+			iterator++;
+			continue;
+		}
 
-		m_windowVector[i]->render();
+		(*iterator)->render();
+		iterator++;
 		
-
 	}
+
 	ImGui::Begin("Helloooo");
 	ImGui::End();
 
 	ImGui::Begin("HellooooB");
 	ImGui::End();
+
+	m_isInRender.store(false);
 }
 
 void ImGuiWindowManager::render_main_menu()
@@ -160,6 +187,19 @@ void ImGuiWindowManager::render_main_menu()
 	{
 		
 		ImGui::End();
+	}
+}
+
+void ImGuiWindowManager::try_to_open_file_in_new_editor(std::filesystem::path path)
+{
+	//X TODO CHECK IS THERE ANY OPENED WINDOW ALREADY FOR THIS WINDOW
+	FILE_TYPE type = get_file_type_from_name(path.filename().string().c_str());
+	if (GImGuiTextEditorWindow::can_open(type))
+	{
+		auto win = new GImGuiTextEditorWindow(path, type,false);
+		bool created = create_imgui_window(win,GIMGUIWINDOWDIR_RIGHT);
+		if (!created)
+			delete win;
 	}
 }
 
@@ -184,6 +224,24 @@ void ImGuiWindowManager::render_main_dockspace()
 			ImGuiDockNodeFlags_PassthruCentralNode);
 
 	ImGui::End();
+}
+
+void ImGuiWindowManager::before_render()
+{
+	while (!m_waitingWindows.empty())
+	{
+		auto windowAndOp = m_waitingWindows.front();
+		auto window = windowAndOp.first;
+		m_waitingWindows.pop();
+		if (windowAndOp.second == WINDOW_OP_ADD)
+		{
+			unsafe_add_window(window);
+		}
+		else
+		{
+			extract_window(window);
+		}
+	}
 }
 
 void ImGuiWindowManager::build_nodes()
@@ -216,35 +274,7 @@ void ImGuiWindowManager::build_nodes()
 
 		for (const auto& win : m_windowVector)
 		{
-			if (win->wants_docking())
-			{
-				auto dir = win->get_dock_dir();
-				int dirId = -1;
-				switch (dir)
-				{
-				case GIMGUIWINDOWDIR_NONE:
-					break;
-				case GIMGUIWINDOWDIR_LEFT:
-					dirId = dock_id_left_top;
-					break;
-				case GIMGUIWINDOWDIR_RIGHT:
-					dirId = dock_id_right;
-					break;
-				case GIMGUIWINDOWDIR_MIDDLE:
-					dirId = dock_id_middle;
-					break;
-				case GIMGUIWINDOWDIR_BOTTOM:
-					dirId = dock_id_bottom;
-					break;
-				default:
-					break;
-				}
-				if (dirId != -1)
-				{
-					ImGui::DockBuilderDockWindow(win->get_window_name(), dirId);
-
-				}
-			}
+			dock_the_window_if_needs(win);
 		}
 
 		ImGui::DockBuilderFinish(m_dock_id);
@@ -455,5 +485,87 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		offset_cpy = 0;
 		cp_x = 0;
 		cp_y = 0;
+	}
+}
+
+void ImGuiWindowManager::dock_the_window_if_needs(GImGuiWindow* win)
+{
+	if (win->wants_docking())
+	{
+		auto dir = win->get_dock_dir();
+		int dirId = -1;
+		switch (dir)
+		{
+		case GIMGUIWINDOWDIR_NONE:
+			break;
+		case GIMGUIWINDOWDIR_LEFT:
+			dirId = dock_id_left_top;
+			break;
+		case GIMGUIWINDOWDIR_RIGHT:
+			dirId = dock_id_right;
+			break;
+		case GIMGUIWINDOWDIR_MIDDLE:
+			dirId = dock_id_middle;
+			break;
+		case GIMGUIWINDOWDIR_BOTTOM:
+			dirId = dock_id_bottom;
+			break;
+		default:
+			break;
+		}
+		if (dirId != -1)
+		{
+			ImGui::DockBuilderDockWindow(win->get_window_name(), dirId);
+
+		}
+	}
+}
+
+void ImGuiWindowManager::extract_window(GImGuiWindow* win)
+{
+	if (auto win2 = m_windowMap.find(win->get_window_name()); win2 != m_windowMap.end())
+	{
+		m_windowMap.erase(win2);
+		auto iter = m_windowVector.begin();
+		while (iter != m_windowVector.end())
+		{
+			if (0 == strcmp((*iter)->get_window_name(), win->get_window_name()))
+			{
+				m_windowVector.erase(iter);
+				break;
+			}
+			iter++;
+		}
+		
+	}
+}
+
+void ImGuiWindowManager::safe_add_window(GImGuiWindow* win)
+{
+	if (m_isInRender.load())
+	{
+		m_waitingWindows.push({win,WINDOW_OP_ADD});
+	}
+	else
+	{
+		unsafe_add_window(win);
+	}
+}
+
+void ImGuiWindowManager::unsafe_add_window(GImGuiWindow* window)
+{
+	m_windowMap.emplace(window->get_window_name(), window);
+	m_windowVector.push_back(window);
+}
+
+void ImGuiWindowManager::safe_extract_window(GImGuiWindow* win)
+{
+	if (m_isInRender.load())
+	{
+		m_waitingWindows.push({ win,WINDOW_OP_EXTRACT });
+	}
+	else
+	{
+		extract_window(win);
 	}
 }
