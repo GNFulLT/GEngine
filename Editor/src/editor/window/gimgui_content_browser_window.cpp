@@ -14,7 +14,8 @@
 #include "internal/imgui_layer.h"
 #include "internal/imgui_window_manager.h"
 #include <stack>
-
+#include "internal/window/content_helper/descriptors/gimgui_texteditor_descriptor.h"
+#include "internal/window/content_helper/descriptors/gimgui_shader_descriptor.h"
 GImGuiContentBrowserWindow::GImGuiContentBrowserWindow()
 {
 	m_name = "ContentBrowser";
@@ -80,6 +81,8 @@ bool GImGuiContentBrowserWindow::init()
 		return false;
 	}
 
+	m_contentHelper.register_descriptor(new GImGuiTextEditorDescriptor());
+	m_contentHelper.register_descriptor(new GImGuiShaderDescriptor());
 	return true;
 }
 
@@ -142,10 +145,9 @@ void GImGuiContentBrowserWindow::render()
 	
 	std::filesystem::directory_entry entry;
 	std::filesystem::directory_entry pathEntry;
-
+	FILE_TYPE selectedFile = FILE_TYPE_UNKNOWN;
 	auto iter = m_currentPath;
 	bool enteredFolder = false;
-
 	for (const auto& dirEntry : directory_iterator(iter))
 	{
 		VkDescriptorSet_T* desc = nullptr;
@@ -190,6 +192,7 @@ void GImGuiContentBrowserWindow::render()
 		if (ImGui::IsItemHovered())
 		{
 			entry = dirEntry;
+			selectedFile = fileType;
 		}
 
 		auto textWidth = ImGui::CalcTextSize(str.c_str()).x;
@@ -206,10 +209,13 @@ void GImGuiContentBrowserWindow::render()
 
 	if (m_mouse->get_mouse_button_state(MOUSE_BUTTON_RIGHT) && entry.exists())
 	{
-		m_rightClickedFile = entry.path();
-		
-		ImGui::OpenPopup("file_popup",0);
-
+		auto descriptors = m_contentHelper.get_descriptor_of_type_if_any(selectedFile);
+		if (descriptors != nullptr && descriptors->size() > 0)
+		{
+			m_rightClickedFile = entry.path();
+			m_rightClickedFileType = selectedFile;
+			ImGui::OpenPopup("file_popup", 0);
+		}
 	}
 
 	if (enteredFolder)
@@ -223,9 +229,13 @@ void GImGuiContentBrowserWindow::render()
 
 	if (ImGui::BeginPopup("file_popup"))
 	{
-		if (ImGui::Selectable("Open in text editor"))
+		auto descriptors = m_contentHelper.get_descriptor_of_type_if_any(m_rightClickedFileType);
+		if (descriptors != nullptr && descriptors->size() > 0)
 		{
-			EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_open_file_in_new_editor(m_rightClickedFile);
+			for (auto descriptor : *descriptors)
+			{
+				descriptor->draw_menu_for_file(m_rightClickedFile);
+			}
 		}
 		ImGui::EndPopup();
 	}
@@ -247,6 +257,7 @@ const char* GImGuiContentBrowserWindow::get_window_name()
 
 void GImGuiContentBrowserWindow::destroy()
 {
+	m_contentHelper.destroy();
 	if (m_folderIcon.is_valid())
 	{
 		m_folderIcon->destroy();

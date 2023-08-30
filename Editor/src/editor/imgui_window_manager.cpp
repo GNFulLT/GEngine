@@ -178,8 +178,6 @@ void ImGuiWindowManager::render_windows()
 	ImGui::Begin("Helloooo");
 	ImGui::End();
 
-	ImGui::Begin("HellooooB");
-	ImGui::End();
 
 	m_isInRender.store(false);
 }
@@ -273,7 +271,6 @@ void ImGuiWindowManager::build_nodes()
 		
 		ImGui::DockBuilderDockWindow("Dear ImGui Demo", dock_id_right);
 		ImGui::DockBuilderDockWindow("Helloooo", dock_id_left_top);
-		ImGui::DockBuilderDockWindow("HellooooB", dock_id_bottom);
 
 		for (const auto& win : m_windowVector)
 		{

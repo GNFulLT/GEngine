@@ -11,6 +11,8 @@ class GImGuiWindowStorage;
 class IGTextureResource;
 
 #include "public/core/templates/shared_ptr.h"
+#include "content_helper/gimgui_content_helper.h"
+enum FILE_TYPE;
 
 class IMouseManager;
 class GImGuiContentBrowserWindow : public IGImGuiWindowImpl
@@ -32,6 +34,7 @@ private:
 	GImGuiWindowStorage* m_storage;
 	std::filesystem::path m_currentPath;
 	std::filesystem::path m_rightClickedFile;
+	FILE_TYPE m_rightClickedFileType;
 
 	std::string m_name;
 	GSharedPtr<IGTextureResource> m_folderIcon;
@@ -40,6 +43,7 @@ private:
 	GSharedPtr<IGTextureResource> m_glslIcon;
 
 	IMouseManager* m_mouse;
+	GImGuiContentHelper m_contentHelper;
 };
 
 #endif // GIMGUI_CONTENT_BROWSER_WINDOW_H

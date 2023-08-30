@@ -1,0 +1,5 @@
+#ifndef GIMGUI_LOG_WINDOW_H
+#define GIMGUI_LOG_WINDOW_H
+
+
+#endif // GIMGUI_LOG_WINDOW_H

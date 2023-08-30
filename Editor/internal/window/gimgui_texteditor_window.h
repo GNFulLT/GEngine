@@ -15,7 +15,7 @@
 #include <regex>
 #include <imgui.h>
 #include <filesystem>
-#include "internal/file_type.h"
+#include "editor/file_type.h"
 #include <future>
 
 class TextEditor
