@@ -32,7 +32,7 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
  "internal/engine/manager/ginjection_manager.h" "src/engine/manager/ginjection_manager.cpp" "include/engine/shader/ispirv_shader.h" "include/engine/resource/igshader_resource.h" 
  "include/engine/manager/igshader_manager.h" "internal/engine/manager/gshader_manager.h" "src/engine/manager/gshader_manager.cpp" "internal/engine/shader/spirv_shader_utils.h" "src/engine/utils.cpp"
  "internal/engine/utils.h" "src/engine/shader/spirv_shader_utils.cpp" "internal/engine/resource/gshader_resource.h" "src/engine/resource/gshader_resource.cpp" "internal/engine/shader/gspirv_shader.h" 
- "src/engine/shader/gspirv_shader.cpp" "include/engine/manager/ijob_manager.h" "internal/engine/manager/gjob_manager.h" "src/engine/manager/gjob_manager.cpp" "include/engine/time_unit.h")
+ "src/engine/shader/gspirv_shader.cpp" "include/engine/manager/ijob_manager.h" "internal/engine/manager/gjob_manager.h" "src/engine/manager/gjob_manager.cpp" "include/engine/time_unit.h" "internal/engine/shader/gspirv_byte_shader.h" "src/engine/shader/gspirv_byte_shader.cpp")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -70,7 +70,8 @@ target_link_libraries(GEngine_Engine PRIVATE GEngine_Core)
 target_link_libraries(GEngine_Engine PUBLIC GEngine_GObject)
 target_link_libraries(GEngine_Engine PRIVATE spdlog)
 target_link_libraries(GEngine_Engine PRIVATE GPUOpen::VulkanMemoryAllocator VulkanMemoryAllocator)
-target_link_libraries(GEngine_Engine PRIVATE glslang glslang-default-resource-limits SPIRV)
+target_link_libraries(GEngine_Engine PUBLIC glslang glslang-default-resource-limits SPIRV)
+target_link_libraries(GEngine_Engine PUBLIC SPIRV-Tools-static)
 
 include(GenerateExportHeader)
 

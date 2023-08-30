@@ -14,6 +14,10 @@ public:
 
 	//X This methos just delete managers from RAM. Dont forget to call destroy methods of managers before use it !
 	void delete_managers();
+
+	void delete_manager(ENGINE_MANAGER mng);
+
+	void delete_and_swap(ENGINE_MANAGER mng, void* ptr);
 private:
 	ankerl::unordered_dense::map<int, void*> m_manager_map;
 	

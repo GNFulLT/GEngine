@@ -13,6 +13,11 @@ SPIRV_SHADER_STAGE GSpirvShader::get_spirv_stage()
 	return glslang_stage_to_spirv_shader_stage(m_input.stage);
 }
 
+uint32_t* GSpirvShader::get_spirv_words()
+{
+	return m_words;
+}
+
 uint32_t GSpirvShader::get_size()
 {
 	return 0;

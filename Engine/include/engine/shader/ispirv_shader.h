@@ -34,6 +34,8 @@ public:
 	virtual uint32_t get_size() = 0;
 
 	virtual bool is_failed_to_compile() = 0;
+
+	virtual uint32_t* get_spirv_words() = 0;
 private:
 };
 

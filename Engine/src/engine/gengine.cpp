@@ -16,11 +16,12 @@
 #include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
 #include "internal/engine/rendering/vulkan/gvulkan_offscreen_viewport.h"
 #include "internal/engine/manager/ginjection_manager.h"
+#include "internal/engine/manager/gshader_manager.h"
 #include "internal/engine/manager/gjob_manager.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
-#include  <GLFW/glfw3.h>
+#include <GLFW/glfw3.h>
 
 static uint32_t SwapchainImageCount = 3;
 
@@ -29,6 +30,7 @@ static GLoggerManager* s_logger;
 static GResourceManager* s_resourceManager;
 static GEngine* s_engine;
 static GJobManager* s_jobManager;
+static ManagerTable* s_managerTable;
 
 GEngine::GEngine()
 {
@@ -37,18 +39,19 @@ GEngine::GEngine()
 
 	//X TODO : USE GDNEWD
 	m_vulkanApp = GSharedPtr<IGVulkanApp>(new GVulkanApp());
-	auto managerTable = gdnew(ManagerTable);
-	m_managerTable = managerTable;
+	s_managerTable = gdnew(ManagerTable);
+	m_managerTable = s_managerTable;
 	auto dev = new GVulkanDevice(m_vulkanApp);
 	s_logger = new GLoggerManager();
 	s_resourceManager = new GResourceManager();
 	s_jobManager = new GJobManager();
 
-	managerTable->set_manager(ENGINE_MANAGER_GRAPHIC_DEVICE, new GSharedPtr<IGVulkanDevice>(dev));
-	managerTable->set_manager(ENGINE_MANAGER_WINDOW, new GSharedPtr<Window>(m_window));
-	managerTable->set_manager(ENGINE_MANAGER_LOGGER, new GSharedPtr<IGLoggerManager>(s_logger));
-	managerTable->set_manager(ENGINE_MANAGER_RESOURCE, new GSharedPtr<IGResourceManager>(s_resourceManager));
-	managerTable->set_manager(ENGINE_MANAGER_JOB, new GSharedPtr<IJobManager>(s_jobManager));
+	s_managerTable->set_manager(ENGINE_MANAGER_GRAPHIC_DEVICE, new GSharedPtr<IGVulkanDevice>(dev));
+	s_managerTable->set_manager(ENGINE_MANAGER_WINDOW, new GSharedPtr<Window>(m_window));
+	s_managerTable->set_manager(ENGINE_MANAGER_LOGGER, new GSharedPtr<IGLoggerManager>(s_logger));
+	s_managerTable->set_manager(ENGINE_MANAGER_RESOURCE, new GSharedPtr<IGResourceManager>(s_resourceManager));
+	s_managerTable->set_manager(ENGINE_MANAGER_JOB, new GSharedPtr<IJobManager>(s_jobManager));
+	s_managerTable->set_manager(ENGINE_MANAGER_SHADER, new GSharedPtr<IGShaderManager>(new GShaderManager()));
 
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
@@ -217,8 +220,6 @@ void GEngine::after_render()
 //}
 void GEngine::init(GApplicationImpl* impl)
 {
-	GSharedPtr<IGVulkanDevice>* graphicDevice = (GSharedPtr<IGVulkanDevice>*)m_managerTable->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
-
 
 	m_impl = impl;
 
@@ -237,11 +238,15 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 
-	GInjectManagerHelper help;
+	GInjectManagerHelper help(s_managerTable);
 
 	help.add_manager_spec(ENGINE_MANAGER_WINDOW,(void*)&m_window->get_window_props());
 
 	m_impl->inject_managers(&help);
+
+	GSharedPtr<IGVulkanDevice>* graphicDevice = (GSharedPtr<IGVulkanDevice>*)m_managerTable->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
+	GSharedPtr<IGShaderManager>* shaderManager = (GSharedPtr<IGShaderManager>*)s_managerTable->get_engine_manager_managed(ENGINE_MANAGER_SHADER);
+
 
 	s_logger->log_d("GEngine","Beginning to initialize window");
 
@@ -270,6 +275,16 @@ void GEngine::init(GApplicationImpl* impl)
 	if (!inited)
 	{
 		s_logger->log_c("GEngine", "Unknown error occured while initializing graphic device. Engine shutdown");
+		return;
+	}
+
+	s_logger->log_d("GEngine", "Beginning to initialize shader manager");
+
+	inited = shaderManager->get()->init();
+
+	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing shader manager. Engine shutdown");
 		return;
 	}
 

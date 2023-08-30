@@ -1,6 +1,88 @@
 #include "volk.h"
-#include "internal/engine/shader/spirv_shader_utils.h"
+#include "internal/shader/spirv_shader_utils.h"
 #include <fstream>
+
+std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(std::filesystem::path fileName)
+{
+	auto path = fileName.string();
+	FILE* file = fopen(path.c_str(), "r");
+
+	if (!file)
+	{
+		return std::unexpected(READ_SHADER_FILE_ERROR_FILE_NOT_FOUND);
+	}
+
+	fseek(file, 0L, SEEK_END);
+	const auto bytesinfile = ftell(file);
+	fseek(file, 0L, SEEK_SET);
+
+	// Allocate from stack not from heap
+	char* buffer = (char*)_malloca(bytesinfile + 1);
+	
+	const size_t bytesread = fread(buffer, 1, bytesinfile, file);
+	fclose(file);
+
+	std::vector<char> buff(bytesread);
+
+	for (int i = 0; i < bytesread; i++)
+	{
+		buff[i] = *(buffer + i);
+	}
+
+	return buff;
+}
+
+SPIRV_SHADER_STAGE get_stage_from_spirv_file_name(const char* fileName)
+{
+	int i = 0;
+	int firstDot = -1;
+	while (fileName[i] != '\0') {
+		if (fileName[i] == '.') {
+			firstDot = i;
+			break;
+		}
+		i++;
+	}
+	if (firstDot == -1)
+		return SPIRV_SHADER_STAGE_UNKNOWN;
+
+	// Find the second dot
+
+	int secondDot = -1;
+	i++;
+	while (fileName[i] != '\0')
+	{
+		if (fileName[i] == '.') {
+			secondDot = i;
+			break;
+		}
+		i++;
+	}
+
+	if (secondDot == -1)
+		return SPIRV_SHADER_STAGE_UNKNOWN;
+
+	// tt.frag.spv
+	// 7 - 2 = 5
+	int len = secondDot - firstDot;
+	std::string ex(fileName, firstDot,len);
+
+	if (strcmp(ex.data(), ".frag") == 0)
+		return SPIRV_SHADER_STAGE_FRAGMENT;
+	if (strcmp(ex.data(), ".vert") == 0)
+		return SPIRV_SHADER_STAGE_VERTEX;
+	if (strcmp(ex.data(), ".geom") == 0)
+		return SPIRV_SHADER_STAGE_GEOMETRY;
+	if (strcmp(ex.data(), ".comp") == 0)
+		return SPIRV_SHADER_STAGE_COMPUTE;
+	if (strcmp(ex.data(), ".tesc") == 0)
+		return SPIRV_SHADER_STAGE_TESSCONTROL;
+	if (strcmp(ex.data(), ".tese") == 0)
+		return SPIRV_SHADER_STAGE_TESSEVALUATION;
+	
+
+	return SPIRV_SHADER_STAGE_UNKNOWN;
+}
 
 std::expected<std::string, READ_SHADER_FILE_ERROR> read_shader_file(const char* fileName)
 {
@@ -53,25 +135,6 @@ std::expected<std::string, READ_SHADER_FILE_ERROR> read_shader_file(const char* 
 	}
 
 	return code;
-}
-
-std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(const char* fileName)
-{
-	std::ifstream file(fileName, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open()) {
-		return std::unexpected(READ_SHADER_FILE_ERROR_FILE_NOT_FOUND);
-	}
-
-	std::size_t fileSize = (size_t)file.tellg();
-
-	std::vector<char> buff(fileSize);
-
-	file.seekg(0);
-	file.read(buff.data(), fileSize);
-	file.close();
-
-	return buff;
 }
 
 std::pair<SPIRV_SHADER_STAGE, SPIRV_SOURCE_TYPE> shader_stage_from_file_name(const char* fileName)
@@ -195,5 +258,28 @@ glslang_target_client_version_t vulkan_version_to_glslang_version(uint32_t vers)
 		return GLSLANG_TARGET_VULKAN_1_3;
 	default:
 		return (glslang_target_client_version_t)-1;
+	}
+}
+
+std::string stage_to_extension(SPIRV_SHADER_STAGE stage)
+{
+	switch (stage)
+	{
+	case SPIRV_SHADER_STAGE_UNKNOWN:
+		return "";
+	case SPIRV_SHADER_STAGE_VERTEX:
+		return ".vert";
+	case SPIRV_SHADER_STAGE_FRAGMENT:
+		return ".frag";
+	case SPIRV_SHADER_STAGE_GEOMETRY:
+		return ".geom";
+	case SPIRV_SHADER_STAGE_COMPUTE:
+		return ".comp";
+	case SPIRV_SHADER_STAGE_TESSCONTROL:
+		return ".tesc";
+	case SPIRV_SHADER_STAGE_TESSEVALUATION:
+		return "tese";
+	default:
+		return "";
 	}
 }

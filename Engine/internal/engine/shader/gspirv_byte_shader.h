@@ -1,27 +1,26 @@
-#ifndef GSPIRV_SHADER_H
-#define GSPIRV_SHADER_H
+#ifndef GSPIRV_BYTE_SHADER_H
+#define GSPIRV_BYTE_SHADER_H
 
 #include "engine/shader/ispirv_shader.h"
 #include <glslang_c_interface.h>
+#include <vector>
 
 class GShaderManager;
 
-class GSpirvShader : public ISpirvShader
+class GSpirvByteShader : public ISpirvShader
 {
 	friend class GShaderManager;
 public:
-	GSpirvShader(uint32_t byteSize, uint32_t* words,const glslang_input_t& usedInput);
+	GSpirvByteShader(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage);
 	// Inherited via ISpirvShader
 	virtual SPIRV_SHADER_STAGE get_spirv_stage() override;
 	virtual uint32_t get_size() override;
 	virtual bool is_failed_to_compile() override;
 	virtual uint32_t* get_spirv_words() override;
-	
 private:
-	glslang_input_t m_input;
-	uint32_t m_byteSize;
-	uint32_t* m_words;
-	
-};
+	SPIRV_SHADER_STAGE m_stage;
+	std::vector<char> m_bytes;
 
-#endif // GSPIRV_SHADER_H
+
+};
+#endif //GSPIRV_BYTE_SHADER_H

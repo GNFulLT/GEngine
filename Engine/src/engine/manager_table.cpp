@@ -4,6 +4,8 @@
 #include "engine/rendering/vulkan/ivulkan_device.h"
 #include "engine/manager/iglogger_manager.h"
 #include "engine/manager/ijob_manager.h"
+#include "engine/manager/igshader_manager.h"
+#include "engine/manager/igresource_manager.h"
 
 void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 {
@@ -16,6 +18,7 @@ void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 
 void* ManagerTable::get_engine_manager_raw(ENGINE_MANAGER manager)
 {
+	assert(false);
 	if (auto itr = m_manager_map.find((int)manager); itr != m_manager_map.end())
 	{
 		return itr->second;
@@ -27,7 +30,68 @@ void ManagerTable::set_manager(ENGINE_MANAGER manager, void* pManager)
 {
 	m_manager_map[(int)manager] = pManager;
 }
+void ManagerTable::delete_and_swap(ENGINE_MANAGER mng, void* ptr)
+{
+	delete_manager(mng);
+	void* managedPtr;
+	switch (mng)
+	{
+	case ENGINE_MANAGER_WINDOW:
+		managedPtr = new GSharedPtr<Window>((Window*)ptr);
+		break;
+	case ENGINE_MANAGER_GRAPHIC_DEVICE:
+		managedPtr = new GSharedPtr<IGVulkanDevice>((IGVulkanDevice*)ptr);
+		break;
+	case ENGINE_MANAGER_LOGGER:
+		managedPtr = new GSharedPtr<IGLoggerManager>((IGLoggerManager*)ptr);
+		break;
+	case ENGINE_MANAGER_RESOURCE:
+		managedPtr = new GSharedPtr<IGResourceManager>((IGResourceManager*)ptr);
+		break;
+	case ENGINE_MANAGER_JOB:
+		managedPtr = new GSharedPtr<IJobManager>((IJobManager*)ptr);
+		break;
+	case ENGINE_MANAGER_SHADER:
+		managedPtr = new GSharedPtr<IGShaderManager>((IGShaderManager*)ptr);
+		break;
+	default:
+		break;
+	}
 
+	set_manager(mng, managedPtr);
+
+}
+void ManagerTable::delete_manager(ENGINE_MANAGER manager)
+{
+	auto mng = get_engine_manager_managed(manager);
+	if (mng == nullptr)
+		return;
+
+	switch (manager)
+	{
+	case ENGINE_MANAGER_WINDOW:
+		delete (GSharedPtr<Window>*)mng;
+		break;
+	case ENGINE_MANAGER_GRAPHIC_DEVICE:
+		delete (GSharedPtr<IGVulkanDevice>*)mng;
+		break;
+	case ENGINE_MANAGER_LOGGER:
+		delete (GSharedPtr<IGLoggerManager>*)mng;
+		break;
+	case ENGINE_MANAGER_RESOURCE:
+		delete (GSharedPtr<IGResourceManager>*)mng;
+		break;
+	case ENGINE_MANAGER_JOB:
+		delete (GSharedPtr<IJobManager>*)mng;
+		break;
+	case ENGINE_MANAGER_SHADER:
+		delete (GSharedPtr<IGShaderManager>*)mng;
+		break;
+	default:
+		break;
+	}
+
+}
 void ManagerTable::delete_managers()
 {
 	if (auto window = get_engine_manager_managed(ENGINE_MANAGER_WINDOW); window != nullptr)
@@ -44,9 +108,18 @@ void ManagerTable::delete_managers()
 		//X TODO : DELETE LOGGER
 		delete (GSharedPtr<IGLoggerManager>*)logger;
 	}
+	if (auto resource = get_engine_manager_managed(ENGINE_MANAGER_RESOURCE); resource != nullptr)
+	{
+		delete (GSharedPtr<IGResourceManager>*)resource;
+	}
 	if (auto job = get_engine_manager_managed(ENGINE_MANAGER_JOB); job != nullptr)
 	{
 		//X TODO : DELETE LOGGER
 		delete (GSharedPtr<IJobManager>*)job;
+	}
+	if (auto shader = get_engine_manager_managed(ENGINE_MANAGER_SHADER); shader != nullptr)
+	{
+		//X TODO : DELETE LOGGER
+		delete (GSharedPtr<IGShaderManager>*)shader;
 	}
 }

@@ -6,9 +6,10 @@
 #include <glslang_c_interface.h>
 
 #include "engine/shader/ispirv_shader.h"
-#include "internal/engine/utils.h"
+#include "internal/utils.h"
 #include <utility>
 #include <vector>
+#include <filesystem>
 
 enum READ_SHADER_FILE_ERROR
 {
@@ -17,10 +18,9 @@ enum READ_SHADER_FILE_ERROR
 };
 
 
+SPIRV_SHADER_STAGE get_stage_from_spirv_file_name(const char* fileName);
 
 std::expected<std::string, READ_SHADER_FILE_ERROR> read_shader_file(const char* fileName);
-
-std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(const char* fileName);
 
 std::pair<SPIRV_SHADER_STAGE, SPIRV_SOURCE_TYPE> shader_stage_from_file_name(const char* fileName);
 
@@ -33,5 +33,10 @@ SPIRV_SHADER_STAGE glslang_stage_to_spirv_shader_stage(glslang_stage_t stage);
 SPIRV_SOURCE_TYPE glslang_source_to_spirv_source_type(glslang_source_t type);
 
 glslang_target_client_version_t vulkan_version_to_glslang_version(uint32_t vers);
+
+std::string stage_to_extension(SPIRV_SHADER_STAGE stage);
+
+
+std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(std::filesystem::path fileName);
 
 #endif // SPIRV_SHADER_UTILS_H

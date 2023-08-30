@@ -11,6 +11,8 @@ public:
 	virtual ~IInjectManagerHelper() = default;
 
 	virtual void* get_manager_spec(ENGINE_MANAGER manager) = 0;
+
+	virtual void delete_and_swap(ENGINE_MANAGER manager, void* mngPtr) = 0;
 private:
 };
 

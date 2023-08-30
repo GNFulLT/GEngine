@@ -16,6 +16,8 @@
 #include <stack>
 #include "internal/window/content_helper/descriptors/gimgui_texteditor_descriptor.h"
 #include "internal/window/content_helper/descriptors/gimgui_shader_descriptor.h"
+#include "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h"
+
 GImGuiContentBrowserWindow::GImGuiContentBrowserWindow()
 {
 	m_name = "ContentBrowser";
@@ -83,6 +85,7 @@ bool GImGuiContentBrowserWindow::init()
 
 	m_contentHelper.register_descriptor(new GImGuiTextEditorDescriptor());
 	m_contentHelper.register_descriptor(new GImGuiShaderDescriptor());
+	m_contentHelper.register_descriptor(new GImGuiSpirvDescriptor());
 	return true;
 }
 

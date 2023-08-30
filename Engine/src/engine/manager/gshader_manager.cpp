@@ -5,6 +5,8 @@
 #include "engine/rendering/vulkan/ivulkan_app.h"
 #include <glslang/Public/resource_limits_c.h>
 #include "internal/engine/shader/gspirv_shader.h"
+#include "spirv-tools/libspirv.h"
+#include "internal/engine/shader/gspirv_byte_shader.h"
 
 std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shader_text(const std::string& text, SPIRV_SHADER_STAGE stage, SPIRV_SOURCE_TYPE sourceType)
 {
@@ -25,6 +27,8 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shade
 		.messages = GLSLANG_MSG_DEFAULT_BIT,
 		.resource = glslang_default_resource()
 	};
+
+	glslang_initialize_process();
 
 	glslang_shader_t* shader = glslang_shader_create(&input);
 	// Preprocess 
@@ -70,6 +74,8 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shade
 	glslang_program_delete(program);
 	glslang_shader_delete(shader);
 
+	glslang_finalize_process();
+
 	return spirvShader;
 }
 	
@@ -87,6 +93,21 @@ bool GShaderManager::init()
 
 	return true;
 
+}
+
+std::expected<ISpirvShader*, SHADER_LOAD_ERROR> GShaderManager::load_shader_from_bytes(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage)
+{
+	//X First check the bytes are corrupted
+	spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_5);
+	spv_const_binary_t binary = { (uint32_t*)bytes.data(), bytes.size() };
+	spv_result_t result = spvValidate(context, &binary, nullptr);
+
+	if (result != SPV_SUCCESS) {
+		return std::unexpected(SHADER_LOAD_ERROR_CORRUPTED_SPIRV);
+	}	
+	spvContextDestroy(context);
+	
+	return new GSpirvByteShader(bytes,stage);
 }
 
 void GShaderManager::set_to_defaults(glslang_resource_s* res)

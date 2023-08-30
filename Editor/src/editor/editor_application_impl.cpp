@@ -16,6 +16,8 @@
 #include "engine/manager/iinject_manager_helper.h"
 #include "public/platform/window_props.h"
 #include "internal/window/gimgui_log_window.h"
+#include "internal/manager/geditor_shader_manager.h"
+GEditorShaderManager* s_shaderManager;
 EditorApplicationImpl* EditorApplicationImpl::get_instance()
 {
     return s_instance;
@@ -38,6 +40,9 @@ void EditorApplicationImpl::inject_managers(IInjectManagerHelper* helper)
     auto prop = (WindowProps*)helper->get_manager_spec(ENGINE_MANAGER_WINDOW);
     if(prop != nullptr)
         prop->hasCaption = false;
+
+    s_shaderManager = new GEditorShaderManager();
+    helper->delete_and_swap(ENGINE_MANAGER_SHADER, s_shaderManager);
 }
 
 bool EditorApplicationImpl::before_update()
@@ -87,14 +92,14 @@ void EditorApplicationImpl::after_render()
 
 bool EditorApplicationImpl::init(GEngine* engine)
 {
+    s_instance = this;
 
     m_engine = engine;
     IManagerTable* table = m_engine->get_manager_table();
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
     m_logger = (*logger)->create_owning_glogger("EditorLayer");
     m_logWindwLogger = (*logger)->create_owning_glogger("Editor",false);
-    
-    s_instance = this;
+    s_shaderManager->editor_init();
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
 
     m_imguiDescriptorCreator = new GImGuiDescriptorCreator(dev->get()->as_logical_device().get());

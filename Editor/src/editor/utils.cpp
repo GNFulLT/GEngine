@@ -50,6 +50,68 @@ FILE_TYPE get_file_type_from_name(const char* str)
     {
         return FILE_TYPE_JSON;
     }
+    else if (endsWith(str, ".spv"))
+    {
+        return FILE_TYPE_SPIRV;
+    }
+    else if (endsWith(str, ".hlsl_frag"))
+    {
+        return FILE_TYPE_HLSL;
+
+    }
+    else if (endsWith(str, ".hlsl_vertex"))
+    {
+        return FILE_TYPE_HLSL;
+
+    }
+    else if (endsWith(str, ".hlsl_geom"))
+    {
+        return FILE_TYPE_HLSL;
+
+    }
+    else if (endsWith(str, ".hlsl_comp"))
+    {
+        return FILE_TYPE_HLSL;
+
+    }
+    else if (endsWith(str, ".hlsl_tesc"))
+    {
+        return FILE_TYPE_HLSL;
+
+    }
+    else if (endsWith(str, ".hlsl_tese"))
+    {
+        return FILE_TYPE_HLSL;
+    }
+    else if (endsWith(str, ".glsl_frag"))
+    {
+        return FILE_TYPE_GLSL;
+
+    }
+    else if (endsWith(str, ".glsl_vertex"))
+    {
+        return FILE_TYPE_GLSL;
+
+    }
+    else if (endsWith(str, ".glsl_geom"))
+    {
+        return FILE_TYPE_GLSL;
+
+    }
+    else if (endsWith(str, ".glsl_comp"))
+    {
+        return FILE_TYPE_GLSL;
+
+    }
+    else if (endsWith(str, ".glsl_tesc"))
+    {
+        return FILE_TYPE_GLSL;
+
+    }
+    else if (endsWith(str, ".glsl_tese"))
+    {
+        return FILE_TYPE_GLSL;
+    }
     else {
         return FILE_TYPE_UNKNOWN;
     }
