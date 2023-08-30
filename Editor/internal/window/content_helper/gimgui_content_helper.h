@@ -22,7 +22,7 @@ public:
 private:
 	ankerl::unordered_dense::segmented_map<FILE_TYPE, std::vector<GImGuiContentDescriptor*>> m_descriptorMap;
 
-	std::vector<std::unique_ptr<GImGuiContentDescriptor>> m_allDescriptors;
+	std::vector<GImGuiContentDescriptor*> m_allDescriptors;
 
 };
 

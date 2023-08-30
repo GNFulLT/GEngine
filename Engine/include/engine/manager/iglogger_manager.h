@@ -26,6 +26,8 @@ public:
 
 
 	virtual GSharedPtr<IOwningGLogger> create_owning_glogger(const char* ownerName) = 0;
+
+	virtual GSharedPtr<IOwningGLogger> create_owning_glogger(const char* ownerName, bool haveDefaultSink) = 0;
 private:
 };
 

@@ -42,10 +42,16 @@ void GLoggerManager::enable_file_logging(const char* fileName, LOG_LEVEL level)
 	spdlog::default_logger()->sinks().push_back(file_sink);
 }
 
+
 GSharedPtr<IOwningGLogger> GLoggerManager::create_owning_glogger(const char* ownerName)
 {
 	//X TODO DONT USE NEW GDNEWDA+
-	return GSharedPtr<IOwningGLogger>(new GOwningGLogger(ownerName));
+	return create_owning_glogger(ownerName,true);
+}
+GSharedPtr<IOwningGLogger> GLoggerManager::create_owning_glogger(const char* ownerName,bool haveSink)
+{
+	//X TODO DONT USE NEW GDNEWDA+
+	return GSharedPtr<IOwningGLogger>(new GOwningGLogger(ownerName,haveSink));
 }
 
 

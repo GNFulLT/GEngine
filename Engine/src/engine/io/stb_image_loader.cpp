@@ -44,5 +44,6 @@ GImage_Descriptor* STBImageLoader::load(std::string_view path,int dedicatedForma
 
 void STBImageLoader::unload(GImage_Descriptor* img)
 {
+	stbi_image_free(img->pixels);
 	delete img;
 }

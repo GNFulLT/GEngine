@@ -412,7 +412,7 @@ class GImGuiTextEditorWindow : public IGImGuiWindowImpl
 {
 public:
 	GImGuiTextEditorWindow(std::filesystem::path path,FILE_TYPE type,bool isReadOnly = true);
-
+	~GImGuiTextEditorWindow();
 	static bool can_open(FILE_TYPE type);
 
 	// Inherited via IGImGuiWindowImpl

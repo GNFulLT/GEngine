@@ -227,3 +227,8 @@ ImGuiWindowManager* ImGuiLayer::get_window_manager()
 {
 	return m_windowManager;
 }
+
+GImGuiLogWindow* ImGuiLayer::get_log_window()
+{
+	return m_logWindow;
+}

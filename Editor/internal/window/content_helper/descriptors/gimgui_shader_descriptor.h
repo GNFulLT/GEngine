@@ -8,6 +8,7 @@ class GImGuiShaderDescriptor : public IGImGuiContentDescriptorImpl
 {
 public:
 	GImGuiShaderDescriptor();
+	~GImGuiShaderDescriptor();
 	// Inherited via IGImGuiContentDescriptorImpl
 	virtual const std::vector<FILE_TYPE>* get_file_types() override;
 	virtual void draw_menu_for_file(std::filesystem::path path) override;

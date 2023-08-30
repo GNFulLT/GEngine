@@ -41,6 +41,7 @@ std::expected<IGVulkanSampler*, std::string> GDefaultSamplerCreator::create_samp
 void GDefaultSamplerCreator::destroy_sampler(IGVulkanSampler* sampler)
 {
 	vkDestroySampler(sampler->get_bounded_device()->get_vk_device(), sampler->get_vk_sampler(), nullptr);
+	delete sampler;
 }
 
 const char* GDefaultSamplerCreator::get_name()

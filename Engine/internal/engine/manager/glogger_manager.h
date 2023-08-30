@@ -27,6 +27,8 @@ public:
 	void enable_file_logging(const char* fileName,LOG_LEVEL level);
 
 	virtual GSharedPtr<IOwningGLogger> create_owning_glogger(const char* ownerName) override;
+
+	virtual GSharedPtr<IOwningGLogger> create_owning_glogger(const char* ownerName,bool haveDefaultSink) override;
 private:
 	inline static GLoggerManager* s_instance = nullptr;;
 };

@@ -37,6 +37,8 @@ public:
 
 	GSharedPtr<IOwningGLogger> get_editor_logger();
 
+	GSharedPtr<IOwningGLogger> get_editor_log_window_logger();
+
 	GImGuiDescriptorCreator* get_descriptor_creator();
 
 	ImGuiLayer* get_editor_layer();
@@ -45,6 +47,7 @@ private:
 	ImGuiLayer* m_imguiLayer;
 	GImGuiDescriptorCreator* m_imguiDescriptorCreator;
 	GSharedPtr<IOwningGLogger> m_logger;
+	GSharedPtr<IOwningGLogger> m_logWindwLogger;
 	inline static EditorApplicationImpl* s_instance;
 
 };

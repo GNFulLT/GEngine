@@ -8,6 +8,8 @@ class GImGuiContentDescriptor
 public:
 	GImGuiContentDescriptor(IGImGuiContentDescriptorImpl* impl);
 
+	void destroy();
+
 	const std::vector<FILE_TYPE>* get_file_type();
 
 	void draw_menu_for_file(std::filesystem::path path);

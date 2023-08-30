@@ -8,7 +8,7 @@
 class GOwningGLogger : public IOwningGLogger
 {
 public:
-	GOwningGLogger(const char* ownerName);
+	GOwningGLogger(const char* ownerName,bool haveSink = true);
 
 	// Inherited via IOwningGlogger
 	virtual void set_log_level(LOG_LEVEL level) override;
@@ -19,7 +19,10 @@ public:
 	virtual void log_e(const char* msg) override;
 	virtual void log_c(const char* msg) override;
 	virtual const char* get_owner_name() override;
+
+	virtual void add_sink(spdlog::sinks::sink* sink) override;
 private:
+	bool m_haveSink;
 	std::string m_ownerName;
 	std::shared_ptr<spdlog::logger> m_logger;
 

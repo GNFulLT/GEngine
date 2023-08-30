@@ -172,6 +172,7 @@ void GTextureResource::unload_impl()
 	if (m_gpuBuffer != nullptr)
 	{
 		m_gpuBuffer->unload();
+		delete m_gpuBuffer;
 		m_gpuBuffer = nullptr;
 	}
 	if (m_inUsageSampler != nullptr && m_samplerCreator != nullptr)

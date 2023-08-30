@@ -15,7 +15,7 @@
 #include "internal/rendering/vulkan/gimgui_descriptor_creator.h"
 #include "engine/manager/iinject_manager_helper.h"
 #include "public/platform/window_props.h"
-
+#include "internal/window/gimgui_log_window.h"
 EditorApplicationImpl* EditorApplicationImpl::get_instance()
 {
     return s_instance;
@@ -92,6 +92,8 @@ bool EditorApplicationImpl::init(GEngine* engine)
     IManagerTable* table = m_engine->get_manager_table();
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
     m_logger = (*logger)->create_owning_glogger("EditorLayer");
+    m_logWindwLogger = (*logger)->create_owning_glogger("Editor",false);
+    
     s_instance = this;
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
 
@@ -149,12 +151,23 @@ bool EditorApplicationImpl::init(GEngine* engine)
     m_renderViewport = engine->create_offscreen_viewport(m_imguiDescriptorCreator);
 
     m_imguiLayer->set_viewport(m_renderViewport);
+
+    
+    if (auto logWin = m_imguiLayer->get_log_window();logWin != nullptr)
+    {
+        m_logWindwLogger->add_sink(logWin->create_sink());
+    }
     return true;    
 }
 
 GSharedPtr<IOwningGLogger> EditorApplicationImpl::get_editor_logger()
 {
     return m_logger;
+}
+
+GSharedPtr<IOwningGLogger> EditorApplicationImpl::get_editor_log_window_logger()
+{
+    return m_logWindwLogger;
 }
 
 GImGuiDescriptorCreator* EditorApplicationImpl::get_descriptor_creator()

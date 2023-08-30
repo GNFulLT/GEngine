@@ -75,6 +75,11 @@ bool GImGuiTextEditorWindow::can_open(FILE_TYPE type)
 	}
 }
 
+GImGuiTextEditorWindow::~GImGuiTextEditorWindow()
+{
+	int a = 5;
+}
+
 bool GImGuiTextEditorWindow::init()
 {
 	return true;

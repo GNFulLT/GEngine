@@ -2,6 +2,7 @@
 #define IOWNING_GLOGGER_H
 
 #include "engine/GEngine_EXPORT.h"
+#include <spdlog/sinks/base_sink-inl.h>
 
 
 enum LOG_LEVEL
@@ -14,6 +15,8 @@ enum LOG_LEVEL
 	LOG_LEVEL_CRITICAL,
 	LOG_LEVEL_OFF,
 };
+
+#include <mutex>
 
 
 class ENGINE_API IOwningGLogger
@@ -31,6 +34,8 @@ public:
 	virtual void log_c(const char* msg) = 0;
 
 	virtual const char* get_owner_name() = 0;
+
+	virtual void add_sink(spdlog::sinks::sink* sink) = 0;
 
 private:
 };

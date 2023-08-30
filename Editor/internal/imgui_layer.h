@@ -31,6 +31,8 @@ public:
 	void set_viewport(IGVulkanViewport* viewport);
 
 	ImGuiWindowManager* get_window_manager();
+
+	GImGuiLogWindow* get_log_window();
 private:
 	IGVulkanDevice* m_dev;
 	Window* m_window;

@@ -6,6 +6,11 @@ GImGuiContentHelper::GImGuiContentHelper()
 
 void GImGuiContentHelper::destroy()
 {
+	for (int i = 0; i < m_allDescriptors.size(); i++)
+	{
+		m_allDescriptors[i]->destroy();
+		delete m_allDescriptors[i];
+	}
 }
 
 void GImGuiContentHelper::register_descriptor(IGImGuiContentDescriptorImpl* impl)
