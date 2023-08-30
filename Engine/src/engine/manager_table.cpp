@@ -3,6 +3,8 @@
 #include "public/platform/window.h"
 #include "engine/rendering/vulkan/ivulkan_device.h"
 #include "engine/manager/iglogger_manager.h"
+#include "engine/manager/ijob_manager.h"
+
 void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 {
 	if (auto itr = m_manager_map.find((int)manager);itr != m_manager_map.end())
@@ -41,7 +43,10 @@ void ManagerTable::delete_managers()
 	{
 		//X TODO : DELETE LOGGER
 		delete (GSharedPtr<IGLoggerManager>*)logger;
-
 	}
-	
+	if (auto job = get_engine_manager_managed(ENGINE_MANAGER_JOB); job != nullptr)
+	{
+		//X TODO : DELETE LOGGER
+		delete (GSharedPtr<IJobManager>*)job;
+	}
 }

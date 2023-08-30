@@ -16,6 +16,7 @@
 #include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
 #include "internal/engine/rendering/vulkan/gvulkan_offscreen_viewport.h"
 #include "internal/engine/manager/ginjection_manager.h"
+#include "internal/engine/manager/gjob_manager.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -27,6 +28,8 @@ static GVulkanDevice* s_device;
 static GLoggerManager* s_logger;
 static GResourceManager* s_resourceManager;
 static GEngine* s_engine;
+static GJobManager* s_jobManager;
+
 GEngine::GEngine()
 {
 	m_window = create_default_window();
@@ -39,11 +42,13 @@ GEngine::GEngine()
 	auto dev = new GVulkanDevice(m_vulkanApp);
 	s_logger = new GLoggerManager();
 	s_resourceManager = new GResourceManager();
+	s_jobManager = new GJobManager();
 
 	managerTable->set_manager(ENGINE_MANAGER_GRAPHIC_DEVICE, new GSharedPtr<IGVulkanDevice>(dev));
 	managerTable->set_manager(ENGINE_MANAGER_WINDOW, new GSharedPtr<Window>(m_window));
 	managerTable->set_manager(ENGINE_MANAGER_LOGGER, new GSharedPtr<IGLoggerManager>(s_logger));
 	managerTable->set_manager(ENGINE_MANAGER_RESOURCE, new GSharedPtr<IGResourceManager>(s_resourceManager));
+	managerTable->set_manager(ENGINE_MANAGER_JOB, new GSharedPtr<IJobManager>(s_jobManager));
 
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;

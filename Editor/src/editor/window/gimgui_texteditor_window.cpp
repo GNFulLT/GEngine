@@ -10,6 +10,10 @@
 #include <streambuf>
 #include "editor/editor_application_impl.h"
 #include "engine/io/iowning_glogger.h"
+#include "engine/gengine.h"
+#include "engine/imanager_table.h"
+#include <thread>
+#include <future>
 
 GImGuiTextEditorWindow::GImGuiTextEditorWindow(std::filesystem::path path,FILE_TYPE type,bool isReadOnly)
 {
@@ -99,9 +103,36 @@ void GImGuiTextEditorWindow::render()
 	{
 		if (!m_firstSavePress && m_editor.GetEditState())
 		{
-			EditorApplicationImpl::get_instance()->get_editor_logger()->log_d("Pressed save");
+
+			if (!m_saveFuture.valid())
+			{
+				m_saveFuture = std::async([&]() {
+					std::ofstream t(m_filePath, std::ios::out | std::ios::trunc);
+					if (t.good())
+					{
+						std::string text = m_editor.GetText();
+						t.write(text.c_str(), text.size() - 1);
+						m_editor.Saved();
+					}
+					});
+			}
+			else
+			{
+				auto state = m_saveFuture.wait_for(std::chrono::seconds(0));
+				if (state == std::future_status::ready)
+				{
+					m_saveFuture = std::async([&]() {
+						std::ofstream t(m_filePath, std::ios::out | std::ios::trunc);
+						if (t.good())
+						{
+							std::string text = m_editor.GetText();
+							t.write(text.c_str(), text.size() - 1);
+							m_editor.Saved();
+						}
+						});
+				}
+			}
 			m_firstSavePress = true;
-			m_editor.Saved();
 		}
 	}
 	else
@@ -142,6 +173,16 @@ bool GImGuiTextEditorWindow::can_open_multiple() const
 const char* GImGuiTextEditorWindow::get_window_id()
 {
 	return m_fileFullPath.c_str();
+}
+
+std::filesystem::path GImGuiTextEditorWindow::get_file_path()
+{
+	return m_filePath;
+}
+
+TextEditor* GImGuiTextEditorWindow::get_editor()
+{
+	return &m_editor;
 }
 
 

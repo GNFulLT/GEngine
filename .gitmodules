@@ -29,3 +29,6 @@
 [submodule "ThirdParty/spirv-headers"]
 	path = ThirdParty/spirv-headers
 	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "ThirdParty/taskflow"]
+	path = ThirdParty/taskflow
+	url = https://github.com/taskflow/taskflow.git

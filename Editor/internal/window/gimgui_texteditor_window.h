@@ -16,6 +16,7 @@
 #include <imgui.h>
 #include <filesystem>
 #include "internal/file_type.h"
+#include <future>
 
 class TextEditor
 {
@@ -427,6 +428,10 @@ public:
 
 	virtual bool can_open_multiple() const override;
 	virtual const char* get_window_id() override;
+
+	std::filesystem::path get_file_path();
+	TextEditor* get_editor();
+
 private:
 	std::string m_name;
 	GImGuiWindowStorage* m_storage;
@@ -436,6 +441,8 @@ private:
 	std::string m_fileFullPath;
 
 	bool m_firstSavePress = false;
+
+	std::future<void> m_saveFuture;
 };
 
 #endif // GIMGUI_TEXTEDITOR_WINDOW_H

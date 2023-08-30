@@ -1,0 +1,12 @@
+#ifndef TIME_UNIT_H
+#define TIME_UNIT_H
+
+
+enum TIME_UNIT
+{
+	TIME_UNIT_MILLIS,
+	TIME_UNIT_SECONDS,
+	TIME_UNIT_MINUTES
+};
+
+#endif // TIME_UNIT_H
