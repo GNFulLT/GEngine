@@ -18,6 +18,7 @@
 #include "internal/window/gimgui_texteditor_window.h"
 #include "internal/utils.h"
 #include "imgui/imgui_internal.h"
+
 ImGuiWindowManager::~ImGuiWindowManager()
 {
 	int a = 5;

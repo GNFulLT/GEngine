@@ -13,6 +13,7 @@ class GImGuiViewportWindow;
 class GSceneRenderer;
 class GImGuiTextEditorWindow;
 class GImGuiContentBrowserWindow;
+class GImGuiLogWindow;
 
 class ImGuiLayer
 {
@@ -37,7 +38,7 @@ private:
 	VkDescriptorPool_T* m_descriptorPool;
 	IGVulkanViewport* m_viewport;
 	ImGuiWindowManager* m_windowManager;
-	
+	GImGuiLogWindow* m_logWindow;
 	// Builtin windows
 	GImGuiViewportWindow* m_renderViewportWindow;
 	GImGuiContentBrowserWindow* m_contentBrowserWindow;

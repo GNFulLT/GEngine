@@ -19,6 +19,7 @@
 #include "internal/imgui_window_manager.h"
 #include "internal/window/gimgui_texteditor_window.h"
 #include "internal/window/gimgui_content_browser_window.h"
+#include "internal/window/gimgui_log_window.h"
 
 #include "internal/menu/gtheme_menu.h"
 
@@ -33,7 +34,7 @@ ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* a
 	m_windowManager = new ImGuiWindowManager();
 	m_renderViewportWindow = new GImGuiViewportWindow();
 	m_contentBrowserWindow = new GImGuiContentBrowserWindow();
-
+	m_logWindow = new GImGuiLogWindow();
 
 	m_sceneRenderer = new GSceneRenderer(viewport,dev);
 
@@ -165,6 +166,12 @@ bool ImGuiLayer::init()
 	{
 		delete m_contentBrowserWindow;
 		m_contentBrowserWindow = nullptr;
+	}
+	created = m_windowManager->create_imgui_window(m_logWindow, GIMGUIWINDOWDIR_BOTTOM);
+	if (!created)
+	{
+		delete m_logWindow;
+		m_logWindow = nullptr;
 	}
 	return true;
 }
