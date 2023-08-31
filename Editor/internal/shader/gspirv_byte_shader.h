@@ -11,6 +11,7 @@ class GSpirvByteShader : public ISpirvShader
 {
 public:
 	GSpirvByteShader(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage);
+	~GSpirvByteShader();
 	// Inherited via ISpirvShader
 	virtual SPIRV_SHADER_STAGE get_spirv_stage() override;
 	virtual uint32_t get_size() override;

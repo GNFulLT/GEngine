@@ -74,7 +74,7 @@ target_link_libraries(GEngine_Engine PRIVATE spdlog)
 target_link_libraries(GEngine_Engine PRIVATE GPUOpen::VulkanMemoryAllocator VulkanMemoryAllocator)
 target_link_libraries(GEngine_Engine PUBLIC glslang MachineIndependent glslang-default-resource-limits SPIRV)
 target_link_libraries(GEngine_Engine PUBLIC SPIRV-Tools-static)
-target_link_libraries(GEngine_Engine PUBLIC spirv-cross-core)
+target_link_libraries(GEngine_Engine PUBLIC spirv-cross-core spirv-cross-hlsl spirv-cross-hlsl)
 
 include(GenerateExportHeader)
 

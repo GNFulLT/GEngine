@@ -4,6 +4,7 @@
 #include "engine/io/iowning_glogger.h"
 #include "internal/shader/spirv_shader_utils.h"
 #include <spdlog/fmt/fmt.h>
+#include <spirv_cross/spirv_hlsl.hpp>
 
 GSpirvShaderDebugger::GSpirvShaderDebugger()
 {
@@ -25,6 +26,11 @@ GSpirvShaderDebugger::GSpirvShaderDebugger(uint32_t* words, uint32_t wordCount,S
 	m_executionModel = spriv_shader_stage_to_execution_model(stage);
 }
 
+GSpirvShaderDebugger::~GSpirvShaderDebugger()
+{
+	int a = 5;
+}
+
 bool GSpirvShaderDebugger::is_valid() const noexcept
 {
 	return m_isValid;
@@ -33,7 +39,7 @@ bool GSpirvShaderDebugger::is_valid() const noexcept
 void GSpirvShaderDebugger::load()
 {
 	try
-	{
+	{		
 		m_compiler = std::unique_ptr<spirv_cross::Compiler>(new spirv_cross::Compiler(m_words, m_wordCount));
 		m_isValid = true;
 		m_shaderResources = m_compiler->get_shader_resources();
@@ -48,21 +54,57 @@ void GSpirvShaderDebugger::load()
 
 std::string GSpirvShaderDebugger::get_all_uniform_buffers()
 {
-	auto uniforms = m_shaderResources.uniform_buffers;
-	auto outs = m_shaderResources.stage_outputs;
+	
+	auto& uniforms = m_shaderResources.uniform_buffers;
+	auto& outs = m_shaderResources.stage_outputs;
+	auto& ins = m_shaderResources.stage_inputs;
+	
 
 	std::string debugStr;
-
-	for (const auto& out : outs)
+	
+	if (outs.size() > 0)
 	{
-		uint32_t binding = m_compiler->get_decoration(out.id, spv::DecorationLocation);
-		debugStr += fmt::format("Out name : {}, Location to : {}", out.name.c_str(), binding);
+		debugStr += "Stage Outputs : \n------------------------------------------------------\n";
+
+		for (const auto& out : outs)
+		{
+			uint32_t location = m_compiler->get_decoration(out.id, spv::DecorationLocation);
+			debugStr += fmt::format("StageOut name : {}, Location to : {}\n", out.name.c_str(), location);
+		}
 	}
-	for (const auto& uniform : uniforms)
+	if (ins.size() > 0)
 	{
-		uint32_t binding = m_compiler->get_decoration(uniform.id, spv::DecorationBinding);
-		debugStr += fmt::format("Uniform name : {}, Binding to : {}", uniform.name.c_str(), binding);
+		if (debugStr.size() == 0)
+		{
+			debugStr += "Stage Inputs : \n------------------------------------------------------\n";
+		}
+		else
+		{
+			debugStr += "\n\n\nStage Inputs : \n------------------------------------------------------\n";
+		}
+		for (const auto& stageIn : ins)
+		{
+			uint32_t location = m_compiler->get_decoration(stageIn.id, spv::DecorationLocation);
+			debugStr += fmt::format("StageIn name : {}, Location to : {}\n", stageIn.name.c_str(), location);
 
+		}
+	}
+	if (uniforms.size() > 0)
+	{
+		if (debugStr.size() == 0)
+		{
+			debugStr += "Uniform Buffers : \n------------------------------------------------------\n";
+		}
+		else
+		{
+			debugStr += "\n\n\nUniform Buffers : \n------------------------------------------------------\n";
+		}
+		for (const auto& uniform : uniforms)
+		{
+			uint32_t binding = m_compiler->get_decoration(uniform.id, spv::DecorationBinding);
+			debugStr += fmt::format("Uniform name : {}, Binding to : {}\n", uniform.name.c_str(), binding);
+
+		}
 	}
 	
 	return debugStr;

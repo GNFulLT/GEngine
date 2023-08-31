@@ -4,14 +4,13 @@
 #include "engine/io/iowning_glogger.h"
 #include "editor/editor_application_impl.h"
 
-EditorDebuggableSPIRVShader::EditorDebuggableSPIRVShader(uint32_t byteSize, uint32_t* words, const glslang_input_t& usedInput)
+EditorDebuggableSPIRVShader::EditorDebuggableSPIRVShader(uint32_t byteSize, uint32_t* words, const glslang_input_t& usedInput) : m_debugger(words, byteSize / sizeof(uint32_t), glslang_stage_to_spirv_shader_stage(m_usedInput.stage))
 {
 	m_byteSize = byteSize;
 	m_words = words;
 	m_usedInput = usedInput;
 
 	//X TODO CHECK COMPILER CTOR THROWS EXCEPTION
-	m_debugger = GSpirvShaderDebugger(words, byteSize / sizeof(uint32_t), glslang_stage_to_spirv_shader_stage(m_usedInput.stage));
 
 	m_debugger.load();	
 }

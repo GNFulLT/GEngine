@@ -1,14 +1,17 @@
 #include "internal/shader/gspirv_byte_shader.h"
 #include "internal/shader/spirv_shader_utils.h"
 
-GSpirvByteShader::GSpirvByteShader(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage)
+GSpirvByteShader::GSpirvByteShader(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage) : m_debugger((uint32_t*)bytes.data(), bytes.size() / sizeof(uint32_t), stage)
 {
 	m_bytes = bytes;
 	m_stage = stage;
 
-	m_debugger = GSpirvShaderDebugger((uint32_t*)bytes.data(), bytes.size() / sizeof(uint32_t),stage);
-
 	m_debugger.load();
+}
+
+GSpirvByteShader::~GSpirvByteShader()
+{
+	int a = 5;
 }
 
 SPIRV_SHADER_STAGE GSpirvByteShader::get_spirv_stage()

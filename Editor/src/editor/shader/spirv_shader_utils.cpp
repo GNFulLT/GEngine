@@ -16,8 +16,7 @@ std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(std::
 	const auto bytesinfile = ftell(file);
 	fseek(file, 0L, SEEK_SET);
 
-	// Allocate from stack not from heap
-	char* buffer = (char*)_malloca(bytesinfile + 1);
+	char* buffer = (char*)malloc(bytesinfile + 1);
 	
 	const size_t bytesread = fread(buffer, 1, bytesinfile, file);
 	fclose(file);
@@ -28,6 +27,8 @@ std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(std::
 	{
 		buff[i] = *(buffer + i);
 	}
+
+	free(buffer);
 
 	return buff;
 }
@@ -98,7 +99,7 @@ std::expected<std::string, READ_SHADER_FILE_ERROR> read_shader_file(const char* 
 	const auto bytesinfile = ftell(file);
 	fseek(file, 0L, SEEK_SET);
 
-	char* buffer = (char*)_malloca(bytesinfile + 1);
+	char* buffer = (char*)malloc(bytesinfile + 1);
 	const size_t bytesread = fread(buffer, 1, bytesinfile, file);
 	fclose(file);
 
@@ -113,6 +114,8 @@ std::expected<std::string, READ_SHADER_FILE_ERROR> read_shader_file(const char* 
 	}
 
 	std::string code(buffer);
+	
+	delete buffer;
 
 	while (code.find("#include ") != code.npos)
 	{

@@ -25,14 +25,27 @@ const std::vector<FILE_TYPE>* GImGuiSpirvDescriptor::get_file_types()
 //X TODO : Clean code
 void GImGuiSpirvDescriptor::draw_menu_for_file(std::filesystem::path path)
 {
-	if (ImGui::Selectable("Show connections"))
+	if (ImGui::Selectable("Inspect SPIR-V Binary"))
 	{
 		// First try to deduce the stage from file name
 		if (!m_loadFileFuture.valid())
 		{
 			m_loadFileFuture = std::async([=]() {
-				load_spv_file(path);
-			});
+				auto spvFile = load_spv_file(path);
+				//X TODO : SAFE CONVERT
+				GSpirvByteShader* shader = (GSpirvByteShader*)spvFile;
+				if (!shader->is_debug_active())
+				{
+					EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e("Couldn't disassemble spv file");
+				}
+				else
+				{
+					auto debugger = shader->get_debugger();
+					auto fileName = path.filename().string();
+					EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(), fileName, "inspector", true);
+					delete shader;
+				}
+				});
 		}
 		else
 		{
@@ -52,6 +65,7 @@ void GImGuiSpirvDescriptor::draw_menu_for_file(std::filesystem::path path)
 						auto debugger = shader->get_debugger();
 						auto fileName = path.filename().string();
 						EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(),fileName,"inspector",true);
+						delete shader;
 					}
 				});
 			}

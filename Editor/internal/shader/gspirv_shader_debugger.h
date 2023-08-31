@@ -12,7 +12,7 @@ class GSpirvShaderDebugger
 public:
 	GSpirvShaderDebugger();
 	GSpirvShaderDebugger(uint32_t* words,uint32_t wordCount,SPIRV_SHADER_STAGE stage);
-
+	~GSpirvShaderDebugger();
 	bool is_valid() const noexcept;
 
 	void load();
