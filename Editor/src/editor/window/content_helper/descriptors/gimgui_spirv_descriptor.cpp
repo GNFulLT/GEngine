@@ -9,6 +9,8 @@
 #include "internal/shader/gspirv_byte_shader.h"
 #include "internal/imgui_layer.h"
 #include "internal/imgui_window_manager.h"
+#include "engine/manager/igresource_manager.h"
+#include "engine/resource/igshader_resource.h"
 
 GImGuiSpirvDescriptor::GImGuiSpirvDescriptor()
 {
@@ -28,6 +30,38 @@ void GImGuiSpirvDescriptor::draw_menu_for_file(std::filesystem::path path)
 	if (ImGui::Selectable("Inspect SPIR-V Binary"))
 	{
 		// First try to deduce the stage from file name
+		
+		/*auto resMng = ((GSharedPtr<IGResourceManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
+		auto filePath = path.string();
+		auto res = resMng->create_shader_resource("name", "EditorResources", filePath);
+		if (res.has_value())
+		{
+			auto res2 = res.value();
+
+			RESOURCE_INIT_CODE init = res2->load();
+			if (init == RESOURCE_INIT_CODE_OK)
+			{
+				EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_d("Loaded the resource");
+				auto module = res2->get_vk_shader_module();
+				if (module != nullptr)
+				{
+					EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_d("Module success");
+				}
+
+				res2->destroy();
+
+				delete res2;
+			}
+			else
+			{
+				EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e("Couldn't load the resource");
+			}
+		}
+		else
+		{
+			EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e("Couldn't create the resource");
+
+		}*/
 		if (!m_loadFileFuture.valid())
 		{
 			m_loadFileFuture = std::async([=]() {

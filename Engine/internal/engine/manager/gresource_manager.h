@@ -30,7 +30,12 @@ public:
 
 	virtual std::expected<IGTextureResource*, RESOURCE_ERROR> create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator,int format = -1) override;
 
+	virtual std::expected<IGShaderResource*, RESOURCE_ERROR> create_shader_resource(std::string_view name, std::string_view groupName, std::string_view filePath) override;
+
+
 	virtual void destroy_texture_resource(IGTextureResource* texture) override;
+
+	virtual void destroy_shader_resource(IGShaderResource* shader) override;
 
 	bool init();
 

@@ -6,6 +6,7 @@
 #include "internal/engine/io/stb_image_loader.h"
 #include "internal/engine/rendering/vulkan/gvulkan_default_sampler_creator.h"
 #include "engine/resource/igtexture_resource.h"
+#include "internal/engine/resource/gshader_resource.h"
 
 GResourceManager::GResourceManager()
 {
@@ -82,9 +83,29 @@ std::expected<IGTextureResource*, RESOURCE_ERROR> GResourceManager::create_textu
 	return res;
 }
 
+std::expected<IGShaderResource*, RESOURCE_ERROR> GResourceManager::create_shader_resource(std::string_view name, std::string_view groupName, std::string_view filePath)
+{
+	if (name.empty() || groupName.empty())
+		return std::unexpected(RESOURCE_ERROR::RESOURCE_ERROR_NAME_OR_GROUP_NAME_IS_NULL);
+
+	m_logger->log_d(fmt::format("A Shader resource created by name : [{}]{}", groupName, name).c_str());
+
+	//X TODO GDNEWDA
+
+	GShaderResource* res = new GShaderResource(GVulkanLogicalDevice::get_instance(),filePath);
+	res->m_creatorOwner = this;
+
+	return res;
+	
+}
+
 void GResourceManager::destroy_texture_resource(IGTextureResource* texture)
 {
 	
+}
+
+void GResourceManager::destroy_shader_resource(IGShaderResource* shader)
+{
 }
 
 bool GResourceManager::init()

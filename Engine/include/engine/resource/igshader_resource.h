@@ -3,16 +3,19 @@
 
 #include "engine/resource/iresource.h"
 
-class ISpirvShader;
-
+enum SPIRV_SHADER_STAGE;
+struct VkShaderModule_T;
+struct VkPipelineShaderStageCreateInfo;
 class ENGINE_API IGShaderResource : public IResource
 {
 public:
 	virtual ~IGShaderResource() = default;
 
-	// After loading is succees it returns a valid SpirvShader pointer
-	virtual ISpirvShader* get_shader() = 0;
-private:
+	virtual VkShaderModule_T* get_vk_shader_module() = 0;
+	
+	virtual SPIRV_SHADER_STAGE get_shader_stage() = 0;
+
+	virtual const VkPipelineShaderStageCreateInfo* get_creation_info() = 0;
 };
 
 #endif // IGSHADER_RESOURCE_H
