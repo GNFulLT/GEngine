@@ -4,6 +4,7 @@
 #include "engine/shader/ispirv_shader.h"
 #include <glslang_c_interface.h>
 #include <vector>
+#include <string>
 
 class GShaderManager;
 
@@ -17,9 +18,14 @@ public:
 	virtual uint32_t get_size() override;
 	virtual bool is_failed_to_compile() override;
 	virtual uint32_t* get_spirv_words() override;
+
+	// Inherited via ISpirvShader
+	virtual const char* get_entry_point_name() override;
 private:
 	SPIRV_SHADER_STAGE m_stage;
 	std::vector<char> m_bytes;
+	std::string m_entryPointName;
+
 
 
 };

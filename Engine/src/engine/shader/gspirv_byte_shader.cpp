@@ -3,6 +3,7 @@
 GSpirvByteShader::GSpirvByteShader(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage)
 {
 	m_bytes = bytes;
+	m_entryPointName = "main";
 	m_stage = stage;
 }
 
@@ -24,4 +25,10 @@ bool GSpirvByteShader::is_failed_to_compile()
 uint32_t* GSpirvByteShader::get_spirv_words()
 {
 	return (uint32_t*)m_bytes.data();
+}
+
+
+const char* GSpirvByteShader::get_entry_point_name()
+{
+	return m_entryPointName.c_str();
 }

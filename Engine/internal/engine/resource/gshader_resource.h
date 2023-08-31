@@ -20,20 +20,20 @@ public:
 	virtual std::string_view get_resource_path() const override;
 	virtual void destroy_impl() override;
 
-	
-
 	virtual VkShaderModule_T* get_vk_shader_module() override;
 
 	virtual SPIRV_SHADER_STAGE get_shader_stage() override;
-	virtual const VkPipelineShaderStageCreateInfo* get_creation_info() override;
+
+	// Inherited via IGShaderResource
+	virtual const char* get_entry_point_name() override;
 private:
-	VkPipelineShaderStageCreateInfo m_stageCreateInfo;
 	std::string m_shaderText;
 	VkShaderModule_T* m_vkShaderModule;
 	std::string m_path;
 	IGVulkanLogicalDevice* m_boundedDevice;
 	SPIRV_SHADER_STAGE m_stage;
-	
+	std::string m_entyPointName;
+
 };
 
 #endif // GSHADER_RESOURCE_H

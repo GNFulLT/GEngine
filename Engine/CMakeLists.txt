@@ -32,7 +32,7 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
  "internal/engine/manager/ginjection_manager.h" "src/engine/manager/ginjection_manager.cpp" "include/engine/shader/ispirv_shader.h" "include/engine/resource/igshader_resource.h" 
  "include/engine/manager/igshader_manager.h" "internal/engine/manager/gshader_manager.h" "src/engine/manager/gshader_manager.cpp" "internal/engine/shader/spirv_shader_utils.h" "src/engine/utils.cpp"
  "internal/engine/utils.h" "src/engine/shader/spirv_shader_utils.cpp" "internal/engine/resource/gshader_resource.h" "src/engine/resource/gshader_resource.cpp" "internal/engine/shader/gspirv_shader.h" 
- "src/engine/shader/gspirv_shader.cpp" "include/engine/manager/ijob_manager.h" "internal/engine/manager/gjob_manager.h" "src/engine/manager/gjob_manager.cpp" "include/engine/time_unit.h" "internal/engine/shader/gspirv_byte_shader.h" "src/engine/shader/gspirv_byte_shader.cpp" "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline.h")
+ "src/engine/shader/gspirv_shader.cpp" "include/engine/manager/ijob_manager.h" "internal/engine/manager/gjob_manager.h" "src/engine/manager/gjob_manager.cpp" "include/engine/time_unit.h" "internal/engine/shader/gspirv_byte_shader.h" "src/engine/shader/gspirv_byte_shader.cpp" "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline.h" "src/engine/rendering/vulkan/gvulkan_graphic_pipeline.cpp" "internal/engine/rendering/vulkan/gvulkan_shader_stage.h" "src/engine/rendering/vulkan/gvulkan_shader_stage.cpp" "include/engine/rendering/vulkan/ivulkan_shader_stage.h")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")

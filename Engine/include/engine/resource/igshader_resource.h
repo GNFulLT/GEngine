@@ -5,7 +5,7 @@
 
 enum SPIRV_SHADER_STAGE;
 struct VkShaderModule_T;
-struct VkPipelineShaderStageCreateInfo;
+
 class ENGINE_API IGShaderResource : public IResource
 {
 public:
@@ -15,7 +15,7 @@ public:
 	
 	virtual SPIRV_SHADER_STAGE get_shader_stage() = 0;
 
-	virtual const VkPipelineShaderStageCreateInfo* get_creation_info() = 0;
+	virtual const char* get_entry_point_name() = 0;
 };
 
 #endif // IGSHADER_RESOURCE_H

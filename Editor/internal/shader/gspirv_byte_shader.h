@@ -5,7 +5,7 @@
 #include <glslang_c_interface.h>
 #include <vector>
 #include "internal/shader/gspirv_shader_debugger.h"
-
+#include <string>
 
 class GSpirvByteShader : public ISpirvShader
 {
@@ -24,6 +24,10 @@ private:
 	SPIRV_SHADER_STAGE m_stage;
 	std::vector<char> m_bytes;
 	GSpirvShaderDebugger m_debugger;
+	std::string m_entryPointName;
+
+	// Inherited via ISpirvShader
+	virtual const char* get_entry_point_name() override;
 
 };
 #endif //GSPIRV_BYTE_SHADER_H

@@ -7,6 +7,7 @@
 #include <expected>
 #include <string>
 #include <vector>
+#include "public/core/templates/shared_ptr.h"
 
 enum SHADER_COMPILE_ERROR
 {
@@ -23,17 +24,26 @@ enum SHADER_LOAD_ERROR
 	SHADER_LOAD_ERROR_SPIRV_STAGE_INCOMPATIBLITY
 };
 
+enum SHADER_STAGE_CREATE_ERROR
+{
+	SHADER_STAGE_CREATE_ERROR_UNKNOWN
+};
 
+class IVulkanShaderStage;
+class IGShaderResource;
 
 class ENGINE_API IGShaderManager
 {
 public:
 	virtual ~IGShaderManager() = default;
 
+	//X THESE ARE FOR INTERNAL USAGE USE RESOURCE MANAGER TO CREATE SHADER RESOURCE
 	virtual std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> compile_shader_text(const std::string& text, SPIRV_SHADER_STAGE stage, SPIRV_SOURCE_TYPE sourceType) = 0;
 
 	//X Try to use this for creating shader resources. If you want to parse first use other and then use this
 	virtual std::expected<ISpirvShader*, SHADER_LOAD_ERROR> load_shader_from_bytes(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage) = 0;
+
+	virtual std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes) = 0;
 
 	virtual bool init() = 0;
 

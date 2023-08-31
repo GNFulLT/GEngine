@@ -16,6 +16,8 @@ public:
 	virtual void delete_and_swap(ENGINE_MANAGER manager, void* mngPtr) override;
 
 	void add_manager_spec(ENGINE_MANAGER, void*);
+
+	virtual void* swap_and_get_managed(ENGINE_MANAGER mng,void* ptr) override;
 private:
 	std::unordered_map<ENGINE_MANAGER, void*> m_map;
 	ManagerTable* m_table;

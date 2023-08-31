@@ -99,7 +99,7 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 	auto res = vkCreateShaderModule(m_boundedDevice->get_vk_device(), &createInfo, nullptr, &m_vkShaderModule);
 
 	m_stage = spirvShader->get_spirv_stage();
-
+	m_entyPointName = std::string(spirvShader->get_entry_point_name());
 	delete spirvShader;
 
 	if (res != VK_SUCCESS)
@@ -108,14 +108,6 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 	}
 
 	m_size = createInfo.codeSize;
-
-	m_stageCreateInfo.pNext = nullptr;
-	m_stageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_stageCreateInfo.module = m_vkShaderModule;
-	m_stageCreateInfo.pName = "main";
-	m_stageCreateInfo.stage = spirv_stage_to_vk_stage(m_stage);
-
-
 
 	return RESOURCE_INIT_CODE_OK;
 }
@@ -153,9 +145,7 @@ SPIRV_SHADER_STAGE GShaderResource::get_shader_stage()
 	return m_stage;
 }
 
-const VkPipelineShaderStageCreateInfo* GShaderResource::get_creation_info()
+const char* GShaderResource::get_entry_point_name()
 {
-	if (m_vkShaderModule == nullptr)
-		return nullptr;
-	return &m_stageCreateInfo;
+	return m_entyPointName.c_str();
 }

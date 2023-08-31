@@ -36,6 +36,8 @@ public:
 	virtual bool is_failed_to_compile() = 0;
 
 	virtual uint32_t* get_spirv_words() = 0;
+
+	virtual const char* get_entry_point_name() = 0;
 private:
 };
 

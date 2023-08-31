@@ -13,6 +13,9 @@ public:
 	virtual void* get_manager_spec(ENGINE_MANAGER manager) = 0;
 
 	virtual void delete_and_swap(ENGINE_MANAGER manager, void* mngPtr) = 0;
+
+	virtual void* swap_and_get_managed(ENGINE_MANAGER mng, void* ptr) = 0;
+
 private:
 };
 

@@ -42,7 +42,8 @@ void EditorApplicationImpl::inject_managers(IInjectManagerHelper* helper)
         prop->hasCaption = false;
 
     s_shaderManager = new GEditorShaderManager();
-    helper->delete_and_swap(ENGINE_MANAGER_SHADER, s_shaderManager);
+    auto defaultMng = helper->swap_and_get_managed(ENGINE_MANAGER_SHADER, s_shaderManager);
+    s_shaderManager->set_default((GSharedPtr<IGShaderManager>*)defaultMng);
 }
 
 bool EditorApplicationImpl::before_update()

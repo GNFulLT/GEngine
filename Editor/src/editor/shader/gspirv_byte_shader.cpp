@@ -5,7 +5,7 @@ GSpirvByteShader::GSpirvByteShader(const std::vector<char>& bytes, SPIRV_SHADER_
 {
 	m_bytes = bytes;
 	m_stage = stage;
-
+	m_entryPointName = "main";
 	m_debugger.load();
 }
 
@@ -42,4 +42,9 @@ bool GSpirvByteShader::is_debug_active() const noexcept
 GSpirvShaderDebugger* GSpirvByteShader::get_debugger()
 {
 	return &m_debugger;
+}
+
+const char* GSpirvByteShader::get_entry_point_name()
+{
+	return m_entryPointName.c_str();
 }

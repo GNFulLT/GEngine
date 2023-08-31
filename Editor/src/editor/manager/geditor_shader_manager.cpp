@@ -41,6 +41,27 @@ void GEditorShaderManager::editor_init()
 	m_targetClientVersion = EditorApplicationImpl::get_instance()->m_engine->get_app()->get_version_info()->vulkanVersion;
 }
 
+void GEditorShaderManager::destroy()
+{
+	m_defaultShaderMng->get()->destroy();
+}
+
+std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GEditorShaderManager::create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes)
+{
+	return m_defaultShaderMng->get()->create_shader_stage_from_shader_res(shaderRes);
+}
+
+void GEditorShaderManager::set_default(GSharedPtr<IGShaderManager>* ptr)
+{
+	m_defaultShaderMng = ptr;
+}
+
+GEditorShaderManager::~GEditorShaderManager()
+{
+	assert(m_defaultShaderMng != nullptr);
+	delete m_defaultShaderMng;
+}
+
 std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GEditorShaderManager::compile_shader_text(const std::string& text, SPIRV_SHADER_STAGE stage, SPIRV_SOURCE_TYPE sourceType)
 {
 	auto glslang_stage = spirv_shader_stage_to_glslang_stage(stage);

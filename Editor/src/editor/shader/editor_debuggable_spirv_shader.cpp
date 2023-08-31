@@ -9,7 +9,7 @@ EditorDebuggableSPIRVShader::EditorDebuggableSPIRVShader(uint32_t byteSize, uint
 	m_byteSize = byteSize;
 	m_words = words;
 	m_usedInput = usedInput;
-
+	m_entryPointName = "main";
 	//X TODO CHECK COMPILER CTOR THROWS EXCEPTION
 
 	m_debugger.load();	
@@ -43,4 +43,9 @@ GSpirvShaderDebugger* EditorDebuggableSPIRVShader::get_debugger()
 bool EditorDebuggableSPIRVShader::is_debug_active() const noexcept
 {
 	return m_debugger.is_valid();
+}
+
+const char* EditorDebuggableSPIRVShader::get_entry_point_name()
+{
+	return m_entryPointName.c_str();
 }

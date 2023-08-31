@@ -30,6 +30,42 @@ void ManagerTable::set_manager(ENGINE_MANAGER manager, void* pManager)
 {
 	m_manager_map[(int)manager] = pManager;
 }
+
+void* ManagerTable::swap_and_get_managed(ENGINE_MANAGER mng, void* ptr)
+{
+	auto manager = get_engine_manager_managed(mng);
+	
+	void* managedPtr;
+
+	switch (mng)
+	{
+	case ENGINE_MANAGER_WINDOW:
+		managedPtr = new GSharedPtr<Window>((Window*)ptr);
+		break;
+	case ENGINE_MANAGER_GRAPHIC_DEVICE:
+		managedPtr = new GSharedPtr<IGVulkanDevice>((IGVulkanDevice*)ptr);
+		break;
+	case ENGINE_MANAGER_LOGGER:
+		managedPtr = new GSharedPtr<IGLoggerManager>((IGLoggerManager*)ptr);
+		break;
+	case ENGINE_MANAGER_RESOURCE:
+		managedPtr = new GSharedPtr<IGResourceManager>((IGResourceManager*)ptr);
+		break;
+	case ENGINE_MANAGER_JOB:
+		managedPtr = new GSharedPtr<IJobManager>((IJobManager*)ptr);
+		break;
+	case ENGINE_MANAGER_SHADER:
+		managedPtr = new GSharedPtr<IGShaderManager>((IGShaderManager*)ptr);
+		break;
+	default:
+		break;
+	}
+
+	set_manager(mng, managedPtr);
+
+	return manager;
+}
+
 void ManagerTable::delete_and_swap(ENGINE_MANAGER mng, void* ptr)
 {
 	delete_manager(mng);

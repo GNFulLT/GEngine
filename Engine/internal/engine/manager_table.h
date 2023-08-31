@@ -18,6 +18,8 @@ public:
 	void delete_manager(ENGINE_MANAGER mng);
 
 	void delete_and_swap(ENGINE_MANAGER mng, void* ptr);
+
+	void* swap_and_get_managed(ENGINE_MANAGER mng, void* ptr);
 private:
 	ankerl::unordered_dense::map<int, void*> m_manager_map;
 	

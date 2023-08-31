@@ -7,6 +7,7 @@
 #include "internal/engine/shader/gspirv_shader.h"
 #include "spirv-tools/libspirv.h"
 #include "internal/engine/shader/gspirv_byte_shader.h"
+#include "internal/engine/rendering/vulkan/gvulkan_shader_stage.h"
 
 std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shader_text(const std::string& text, SPIRV_SHADER_STAGE stage, SPIRV_SOURCE_TYPE sourceType)
 {
@@ -79,6 +80,11 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shade
 	return spirvShader;
 }
 	
+std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GShaderManager::create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes)
+{
+	return new GVulkanShaderStage(shaderRes);
+}
+
 bool GShaderManager::init()
 {
 	auto info = GEngine::get_instance()->get_app()->get_version_info();
