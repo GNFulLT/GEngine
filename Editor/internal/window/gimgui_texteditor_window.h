@@ -411,6 +411,7 @@ class GImGuiWindowStorage;
 class GImGuiTextEditorWindow : public IGImGuiWindowImpl
 {
 public:
+	GImGuiTextEditorWindow(const std::string& content,std::string_view name,std::string_view id,bool isReadOnly = true);
 	GImGuiTextEditorWindow(std::filesystem::path path,FILE_TYPE type,bool isReadOnly = true);
 	~GImGuiTextEditorWindow();
 	static bool can_open(FILE_TYPE type);

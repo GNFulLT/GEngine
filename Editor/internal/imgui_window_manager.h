@@ -43,6 +43,8 @@ public:
 	void render_main_menu();
 
 	void try_to_open_file_in_new_editor(std::filesystem::path path);
+
+	void try_to_show_string_in_new_editor(const std::string& content, std::string_view name, std::string_view id, bool isReadOnly = true);
 private:
 	void render_main_dockspace();
 

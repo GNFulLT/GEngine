@@ -15,6 +15,15 @@
 #include <thread>
 #include <future>
 
+GImGuiTextEditorWindow::GImGuiTextEditorWindow(const std::string& content,std::string_view name,std::string_view id,bool isReadOnly)
+{
+	m_name = name;
+	m_fileFullPath = id;
+	m_storage = nullptr;
+	m_editor.SetText(content);
+	m_editor.SetReadOnly(isReadOnly);
+}
+
 GImGuiTextEditorWindow::GImGuiTextEditorWindow(std::filesystem::path path,FILE_TYPE type,bool isReadOnly)
 {
 	m_filePath = path;

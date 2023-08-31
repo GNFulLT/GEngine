@@ -205,6 +205,14 @@ void ImGuiWindowManager::try_to_open_file_in_new_editor(std::filesystem::path pa
 	}
 }
 
+void ImGuiWindowManager::try_to_show_string_in_new_editor(const std::string& content, std::string_view name, std::string_view id, bool isReadOnly)
+{
+	auto win = new GImGuiTextEditorWindow(content,name,id,isReadOnly);
+	bool created = create_imgui_window(win, GIMGUIWINDOWDIR_RIGHT);
+	if (!created)
+		delete win;
+}
+
 void ImGuiWindowManager::render_main_dockspace()
 {
 	m_dock_id = ImGui::GetID("##MainDockSpace");

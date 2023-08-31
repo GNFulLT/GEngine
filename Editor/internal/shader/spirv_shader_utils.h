@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include <filesystem>
+#include <spirv_cross/spirv_cross.hpp>
 
 enum READ_SHADER_FILE_ERROR
 {
@@ -36,6 +37,7 @@ glslang_target_client_version_t vulkan_version_to_glslang_version(uint32_t vers)
 
 std::string stage_to_extension(SPIRV_SHADER_STAGE stage);
 
+spv::ExecutionModel spriv_shader_stage_to_execution_model(SPIRV_SHADER_STAGE stage);
 
 std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(std::filesystem::path fileName);
 

@@ -22,7 +22,7 @@ add_library(GEditor SHARED  "src/editor/editor_application_impl.cpp" "src/editor
 "src/editor/window/content_helper/descriptors/gimgui_shader_descriptor.cpp" "internal/window/gimgui_log_window.h" "src/editor/window/gimgui_log_window.cpp" "internal/manager/geditor_shader_manager.h" 
 "src/editor/manager/geditor_shader_manager.cpp" "src/editor/shader/spirv_shader_utils.cpp" "internal/shader/editor_debuggable_spirv_shader.h" "src/editor/shader/editor_debuggable_spirv_shader.cpp"
 "src/editor/shader/gspirv_byte_shader.cpp"
- "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_spirv_descriptor.cpp")
+ "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_spirv_descriptor.cpp" "internal/shader/gspirv_shader_debugger.h" "src/editor/shader/gspirv_shader_debugger.cpp")
 
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Core/include")
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Engine/include")

@@ -283,3 +283,26 @@ std::string stage_to_extension(SPIRV_SHADER_STAGE stage)
 		return "";
 	}
 }
+
+spv::ExecutionModel spriv_shader_stage_to_execution_model(SPIRV_SHADER_STAGE stage)
+{
+	switch (stage)
+	{
+	case SPIRV_SHADER_STAGE_UNKNOWN:
+		return spv::ExecutionModelMax;
+	case SPIRV_SHADER_STAGE_VERTEX:
+		return spv::ExecutionModelVertex;
+	case SPIRV_SHADER_STAGE_FRAGMENT:
+		return spv::ExecutionModelFragment;
+	case SPIRV_SHADER_STAGE_GEOMETRY:
+		return spv::ExecutionModelGeometry;
+	case SPIRV_SHADER_STAGE_COMPUTE:
+		return spv::ExecutionModelGLCompute;
+	case SPIRV_SHADER_STAGE_TESSCONTROL:
+		return spv::ExecutionModelTessellationControl;
+	case SPIRV_SHADER_STAGE_TESSEVALUATION:
+		return spv::ExecutionModelTessellationEvaluation;
+	default:
+		return spv::ExecutionModelMax;
+	}
+}

@@ -41,6 +41,7 @@ private:
 	GSharedPtr<IGTextureResource> m_txtIcon;
 	GSharedPtr<IGTextureResource> m_hlslIcon;
 	GSharedPtr<IGTextureResource> m_glslIcon;
+	GSharedPtr<IGTextureResource> m_spvIcon;
 
 	IMouseManager* m_mouse;
 	GImGuiContentHelper m_contentHelper;

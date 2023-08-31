@@ -33,8 +33,8 @@ void GImGuiShaderDescriptor::draw_menu_for_file(std::filesystem::path path)
 	if (ImGui::Selectable("Check with compiler"))
 	{
 		EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_d("Trying to compile shader");
-		try_to_compile_shader(path);
-		/*if (!m_compileFuture.valid())
+		//try_to_compile_shader(path);
+		if (!m_compileFuture.valid())
 		{
 			m_compileFuture = std::async([=]() {
 					try_to_compile_shader(path);
@@ -49,7 +49,7 @@ void GImGuiShaderDescriptor::draw_menu_for_file(std::filesystem::path path)
 					try_to_compile_shader(path);
 				});
 			}
-		}*/
+		}
 
 	}
 }
@@ -79,20 +79,7 @@ void GImGuiShaderDescriptor::try_to_compile_shader(std::filesystem::path path)
 			if (out.good())
 			{
 				//X TODO : ADD ALL ENDIAN SUPPORT
-				std::vector<char> bytes(val->get_size());
-				int wordCount = val->get_size()/sizeof(uint32_t);
-				auto wordBegin = val->get_spirv_words();
-				for (int i = 0; i < wordCount; i++)
-				{
-					auto word = wordBegin + i;
-					bytes[(i*4)] = ((*word) & 0xFF);
-					bytes[(i*4)+1] = ((*word >> 8) & 0xFF);
-					bytes[(i*4) + 2] = ((*word >> 16) & 0xFF);
-					bytes[(i*4) + 3] = ((*word >> 24) & 0xFF);
-
-				}
-
-				out.write(bytes.data(), bytes.size());
+				out.write((char*)val->get_spirv_words(), val->get_size());
 				out.flush();
 			}
 			out.close();

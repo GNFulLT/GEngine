@@ -44,6 +44,7 @@ target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/.
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vma/include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glslang/glslang/Include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/taskflow")
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross/include")
 
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
@@ -59,6 +60,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glslang" GLSLANG)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/taskflow" TASKFLOW)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-headers" SPIRV_HEADERS)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-tools" SPIRV-TOOLS)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross" SPIRV-CROSS)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 target_compile_definitions(glslang PRIVATE BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)
@@ -70,8 +72,9 @@ target_link_libraries(GEngine_Engine PRIVATE GEngine_Core)
 target_link_libraries(GEngine_Engine PUBLIC GEngine_GObject)
 target_link_libraries(GEngine_Engine PRIVATE spdlog)
 target_link_libraries(GEngine_Engine PRIVATE GPUOpen::VulkanMemoryAllocator VulkanMemoryAllocator)
-target_link_libraries(GEngine_Engine PUBLIC glslang glslang-default-resource-limits SPIRV)
+target_link_libraries(GEngine_Engine PUBLIC glslang MachineIndependent glslang-default-resource-limits SPIRV)
 target_link_libraries(GEngine_Engine PUBLIC SPIRV-Tools-static)
+target_link_libraries(GEngine_Engine PUBLIC spirv-cross-core)
 
 include(GenerateExportHeader)
 

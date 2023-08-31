@@ -35,6 +35,7 @@ bool GImGuiContentBrowserWindow::init()
 	auto res2 = (*resManager)->create_texture_resource("TextIcon", "EditorResources", "./assets/txt.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
 	auto res3 = (*resManager)->create_texture_resource("HLSLIcon", "EditorResources", "./assets/hlsl.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
 	auto res4 = (*resManager)->create_texture_resource("GLSLIcon", "EditorResources", "./assets/glsl.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
+	auto res5 = (*resManager)->create_texture_resource("SPVIcon", "EditorResources", "./assets/spv.png", EditorApplicationImpl::get_instance()->get_descriptor_creator());
 
 	if (!res.has_value())
 	{
@@ -45,7 +46,7 @@ bool GImGuiContentBrowserWindow::init()
 	{
 		return false;
 	}
-	if (!res3.has_value() || !res4.has_value())
+	if (!res3.has_value() || !res4.has_value() || !res5.has_value())
 	{
 		return false;
 	}
@@ -54,7 +55,9 @@ bool GImGuiContentBrowserWindow::init()
 	m_txtIcon = GSharedPtr<IGTextureResource>(res2.value());
 	m_hlslIcon= GSharedPtr<IGTextureResource>(res3.value());
 	m_glslIcon = GSharedPtr<IGTextureResource>(res4.value());
+	m_spvIcon = GSharedPtr<IGTextureResource>(res5.value());
 
+	//X TODO : Make parallel
 	RESOURCE_INIT_CODE code = m_folderIcon->load();
 
 	if (code != RESOURCE_INIT_CODE_OK)
@@ -77,6 +80,12 @@ bool GImGuiContentBrowserWindow::init()
 	}
 
 	code = m_glslIcon->load();
+	if (code != RESOURCE_INIT_CODE_OK)
+	{
+		EditorApplicationImpl::get_instance()->get_editor_logger()->log_c("Couldn't load the texture");
+		return false;
+	}
+	code = m_spvIcon->load();
 	if (code != RESOURCE_INIT_CODE_OK)
 	{
 		EditorApplicationImpl::get_instance()->get_editor_logger()->log_c("Couldn't load the texture");
@@ -171,6 +180,9 @@ void GImGuiContentBrowserWindow::render()
 			break;
 		case FILE_TYPE_GLSL:
 			desc = m_glslIcon->get_descriptor_set()->get_vk_descriptor();
+			break;
+		case FILE_TYPE_SPIRV:
+			desc = m_spvIcon->get_descriptor_set()->get_vk_descriptor();
 			break;
 		default:
 			desc = m_txtIcon->get_descriptor_set()->get_vk_descriptor();
@@ -280,5 +292,10 @@ void GImGuiContentBrowserWindow::destroy()
 	{
 		m_glslIcon->destroy();
 		m_glslIcon = GSharedPtr<IGTextureResource>();
+	}
+	if (m_spvIcon.is_valid())
+	{
+		m_spvIcon->destroy();
+		m_spvIcon = GSharedPtr<IGTextureResource>();
 	}
 }

@@ -10,7 +10,10 @@
 #include "spirv-tools/libspirv.h"
 #include "internal/shader/gspirv_byte_shader.h"
 #include <spdlog/fmt/fmt.h>
-
+#include <glslang/Public/ShaderLang.h>
+#include <SPIRV/GlslangToSpv.h>
+#include <SPIRV/SpvTools.h>
+#include "MachineIndependent/reflection.h"
 
 std::expected<ISpirvShader*, SHADER_LOAD_ERROR> GEditorShaderManager::load_shader_from_bytes(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage)
 {
@@ -28,7 +31,7 @@ std::expected<ISpirvShader*, SHADER_LOAD_ERROR> GEditorShaderManager::load_shade
 		return std::unexpected(SHADER_LOAD_ERROR_CORRUPTED_SPIRV);
 	}
 	EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_d("Loaded spirv binary file checking for stage");
-
+	
 	spvContextDestroy(context);
 	return new GSpirvByteShader(bytes, stage);
 }
@@ -109,10 +112,14 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GEditorShaderManager::compile
 
 	EditorDebuggableSPIRVShader* spirvShader = new EditorDebuggableSPIRVShader(wordCount * sizeof(uint32_t), words, input);
 
-	//X TODO : CAN GET SPIRV OUTPUT MESSAGES
+	//X TODO : CAN GET SPIRV OUTPUT MESSAGES	
 
 	glslang_program_delete(program);
 	glslang_shader_delete(shader);
+
+
+	 
+
 
 	glslang_finalize_process();
 

@@ -4,6 +4,7 @@
 #include "engine/shader/ispirv_shader.h"
 #include <glslang_c_interface.h>
 #include <vector>
+#include "internal/shader/gspirv_shader_debugger.h"
 
 
 class GSpirvByteShader : public ISpirvShader
@@ -15,9 +16,13 @@ public:
 	virtual uint32_t get_size() override;
 	virtual bool is_failed_to_compile() override;
 	virtual uint32_t* get_spirv_words() override;
+
+	bool is_debug_active() const noexcept;
+	GSpirvShaderDebugger* get_debugger();
 private:
 	SPIRV_SHADER_STAGE m_stage;
 	std::vector<char> m_bytes;
+	GSpirvShaderDebugger m_debugger;
 
 };
 #endif //GSPIRV_BYTE_SHADER_H
