@@ -6,8 +6,9 @@
 #include <volk.h>
 #include <vector>
 
+#include "engine/rendering/vulkan/ivulkan_renderpass.h"
 
-class GVulkanRenderpass
+class GVulkanRenderpass : public IGVulkanRenderPass
 {
 public:
 	GVulkanRenderpass();
@@ -49,12 +50,17 @@ public:
 	{
 		return _info[index].renderPass;
 	}
+
+	// Inherited via IGVulkanRenderPass
+	virtual VkRenderPass_T* get_vk_renderpass() override;
 private:
 	std::vector<VkRenderPassBeginInfo> _info;
 	VkSubpassContents _subpassContents;
 	std::vector<VkClearValue> _clearValues;
 	std::vector<VkPipelineStageFlags> _stageFlags;
 	bool _isFailed = false;
+
+
 
 };
 

@@ -38,6 +38,8 @@ public:
 
 	void destroy_offscreen_viewport(IGVulkanViewport* port);
 	static GEngine* get_instance();
+
+	GVulkanSwapchain* get_swapchain();
 private:
 	void exit();
 

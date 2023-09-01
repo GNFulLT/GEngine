@@ -12,11 +12,11 @@ class GVulkanShaderStage : public IVulkanShaderStage
 public:
 	GVulkanShaderStage(GSharedPtr<IGShaderResource> shaderRes);
 
+	virtual const VkPipelineShaderStageCreateInfo* get_creation_info() override	;
 
 	// Inherited via IVulkanShaderStage
-	virtual const VkPipelineShaderStageCreateInfo* get_creation_info() override;
 	virtual IGShaderResource* get_shader_resource() override;
-
+	
 	// Inherited via IVulkanShaderStage
 	virtual bool is_valid() override;
 private:

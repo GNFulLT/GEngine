@@ -89,3 +89,8 @@ IGVulkanDescriptorSet* GVulkanMainViewport::get_descriptor()
 {
 	return nullptr;
 }
+
+IGVulkanRenderPass* GVulkanMainViewport::get_render_pass()
+{
+	return &m_renderpass;
+}

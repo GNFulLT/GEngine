@@ -368,6 +368,11 @@ GEngine* GEngine::get_instance()
 	return s_engine;
 }
 
+GVulkanSwapchain* GEngine::get_swapchain()
+{
+	return m_vulkanSwapchain;
+}
+
 ENGINE_API GEngine* create_the_engine()
 {
 	s_engine = new GEngine();

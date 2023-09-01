@@ -214,3 +214,8 @@ IGVulkanDescriptorSet* GVulkanOffScreenViewport::get_descriptor()
 {
 	return m_descriptorSet;
 }
+
+IGVulkanRenderPass* GVulkanOffScreenViewport::get_render_pass()
+{
+	return &m_renderpass;
+}

@@ -10,6 +10,9 @@ class ImGuiLayer;
 class IOwningGLogger;
 class IGVulkanViewport;
 class GImGuiDescriptorCreator;
+class IGVulkanDescriptorPool;
+struct VkDescriptorSetLayout_T;
+
 class EditorApplicationImpl : public GApplicationImpl
 {
 public:
@@ -49,7 +52,8 @@ private:
 	GSharedPtr<IOwningGLogger> m_logger;
 	GSharedPtr<IOwningGLogger> m_logWindwLogger;
 	inline static EditorApplicationImpl* s_instance;
-
+	IGVulkanDescriptorPool* m_defaultShaderPool = nullptr;
+	VkDescriptorSetLayout_T* m_shaderSetLayout = nullptr;
 };
 
 

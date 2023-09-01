@@ -16,6 +16,13 @@
 class ITransferOperations;
 class IGVulkanPhysicalDevice;
 class GVulkanCommandBufferManager;
+class IGVulkanPipelineLayout;
+struct VkDescriptorLayout_T;
+class IGVulkanViewport;
+class IGVulkanGraphicPipeline;
+class IVulkanShaderStage;
+class IGVulkanGraphicPipelineState;
+
 
 class GVulkanLogicalDevice : public IGVulkanLogicalDevice
 {
@@ -64,6 +71,15 @@ public:
 
 	virtual void finish_execute_and_wait_transfer_cmd(ITransferHandle* handle) override;
 	
+	
+	
+	virtual IGVulkanPipelineLayout* create_and_init_pipeline_layout(VkDescriptorSetLayout_T* layout);
+	
+	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp, IGVulkanPipelineLayout* layout,
+		const std::vector< IVulkanShaderStage*>& shaderStages,const std::vector<IGVulkanGraphicPipelineState*>& states);
+
+	virtual IGVulkanDescriptorPool* create_and_init_default_pool(uint32_t uniformBufferCount, uint32_t storageBufferCount, uint32_t samplerCount) override;
+
 	static GVulkanLogicalDevice* get_instance();
 private:
 	bool create_vma_allocator();

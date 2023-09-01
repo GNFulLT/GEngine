@@ -31,6 +31,7 @@ class ITransferHandle;
 enum TRANSFER_QUEUE_GET_ERR;
 struct VkDevice_T;
 class ITransferOperations;
+class IGVulkanDescriptorPool;
 
 class ENGINE_API IGVulkanLogicalDevice
 {
@@ -74,6 +75,8 @@ public:
 
 
 	virtual ITransferOperations* get_transfer_operation() = 0;
+
+	virtual IGVulkanDescriptorPool* create_and_init_default_pool(uint32_t uniformBufferCount, uint32_t storageBufferCount, uint32_t samplerCount) =0;
 private:
 };
 

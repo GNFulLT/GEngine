@@ -17,6 +17,21 @@
 #include "public/platform/window_props.h"
 #include "internal/window/gimgui_log_window.h"
 #include "internal/manager/geditor_shader_manager.h"
+#include "engine/rendering/vulkan/ivulkan_descriptor_pool.h"
+
+IGVulkanLogicalDevice* s_device;
+
+inline VkDescriptorSetLayoutBinding descriptor_set_layout_binding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags flags, uint32_t descriptorCount = 1)
+{
+    return VkDescriptorSetLayoutBinding{
+        .binding = binding,
+        .descriptorType = type,
+        .descriptorCount = descriptorCount,
+        .stageFlags = flags,
+        .pImmutableSamplers = nullptr
+    };
+}
+
 GEditorShaderManager* s_shaderManager;
 EditorApplicationImpl* EditorApplicationImpl::get_instance()
 {
@@ -25,6 +40,14 @@ EditorApplicationImpl* EditorApplicationImpl::get_instance()
 
 void EditorApplicationImpl::destroy()
 {
+    if (m_shaderSetLayout != nullptr)
+    {
+        vkDestroyDescriptorSetLayout(s_device->get_vk_device(), m_shaderSetLayout, nullptr);
+    }
+    if (m_defaultShaderPool != nullptr)
+    {
+        m_defaultShaderPool->destroy();
+    }
     m_renderViewport->destroy();
     
     m_engine->destroy_offscreen_viewport(m_renderViewport);
@@ -94,7 +117,7 @@ void EditorApplicationImpl::after_render()
 bool EditorApplicationImpl::init(GEngine* engine)
 {
     s_instance = this;
-
+    
     m_engine = engine;
     IManagerTable* table = m_engine->get_manager_table();
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
@@ -102,7 +125,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
     m_logWindwLogger = (*logger)->create_owning_glogger("Editor",false);
     s_shaderManager->editor_init();
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
-
+    s_device = dev->get()->as_logical_device().get();
     m_imguiDescriptorCreator = new GImGuiDescriptorCreator(dev->get()->as_logical_device().get());
 
 
@@ -163,6 +186,27 @@ bool EditorApplicationImpl::init(GEngine* engine)
     {
         m_logWindwLogger->add_sink(logWin->create_sink());
     }
+
+    m_defaultShaderPool = dev->get()->as_logical_device()->create_and_init_default_pool(2, 2, 2);
+
+    std::vector<VkDescriptorSetLayoutBinding> binding(4);
+    binding[0] = descriptor_set_layout_binding(0,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,VK_SHADER_STAGE_VERTEX_BIT);
+    binding[1] = descriptor_set_layout_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    binding[2] = descriptor_set_layout_binding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    binding[3] = descriptor_set_layout_binding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    VkDescriptorSetLayoutCreateInfo crtInfo = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .bindingCount = uint32_t(binding.size()),
+        .pBindings = binding.data()
+    };
+
+    vkCreateDescriptorSetLayout(dev->get()->as_logical_device()->get_vk_device(),&crtInfo,nullptr,&m_shaderSetLayout);
+
+
+
     return true;    
 }
 

@@ -7,6 +7,7 @@
 class GVulkanCommandBuffer;
 class GVulkanSemaphore;
 class IGVulkanDescriptorSet;
+class IGVulkanRenderPass;
 
 class ENGINE_API IGVulkanViewport
 {
@@ -26,6 +27,7 @@ public:
 	virtual void begin_draw_cmd(GVulkanCommandBuffer* cmd) = 0;
 	virtual void end_draw_cmd(GVulkanCommandBuffer* cmd) = 0;
 
+	virtual IGVulkanRenderPass* get_render_pass() = 0;
 
 	virtual bool can_be_used_as_texture() = 0;
 	

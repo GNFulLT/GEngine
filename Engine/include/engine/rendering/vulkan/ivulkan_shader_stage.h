@@ -6,14 +6,15 @@ struct VkPipelineShaderStageCreateInfo;
 #include "engine/GEngine_EXPORT.h"
 
 class IGShaderResource;
+struct VkGraphicsPipelineCreateInfo;
 
 class ENGINE_API IVulkanShaderStage
 {
 public:
 	virtual ~IVulkanShaderStage() = default;
-
-	virtual const VkPipelineShaderStageCreateInfo* get_creation_info() = 0;
 	
+	virtual const VkPipelineShaderStageCreateInfo* get_creation_info() = 0;
+
 	virtual IGShaderResource* get_shader_resource() = 0;
 	
 	virtual bool is_valid() = 0;

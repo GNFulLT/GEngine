@@ -8,6 +8,7 @@ class IVulkanImage;
 class IGVulkanDescriptorCreator;
 struct VkSampler_T;
 class IGVulkanDescriptorSet;
+
 class GVulkanOffScreenViewport : public IGVulkanViewport
 {
 public:
@@ -30,6 +31,7 @@ public:
 
 	virtual bool can_be_used_as_texture() override;
 
+	virtual IGVulkanRenderPass* get_render_pass() override;
 	// If the viewport couldn't be used as texture it returns null
 	virtual IGVulkanDescriptorSet* get_descriptor() override;
 private:
@@ -39,6 +41,7 @@ private:
 	IVulkanImage* m_image;
 	IGVulkanDescriptorCreator* m_descriptorCreator;
 	IGVulkanDescriptorSet* m_descriptorSet;
+
 
 };
 

@@ -19,6 +19,8 @@ const VkPipelineShaderStageCreateInfo* GVulkanShaderStage::get_creation_info()
 	return &m_createInfo;
 }
 
+
+
 IGShaderResource* GVulkanShaderStage::get_shader_resource()
 {
 	return m_shaderResource.get();

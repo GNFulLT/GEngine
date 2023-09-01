@@ -207,3 +207,8 @@ void GVulkanRenderpass::destroy(VkDevice dev)
 	_isFailed = true;
 
 }
+
+VkRenderPass_T* GVulkanRenderpass::get_vk_renderpass()
+{
+	return get_handle();
+}

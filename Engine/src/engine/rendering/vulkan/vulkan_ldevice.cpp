@@ -13,6 +13,12 @@
 #include <spdlog/fmt/fmt.h>
 #include "internal/engine/rendering/vulkan/transfer/transfer_op_transfer_queue.h"
 #include "internal/engine/rendering/vulkan/vma_importer.h"
+#include "internal/engine/rendering/vulkan/gvulkan_pipeline_layout.h"
+#include "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline.h"
+#include "engine/rendering/vulkan/ivulkan_viewport.h"
+#include "internal/engine/rendering/vulkan/gvulkan_descriptor_pool.h"
+#include "engine/gengine.h"
+#include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
 
 GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
@@ -389,6 +395,43 @@ void GVulkanLogicalDevice::finish_execute_and_wait_transfer_cmd(ITransferHandle*
 {
 	m_transferOps->finish_execute_and_wait_transfer_cmd(handle);
 }
+
+IGVulkanPipelineLayout* GVulkanLogicalDevice::create_and_init_pipeline_layout(VkDescriptorSetLayout_T* layout)
+{
+	GVulkanPipelineLayout* glayout = new GVulkanPipelineLayout(this, layout);
+	auto res = glayout->init();
+	if (!res)
+	{
+		delete glayout;
+		return nullptr;
+	}
+	return glayout;
+}
+
+IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp, IGVulkanPipelineLayout* layout, const std::vector< IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states)
+{
+	GVulkanGraphicPipeline* pipeline = new GVulkanGraphicPipeline(this, vp->get_render_pass(), layout, shaderStages, states,0);
+	auto res = pipeline->init();
+	if (!res)
+	{
+		delete pipeline;
+		return nullptr;
+	}
+	return pipeline;
+}
+
+IGVulkanDescriptorPool* GVulkanLogicalDevice::create_and_init_default_pool(uint32_t uniformBufferCount, uint32_t storageBufferCount, uint32_t samplerCount)
+{
+	GVulkanDescriptorPool* pool = new GVulkanDescriptorPool(this,GEngine::get_instance()->get_swapchain()->get_total_image(),uniformBufferCount,storageBufferCount,samplerCount);
+	auto res = pool->init();
+	if (!res)
+	{
+		delete pool;
+		return nullptr;
+	}
+	return pool;
+}
+
 
 GVulkanLogicalDevice* GVulkanLogicalDevice::get_instance()
 {

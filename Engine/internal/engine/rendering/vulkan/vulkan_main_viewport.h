@@ -43,6 +43,8 @@ public:
 	// If the viewport couldn't be used as texture it returns null
 	virtual IGVulkanDescriptorSet* get_descriptor() override;
 
+	// Inherited via IGVulkanViewport
+	virtual IGVulkanRenderPass* get_render_pass() override;
 	GVulkanLogicalDevice* m_device;
 private:
 	GVulkanRenderpass m_renderpass;
@@ -50,6 +52,7 @@ private:
 	uint32_t m_sizeY;
 	uint32_t m_currentImage;
 	const std::vector<VkImageView_T*>* m_imageViews;
+
 };
 
 #endif //VULKAN_VIEWPORT_H
