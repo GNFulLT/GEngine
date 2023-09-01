@@ -2,14 +2,14 @@
 #define VULKAN_SWAPCHAIN_H
 
 #include "internal/engine/rendering/vulkan/vulkan_utils.h"
-
+#include "engine/rendering/vulkan/ivulkan_swapchain.h"
 class GVulkanLogicalDevice;
 class IGVulkanQueue;
 class GVulkanSemaphore;
 class GVulkanMainViewport;
 class IGVulkanViewport;
 
-class GVulkanSwapchain
+class GVulkanSwapchain : public IGVulkanSwapchain
 {
 public:
 	GVulkanSwapchain(GVulkanLogicalDevice* inDevice,VkSurfaceKHR surface,uint32_t desiredImageCount,uint32_t width,uint32_t height,VkSurfaceFormatKHR format,
@@ -27,10 +27,7 @@ public:
 		return m_currentImage;
 	}
 
-	inline uint32_t get_total_image()
-	{
-		return m_images.size();
-	}
+	virtual uint32_t get_total_image() override;
 
 	bool acquire_draw_image(GVulkanSemaphore* semaphore);
 

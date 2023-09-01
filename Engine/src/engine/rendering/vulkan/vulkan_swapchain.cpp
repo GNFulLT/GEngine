@@ -129,6 +129,11 @@ IGVulkanViewport* GVulkanSwapchain::get_viewport()
 	return m_viewPort;
 }
 
+uint32_t GVulkanSwapchain::get_total_image()
+{
+	return m_images.size();
+}
+
 bool GVulkanSwapchain::acquire_draw_image(GVulkanSemaphore* semaphore)
 {
 	VkResult res = vkAcquireNextImageKHR((VkDevice)m_device->get_vk_device(), m_swapchain, UINT64_MAX,semaphore->get_semaphore(),VK_NULL_HANDLE,&m_currentImage);

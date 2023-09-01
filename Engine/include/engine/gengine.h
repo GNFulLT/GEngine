@@ -13,6 +13,7 @@ class IGVulkanViewport;
 class GVulkanSwapchain;
 class IGVulkanDescriptorCreator;
 struct VkSurfaceKHR_T;
+class IGVulkanSwapchain;
 
 class ENGINE_API GEngine
 {
@@ -39,7 +40,7 @@ public:
 	void destroy_offscreen_viewport(IGVulkanViewport* port);
 	static GEngine* get_instance();
 
-	GVulkanSwapchain* get_swapchain();
+	IGVulkanSwapchain* get_swapchain();
 private:
 	void exit();
 

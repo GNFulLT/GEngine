@@ -368,7 +368,7 @@ GEngine* GEngine::get_instance()
 	return s_engine;
 }
 
-GVulkanSwapchain* GEngine::get_swapchain()
+IGVulkanSwapchain* GEngine::get_swapchain()
 {
 	return m_vulkanSwapchain;
 }
