@@ -29,6 +29,8 @@ GVulkanOffScreenViewport::~GVulkanOffScreenViewport()
 
 bool GVulkanOffScreenViewport::init(int width,int height,int vkFormat)
 {
+	m_width = width;
+	m_height = height;
 	VkExtent3D extent = {
 		.width = uint32_t(width),
 		.height = uint32_t(height),
@@ -154,7 +156,7 @@ bool GVulkanOffScreenViewport::init(int width,int height,int vkFormat)
 	return true;
 }
 
-void GVulkanOffScreenViewport::destroy()
+void GVulkanOffScreenViewport::destroy(bool forResize)
 {
 	if (m_image != nullptr)
 	{
@@ -164,7 +166,7 @@ void GVulkanOffScreenViewport::destroy()
 	}
 	if (!m_renderpass.is_failed())
 	{
-		m_renderpass.destroy(m_boundedDevice->get_vk_device());
+		m_renderpass.destroy(m_boundedDevice->get_vk_device(),forResize);
 	}
 	if (m_sampler != nullptr)
 	{
@@ -185,12 +187,12 @@ void* GVulkanOffScreenViewport::get_vk_current_image_renderpass()
 
 uint32_t GVulkanOffScreenViewport::get_width() const
 {
-	return 0;
+	return m_width;
 }
 
 uint32_t GVulkanOffScreenViewport::get_height() const
 {
-	return 0;
+	return m_height;
 }
 
 void GVulkanOffScreenViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)

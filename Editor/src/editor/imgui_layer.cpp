@@ -25,6 +25,7 @@
 
 ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* app, IGVulkanDevice* dev)
 {
+	m_sceneRenderer = nullptr;
 	m_viewport = viewport;
 	m_window = window;
 	m_dev = dev;
@@ -35,8 +36,6 @@ ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* a
 	m_renderViewportWindow = new GImGuiViewportWindow();
 	m_contentBrowserWindow = new GImGuiContentBrowserWindow();
 	m_logWindow = new GImGuiLogWindow();
-
-	m_sceneRenderer = new GSceneRenderer(viewport,dev);
 
 }
 
@@ -148,11 +147,6 @@ bool ImGuiLayer::init()
 		return false;
 
 	m_windowManager->create_imgui_menu(new GThemeMenu());
-	
-	inited = m_sceneRenderer->init();
-	
-	if (!inited)
-		return false;
 
 
 	bool created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
@@ -220,6 +214,8 @@ void ImGuiLayer::render(GVulkanCommandBuffer* cmd)
 void ImGuiLayer::set_viewport(IGVulkanViewport* viewport)
 {
 	m_renderViewportWindow->set_the_viewport(viewport);
+	m_sceneRenderer = new GSceneRenderer(viewport, m_dev);
+	m_sceneRenderer->init();
 	m_sceneRenderer->set_the_viewport(viewport);
 }
 

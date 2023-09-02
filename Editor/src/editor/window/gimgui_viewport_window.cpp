@@ -52,7 +52,7 @@ void GImGuiViewportWindow::render()
 
 void GImGuiViewportWindow::on_resize()
 {
-	m_viewport->destroy();
+	m_viewport->destroy(true);
 	if (m_storage->width > 0 && m_storage->width < 1920 && m_storage->height > 0 && m_storage->height < 1080)
 	{
 		m_viewport->init(m_storage->width, m_storage->height, VkFormat::VK_FORMAT_B8G8R8A8_UNORM);

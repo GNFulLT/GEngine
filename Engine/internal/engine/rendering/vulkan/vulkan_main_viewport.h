@@ -24,7 +24,7 @@ public:
 
 	void set_current_image(uint32_t index);
 
-	void destroy();
+	virtual void destroy(bool forResize) override;
 
 
 	virtual void* get_vk_current_image_renderpass() override;

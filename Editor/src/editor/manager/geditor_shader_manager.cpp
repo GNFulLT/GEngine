@@ -47,7 +47,7 @@ void GEditorShaderManager::destroy()
 	m_defaultShaderMng->get()->destroy();
 }
 
-std::expected<std::vector<VkDescriptorSetLayoutBinding>, SHADER_LAYOUT_BINDING_ERROR> GEditorShaderManager::get_layout_bindings_from(ISpirvShader* shaderHandle)
+std::expected<IGVulkanShaderInfo*, SHADER_LAYOUT_BINDING_ERROR> GEditorShaderManager::get_layout_bindings_from(ISpirvShader* shaderHandle)
 {
 	return m_defaultShaderMng->get()->get_layout_bindings_from(shaderHandle);
 }

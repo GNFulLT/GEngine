@@ -10,7 +10,7 @@ class GVulkanBuffer : public IVulkanBuffer
 {
 	friend class GVulkanLogicalDevice;
 public:
-	GVulkanBuffer(GVulkanLogicalDevice* owner, VmaAllocator allocator);
+	GVulkanBuffer(GVulkanLogicalDevice* owner, VmaAllocator allocator,uint32_t size);
 	~GVulkanBuffer();
 
 	VmaAllocation* get_allocation();
@@ -25,11 +25,15 @@ public:
 	virtual VkDeviceMemory_T* get_device_memory() override;
 
 	virtual void copy_data_to_device_memory(void* src, uint32_t size) override;
+
+	virtual uint32_t get_size() override;
+
 private:
 	GVulkanLogicalDevice* m_boundedDevice;
 	VmaAllocator m_allocatorRef;
 	VmaAllocation m_allocationBlock;
 	VkBuffer m_buffer;
+	uint32_t m_size = 0;
 	bool m_inited;
 
 };

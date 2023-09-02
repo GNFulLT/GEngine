@@ -115,7 +115,7 @@ bool GVulkanSwapchain::init()
 
 void GVulkanSwapchain::destroy()
 {
-	m_viewPort->destroy();
+	m_viewPort->destroy(false);
 	delete m_viewPort;
 	for (int i = 0; i < m_imageViews.size(); i++)
 	{
@@ -178,7 +178,7 @@ bool GVulkanSwapchain::need_handle()
 
 bool GVulkanSwapchain::handle()
 {
-	m_viewPort->destroy();
+	m_viewPort->destroy(true);
 	for (int i = 0; i < m_imageViews.size(); i++)
 	{
 		vkDestroyImageView((VkDevice)m_device->get_vk_device(), m_imageViews[i], nullptr);

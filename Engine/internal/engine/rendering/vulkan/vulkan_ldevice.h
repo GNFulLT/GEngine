@@ -18,10 +18,8 @@ class IGVulkanPhysicalDevice;
 class GVulkanCommandBufferManager;
 class IGVulkanPipelineLayout;
 struct VkDescriptorLayout_T;
-class IGVulkanViewport;
 class IGVulkanGraphicPipeline;
 class IVulkanShaderStage;
-class IGVulkanGraphicPipelineState;
 class IGVulkanDescriptorPool;
 
 
@@ -72,14 +70,34 @@ public:
 
 	virtual void finish_execute_and_wait_transfer_cmd(ITransferHandle* handle) override;
 	
-	
+	virtual std::expected<IGVulkanUniformBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_uniform_buffer(uint32_t size) override;
 	
 	virtual IGVulkanPipelineLayout* create_and_init_pipeline_layout(VkDescriptorSetLayout_T* layout);
 	
-	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp, IGVulkanPipelineLayout* layout,
-		const std::vector< IVulkanShaderStage*>& shaderStages,const std::vector<IGVulkanGraphicPipelineState*>& states);
+	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp,
+		const std::vector< IVulkanShaderStage*>& shaderStages,const std::vector<IGVulkanGraphicPipelineState*>& states) override;
 
 	virtual IGVulkanDescriptorPool* create_and_init_default_pool(uint32_t uniformBufferCount, uint32_t storageBufferCount, uint32_t samplerCount) override;
+
+	virtual IGVulkanDescriptorPool* create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap) override;
+
+	virtual IGVulkanPipelineLayout* create_and_init_vector_pipeline_layout(const std::vector<VkDescriptorSetLayout_T*>& layouts) override;
+
+	virtual IGVulkanGraphicPipelineState* create_vertex_input_state(const std::vector< VkVertexInputBindingDescription>* vertexBindingDescription, 
+		const std::vector< VkVertexInputAttributeDescription>* attributeDescription) override;
+
+	virtual IGVulkanGraphicPipelineState* create_default_input_assembly_state() override;
+
+	virtual IGVulkanGraphicPipelineState* create_input_assembly_state(VkPrimitiveTopology topology,bool resetAfterIndexedDraw) override;
+
+	virtual IGVulkanGraphicPipelineState* create_default_rasterization_state() override;
+
+	virtual IGVulkanGraphicPipelineState* create_default_none_multisample_state() override;
+
+	virtual IGVulkanGraphicPipelineState* create_default_color_blend_state() override;
+	virtual IGVulkanGraphicPipelineState* create_default_viewport_state(uint32_t width,uint32_t height) override;
+
+
 
 	static GVulkanLogicalDevice* get_instance();
 private:
@@ -108,6 +126,8 @@ private:
 
 	VkDevice m_logicalDevice;
 	VmaAllocator allocator;
+
+
 
 };
 #endif // GVULKAN_LDEVICE_H

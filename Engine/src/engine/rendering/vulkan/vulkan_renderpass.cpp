@@ -9,6 +9,13 @@ GVulkanRenderpass::GVulkanRenderpass()
 
 void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& views, std::vector<C_GVec2>& sizes, const std::vector<VkClearValue>& clearValues, VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents)
 {
+	VkRenderPass handle = nullptr;
+
+	if (_info.size() > 0 && _info[0].renderPass != nullptr)
+	{
+		handle = _info[0].renderPass;
+	}
+
 	_info = {};
 
 	_subpassContents = subpassContents;
@@ -52,15 +59,22 @@ void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& vie
 	//connect the subpass to the info
 	create_inf.subpassCount = 1;
 	create_inf.pSubpasses = &subpass;
-	VkRenderPass handle;
-
-	if (VK_SUCCESS != vkCreateRenderPass(dev, &create_inf, nullptr, &handle))
+	
+	if (handle != nullptr)
 	{
-		_isFailed = true;
+		int a = 5;
+		_isFailed = false;
 	}
 	else
 	{
-		_isFailed = false;
+		if (VK_SUCCESS != vkCreateRenderPass(dev, &create_inf, nullptr, &handle))
+		{
+			_isFailed = true;
+		}
+		else
+		{
+			_isFailed = false;
+		}
 	}
 
 	if (!_isFailed)
@@ -102,6 +116,12 @@ void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& vie
 
 void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t width, uint32_t height, const std::vector<VkClearValue>& clearValues, VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents, VkSubpassDependency* dependency, int dependencyCount)
 {
+	VkRenderPass handle = nullptr;
+
+	if (_info.size() > 0 && _info[0].renderPass != nullptr)
+	{
+		handle = _info[0].renderPass;
+	}
 	_info = {};
 
 	_subpassContents = subpassContents;
@@ -152,16 +172,23 @@ void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t wid
 		create_inf.pDependencies = dependency;
 	}
 
-	VkRenderPass handle;
-
-	if (VK_SUCCESS != vkCreateRenderPass(dev, &create_inf, nullptr, &handle))
+	if (handle != nullptr)
 	{
-		_isFailed = true;
+		int a = 5;
+		_isFailed = false;
 	}
 	else
 	{
-		_isFailed = false;
+		if (VK_SUCCESS != vkCreateRenderPass(dev, &create_inf, nullptr, &handle))
+		{
+			_isFailed = true;
+		}
+		else
+		{
+			_isFailed = false;
+		}
 	}
+	
 	if (!_isFailed)
 	{
 		_info.resize(1);
@@ -195,14 +222,21 @@ void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t wid
 	}
 }
 
-void GVulkanRenderpass::destroy(VkDevice dev)
+void GVulkanRenderpass::destroy(VkDevice dev,bool forResize)
 {	
-	if (_info[0].renderPass != nullptr)
+	if (_info[0].renderPass != nullptr && !forResize)
+	{
 		vkDestroyRenderPass(dev, _info[0].renderPass, nullptr);
+		_info[0].renderPass = nullptr;
+	}
+
 	for (int i = 0; i < _info.size(); i++)
 	{
 		if (_info[i].framebuffer != nullptr)
+		{
 			vkDestroyFramebuffer(dev, _info[i].framebuffer, nullptr);
+			_info[i].framebuffer = nullptr;
+		}
 	}
 	_isFailed = true;
 

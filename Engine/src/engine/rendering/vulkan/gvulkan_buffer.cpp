@@ -6,13 +6,14 @@
 
 #include <vma/vk_mem_alloc.h>
 
-GVulkanBuffer::GVulkanBuffer(GVulkanLogicalDevice* owner, VmaAllocator allocator)
+GVulkanBuffer::GVulkanBuffer(GVulkanLogicalDevice* owner, VmaAllocator allocator,uint32_t size)
 {
 	m_inited = false;
 	m_allocationBlock = nullptr;
 	m_allocatorRef = allocator;
 	m_boundedDevice = owner;
 	m_buffer = nullptr;
+	m_size = size;
 }
 
 GVulkanBuffer::~GVulkanBuffer()
@@ -67,4 +68,9 @@ void GVulkanBuffer::copy_data_to_device_memory(void* src, uint32_t size)
 	vkMapMemory((VkDevice)m_boundedDevice->get_vk_device(),mem , 0, size, 0, &data);
 	memcpy(data, src, size);
 	vkUnmapMemory((VkDevice)m_boundedDevice->get_vk_device(),mem);
+}
+
+uint32_t GVulkanBuffer::get_size()
+{
+	return m_size;
 }

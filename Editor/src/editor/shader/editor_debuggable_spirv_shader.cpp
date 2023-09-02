@@ -15,6 +15,11 @@ EditorDebuggableSPIRVShader::EditorDebuggableSPIRVShader(uint32_t byteSize, uint
 	m_debugger.load();	
 }
 
+EditorDebuggableSPIRVShader::~EditorDebuggableSPIRVShader()
+{
+	free(m_words);
+}
+
 SPIRV_SHADER_STAGE EditorDebuggableSPIRVShader::get_spirv_stage()
 {
 	return glslang_stage_to_spirv_shader_stage(m_usedInput.stage);

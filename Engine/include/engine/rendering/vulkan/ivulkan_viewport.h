@@ -22,7 +22,7 @@ public:
 
 	virtual bool init(int width, int height, int vkFormat) = 0;
 
-	virtual void destroy() = 0;
+	virtual void destroy(bool forResize) = 0;
 	//X TODO : CHANGE THIS
 	virtual void begin_draw_cmd(GVulkanCommandBuffer* cmd) = 0;
 	virtual void end_draw_cmd(GVulkanCommandBuffer* cmd) = 0;

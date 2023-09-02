@@ -19,7 +19,10 @@
 #include "internal/manager/geditor_shader_manager.h"
 #include "engine/rendering/vulkan/ivulkan_descriptor_pool.h"
 #include "engine/rendering/vulkan/ivulkan_swapchain.h"
-
+#include "engine/manager/igresource_manager.h"
+#include "engine/resource/igshader_resource.h"
+#include "engine/rendering/vulkan/ivulkan_shader_stage.h"
+#include "engine/rendering/vulkan/ivulkan_graphic_pipeline.h"
 IGVulkanLogicalDevice* s_device;
 
 inline VkDescriptorSetLayoutBinding descriptor_set_layout_binding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags flags, uint32_t descriptorCount = 1)
@@ -41,22 +44,13 @@ EditorApplicationImpl* EditorApplicationImpl::get_instance()
 
 void EditorApplicationImpl::destroy()
 {
-    if (m_shaderSetLayout != nullptr)
-    {
-        vkDestroyDescriptorSetLayout(s_device->get_vk_device(), m_shaderSetLayout, nullptr);
-    }
-    if (m_defaultShaderPool != nullptr)
-    {
-        m_defaultShaderPool->destroy();
-    }
-    m_renderViewport->destroy();
+    m_renderViewport->destroy(false);
     
     m_engine->destroy_offscreen_viewport(m_renderViewport);
     
     m_imguiLayer->destroy();
 
     delete m_imguiDescriptorCreator;
-
 }
 
 void EditorApplicationImpl::inject_managers(IInjectManagerHelper* helper)
@@ -122,6 +116,8 @@ bool EditorApplicationImpl::init(GEngine* engine)
     m_engine = engine;
     IManagerTable* table = m_engine->get_manager_table();
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
+    auto resourceManager = ((GSharedPtr<IGResourceManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
+
     m_logger = (*logger)->create_owning_glogger("EditorLayer");
     m_logWindwLogger = (*logger)->create_owning_glogger("Editor",false);
     s_shaderManager->editor_init();
@@ -188,36 +184,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
         m_logWindwLogger->add_sink(logWin->create_sink());
     }
 
-    m_defaultShaderPool = dev->get()->as_logical_device()->create_and_init_default_pool(2, 2, 2);
-
-    std::vector<VkDescriptorSetLayoutBinding> binding(4);
-    binding[0] = descriptor_set_layout_binding(0,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,VK_SHADER_STAGE_VERTEX_BIT);
-    binding[1] = descriptor_set_layout_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-    binding[2] = descriptor_set_layout_binding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-    binding[3] = descriptor_set_layout_binding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-
-    VkDescriptorSetLayoutCreateInfo crtInfo = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .bindingCount = uint32_t(binding.size()),
-        .pBindings = binding.data()
-    };
-
-    vkCreateDescriptorSetLayout(dev->get()->as_logical_device()->get_vk_device(),&crtInfo,nullptr,&m_shaderSetLayout);
-
-    std::vector<VkDescriptorSetLayout> layouts(engine->get_swapchain()->get_total_image(),m_shaderSetLayout);
-
-    VkDescriptorSetAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = m_defaultShaderPool->get_vk_descriptor_pool();
-    allocInfo.descriptorSetCount = engine->get_swapchain()->get_total_image();
-    allocInfo.pSetLayouts = layouts.data();
-
-    std::vector < VkDescriptorSet> sets(engine->get_swapchain()->get_total_image());
-
-   auto rrrs =  vkAllocateDescriptorSets(s_device->get_vk_device(), &allocInfo, sets.data() );
-
+  
    return true;    
 }
 

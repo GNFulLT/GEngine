@@ -7,6 +7,7 @@
 #include "engine/manager/igshader_manager.h"
 #include "engine/rendering/vulkan/ivulkan_device.h"
 #include "engine/manager/igresource_manager.h"
+#include "engine/rendering/vulkan/ivulkan_shader_info.h"
 
 GShaderResource::GShaderResource(IGVulkanLogicalDevice* device, std::string_view path)
 {
@@ -14,6 +15,7 @@ GShaderResource::GShaderResource(IGVulkanLogicalDevice* device, std::string_view
 	m_path = path;
 	m_vkShaderModule = nullptr;
 	m_boundedDevice = device;
+	m_shaderInfo = nullptr;
 }
 
 RESOURCE_INIT_CODE GShaderResource::prepare_impl()
@@ -30,6 +32,8 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 {
 	std::filesystem::path path(m_path);
 	auto shaderManager = ((GSharedPtr<IGShaderManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SHADER))->get();
+	auto filenameOnly = path.filename().string();
+
 	if (!std::filesystem::exists(path))
 	{
 		return RESOURCE_INIT_CODE_FILE_NOT_FOUND;
@@ -46,7 +50,7 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 		}
 		auto shader = res.value();
 		
-		auto stage = get_stage_from_spirv_file_name(m_path.c_str());
+		auto stage = get_stage_from_spirv_file_name(filenameOnly.c_str());
 
 		if (stage == SPIRV_SHADER_STAGE_UNKNOWN)
 		{
@@ -72,7 +76,7 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 
 		auto txt = res.value();
 		
-		auto stageType = shader_stage_from_file_name(m_path.c_str());
+		auto stageType = shader_stage_from_file_name(filenameOnly.c_str());
 
 		if (stageType.first == SPIRV_SHADER_STAGE_UNKNOWN || stageType.second == SPIRV_SOURCE_TYPE_UNKNOWN)
 		{
@@ -97,17 +101,22 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 	}
 
 
-	auto bindings = bindingsRes.value();
-
-	if (bindings.size() > 0)
+	m_shaderInfo = bindingsRes.value();
+	if (m_shaderInfo == nullptr)
 	{
+		delete spirvShader;
+		return RESOURCE_INIT_CODE_UNKNOWN_EX;
+	}
 
+	auto bindings = m_shaderInfo->get_bindings();
+	if (bindings->size() > 0)
+	{
 		VkDescriptorSetLayoutCreateInfo crtInfo = {
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 			.pNext = nullptr,
 			.flags = 0,
-			.bindingCount = uint32_t(bindings.size()),
-			.pBindings = bindings.data()
+			.bindingCount = uint32_t((*bindings).size()),
+			.pBindings = (*bindings).data()
 		};
 
 		auto desSuc = vkCreateDescriptorSetLayout(m_boundedDevice->get_vk_device(), &crtInfo, nullptr, &m_setLayout);
@@ -118,6 +127,7 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 		}
 	}
 
+	
 
 	VkShaderModuleCreateInfo createInfo = {};
 	createInfo.pNext = nullptr;
@@ -146,6 +156,14 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 
 void GShaderResource::unload_impl()
 {
+	if (m_shaderInfo != nullptr)
+	{
+		delete m_shaderInfo;
+	}
+	if(m_setLayout != nullptr)
+	{
+		vkDestroyDescriptorSetLayout(m_boundedDevice->get_vk_device(), m_setLayout, nullptr);
+	}
 	if (m_vkShaderModule != nullptr)
 	{
 		vkDestroyShaderModule(m_boundedDevice->get_vk_device(), m_vkShaderModule, nullptr);
@@ -180,4 +198,14 @@ SPIRV_SHADER_STAGE GShaderResource::get_shader_stage()
 const char* GShaderResource::get_entry_point_name()
 {
 	return m_entyPointName.c_str();
+}
+
+const IGVulkanShaderInfo* GShaderResource::get_shader_info()
+{
+	return m_shaderInfo;
+}
+
+VkDescriptorSetLayout_T* GShaderResource::get_layout_set()
+{
+	return m_setLayout;
 }

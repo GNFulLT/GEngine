@@ -16,7 +16,7 @@ public:
 	~GVulkanOffScreenViewport();
 	bool init(int width,int height,int vkFormat) override;
 
-	void destroy() override;
+	void destroy(bool forResize) override;
 	// Inherited via IGVulkanViewport
 	virtual void* get_vk_current_image_renderpass() override;
 
@@ -42,7 +42,8 @@ private:
 	IGVulkanDescriptorCreator* m_descriptorCreator;
 	IGVulkanDescriptorSet* m_descriptorSet;
 
-
+	uint32_t m_width;
+	uint32_t m_height;
 };
 
 #endif // GVULKAN_OFFSCREEN_VIEWPORT_H

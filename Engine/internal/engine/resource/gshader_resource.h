@@ -2,10 +2,10 @@
 #define GSHADER_RESOURCE_H
 
 #include "engine/resource/igshader_resource.h"
+#include <utility>
 
 class IGVulkanLogicalDevice;
 class GResourceManager;
-struct VkDescriptorSetLayout_T;
 
 class GShaderResource :public IGShaderResource
 {
@@ -26,6 +26,9 @@ public:
 	virtual SPIRV_SHADER_STAGE get_shader_stage() override;
 
 	// Inherited via IGShaderResource
+	virtual VkDescriptorSetLayout_T* get_layout_set() override;
+
+	// Inherited via IGShaderResource
 	virtual const char* get_entry_point_name() override;
 private:
 	std::string m_shaderText;
@@ -35,6 +38,12 @@ private:
 	SPIRV_SHADER_STAGE m_stage;
 	std::string m_entyPointName;
 	VkDescriptorSetLayout_T* m_setLayout;
+
+	
+	IGVulkanShaderInfo* m_shaderInfo;
+
+	// Inherited via IGShaderResource
+	virtual const IGVulkanShaderInfo* get_shader_info() override;
 };
 
 #endif // GSHADER_RESOURCE_H

@@ -1,10 +1,16 @@
 #ifndef GSCENE_RENDERER_H
 #define GSCENE_RENDERER_H
+#include "volk.h"
 
 class IGVulkanViewport;
 class IGVulkanDevice;
 class GVulkanCommandBuffer;
 class GVulkanSemaphore;
+class IGShaderResource;
+class IVulkanShaderStage;
+class IGVulkanGraphicPipeline;
+
+#include "public/core/templates/shared_ptr.h"
 class GSceneRenderer
 {
 public:
@@ -22,6 +28,15 @@ private:
 	IGVulkanViewport* m_viewport;
 	GVulkanCommandBuffer* m_cmd;
 	GVulkanSemaphore* m_semaphore;
+
+	VkViewport m_vkViewport;
+	VkRect2D m_vkScissor;
+
+	GSharedPtr< IGShaderResource> m_basicFragShader;
+	GSharedPtr< IGShaderResource> m_basicVertexShader;
+	IGVulkanGraphicPipeline* m_graphicPipeline = nullptr;
+	IVulkanShaderStage* m_fragShaderStage = nullptr;
+	IVulkanShaderStage* m_vertexShaderStage = nullptr;
 };
 
 #endif // GSCENE_RENDERER_H

@@ -4,6 +4,7 @@
 #include "engine/GEngine_EXPORT.h"
 #include <expected>
 #include <cstdint>
+#include <unordered_map>
 
 class IGVulkanPhysicalDevice;
 class IGVulkanQueue;
@@ -11,8 +12,16 @@ class GVulkanCommandBuffer;
 class IVulkanBuffer;
 class IVulkanImage;
 class IGVulkanDevice;
+class IGVulkanPipelineLayout;
+class IGVulkanGraphicPipeline;
 
 struct VkImageCreateInfo;
+enum VkDescriptorType;
+enum VkPrimitiveTopology;
+struct VkDescriptorSetLayout_T;
+struct VkVertexInputBindingDescription;
+struct VkVertexInputAttributeDescription;
+class IVulkanShaderStage;
 
 enum VkFormat;
 
@@ -32,6 +41,9 @@ enum TRANSFER_QUEUE_GET_ERR;
 struct VkDevice_T;
 class ITransferOperations;
 class IGVulkanDescriptorPool;
+class IGVulkanUniformBuffer;
+class IGVulkanGraphicPipelineState;
+class IGVulkanViewport;
 
 class ENGINE_API IGVulkanLogicalDevice
 {
@@ -77,6 +89,33 @@ public:
 	virtual ITransferOperations* get_transfer_operation() = 0;
 
 	virtual IGVulkanDescriptorPool* create_and_init_default_pool(uint32_t uniformBufferCount, uint32_t storageBufferCount, uint32_t samplerCount) =0;
+
+	virtual IGVulkanDescriptorPool* create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap) = 0;
+
+	virtual IGVulkanPipelineLayout* create_and_init_vector_pipeline_layout(const std::vector<VkDescriptorSetLayout_T*>& layouts) = 0;
+
+	virtual std::expected<IGVulkanUniformBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_uniform_buffer(uint32_t size) = 0;
+
+
+	virtual IGVulkanGraphicPipelineState* create_vertex_input_state(const std::vector< VkVertexInputBindingDescription>* vertexBindingDescription,
+		const std::vector< VkVertexInputAttributeDescription>* attributeDescription) = 0;
+
+
+	virtual IGVulkanGraphicPipelineState* create_default_input_assembly_state() = 0;
+
+	virtual IGVulkanGraphicPipelineState* create_input_assembly_state(VkPrimitiveTopology topology, bool resetAfterIndexedDraw) = 0;
+
+	virtual IGVulkanGraphicPipelineState* create_default_rasterization_state() = 0;
+
+	virtual IGVulkanGraphicPipelineState* create_default_none_multisample_state() = 0;
+
+	virtual IGVulkanGraphicPipelineState* create_default_viewport_state(uint32_t width, uint32_t height) = 0;
+
+	virtual IGVulkanGraphicPipelineState* create_default_color_blend_state() = 0;
+
+
+	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp,
+		const std::vector< IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states) = 0;
 private:
 };
 

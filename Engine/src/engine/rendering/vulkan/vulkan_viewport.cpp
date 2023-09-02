@@ -50,9 +50,9 @@ void GVulkanMainViewport::set_current_image(uint32_t index)
 }
 
 
-void GVulkanMainViewport::destroy()
+void GVulkanMainViewport::destroy(bool forResize)
 {
-	m_renderpass.destroy((VkDevice)m_device->get_vk_device());
+	m_renderpass.destroy((VkDevice)m_device->get_vk_device(),forResize);
 }
 
 void* GVulkanMainViewport::get_vk_current_image_renderpass()

@@ -17,8 +17,17 @@
 #include "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline.h"
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
 #include "internal/engine/rendering/vulkan/gvulkan_descriptor_pool.h"
+#include "internal/engine/rendering/vulkan/gvulkan_vectorized_descriptor_pool.h"
 #include "engine/gengine.h"
 #include "internal/engine/rendering/vulkan/vulkan_swapchain.h"
+#include "internal/engine/rendering/vulkan/gvulkan_vectorized_pipeline_layout.h"
+#include "internal/engine/rendering/vulkan/gvulkan_uniform_buffer.h"
+#include "internal/engine/rendering/vulkan/gvulkan_vertex_state.h"
+#include "internal/engine/rendering/vulkan/gvulkan_input_assembly_state.h"
+#include "internal/engine/rendering/vulkan/gvulkan_rasterization_state.h"
+#include "internal/engine/rendering/vulkan/gvulkan_multisample_state.h"
+#include "internal/engine/rendering/vulkan/gvulkan_color_blend_state.h"
+#include "internal/engine/rendering/vulkan/gvulkan_viewport_state.h"
 
 GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
@@ -313,7 +322,7 @@ void GVulkanLogicalDevice::end_command_buffer_record(GVulkanCommandBuffer* buff)
 std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_buffer(uint64_t size, uint32_t bufferUsageFlag, VmaMemoryUsage memoryUsageFlag)
 {
 	//X TODO : GDNEWDA
-	GVulkanBuffer* buff = new GVulkanBuffer(this, allocator);
+	GVulkanBuffer* buff = new GVulkanBuffer(this, allocator,size);
 
 	VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	bufferInfo.size = size;
@@ -408,12 +417,13 @@ IGVulkanPipelineLayout* GVulkanLogicalDevice::create_and_init_pipeline_layout(Vk
 	return glayout;
 }
 
-IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp, IGVulkanPipelineLayout* layout, const std::vector< IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states)
+IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp,const std::vector< IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states)
 {
-	GVulkanGraphicPipeline* pipeline = new GVulkanGraphicPipeline(this, vp->get_render_pass(), layout, shaderStages, states,0);
+	GVulkanGraphicPipeline* pipeline = new GVulkanGraphicPipeline(this, vp->get_render_pass(), shaderStages, states,0);
 	auto res = pipeline->init();
 	if (!res)
 	{
+		pipeline->destroy();
 		delete pipeline;
 		return nullptr;
 	}
@@ -432,6 +442,71 @@ IGVulkanDescriptorPool* GVulkanLogicalDevice::create_and_init_default_pool(uint3
 	return pool;
 }
 
+IGVulkanDescriptorPool* GVulkanLogicalDevice::create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap)
+{
+	GVulkanVectorizedDescriptorPool* pool = new GVulkanVectorizedDescriptorPool(this, GEngine::get_instance()->get_swapchain()->get_total_image(), typeMap);
+	auto res = pool->init();
+	if (!res)
+	{
+		delete pool;
+		return nullptr;
+	}
+	return pool;
+}
+
+IGVulkanPipelineLayout* GVulkanLogicalDevice::create_and_init_vector_pipeline_layout(const std::vector<VkDescriptorSetLayout_T*>& layouts)
+{
+	GVulkanVectorizedPipelineLayout* layout = new GVulkanVectorizedPipelineLayout(this, layouts);
+	bool res = layout->init();
+
+	if (!res)
+	{
+		delete layout;
+		return nullptr;
+	}
+	return layout;
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_vertex_input_state(const std::vector<VkVertexInputBindingDescription>* vertexBindingDescription, const std::vector<VkVertexInputAttributeDescription>* attributeDescription)
+{	
+	if (vertexBindingDescription == nullptr && attributeDescription == nullptr)
+	{
+		return new GVulkanVertexState();
+	}
+	
+	return new GVulkanVertexState(vertexBindingDescription == nullptr ? std::vector<VkVertexInputBindingDescription>() : *vertexBindingDescription, attributeDescription == nullptr ? std::vector<VkVertexInputAttributeDescription>() : *attributeDescription);
+
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_input_assembly_state()
+{
+	return new GVulkanInputAssemblyState();
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_input_assembly_state(VkPrimitiveTopology topology, bool resetAfterIndexedDraw)
+{
+	return new GVulkanInputAssemblyState(topology,resetAfterIndexedDraw);
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_rasterization_state()
+{
+	return new GVulkanRasterizationState();
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_none_multisample_state()
+{
+	return new GVulkanMultiSampleState();
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_color_blend_state()
+{
+	return new GVulkanColorBlendState();
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_viewport_state(uint32_t width, uint32_t height)
+{
+	return new GVulkanViewportState(width,height);
+}
 
 GVulkanLogicalDevice* GVulkanLogicalDevice::get_instance()
 {
@@ -485,4 +560,17 @@ bool GVulkanLogicalDevice::create_vma_allocator()
 
 	return VK_SUCCESS == vmaCreateAllocator(&allocatorCreateInfo, &allocator);
 
+}
+
+std::expected<IGVulkanUniformBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_uniform_buffer(uint32_t size)
+{
+	
+	auto res = create_buffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	if (!res.has_value())
+	{
+		return std::unexpected(res.error());
+	}
+	
+	GVulkanUniformBuffer* buff = new GVulkanUniformBuffer(res.value());
+	return buff;
 }

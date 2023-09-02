@@ -1,5 +1,5 @@
 #include "internal/engine/shader/spirv_parser.h"
-SPIRV_READ_BINARY_RESULT get_bindings_from_binary(const uint32_t* words, std::size_t size, std::vector<VkDescriptorSetLayoutBinding>& vec)
+SPIRV_READ_BINARY_RESULT get_bindings_from_binary(const uint32_t* words, std::size_t size, std::vector<std::pair<VkDescriptorSetLayoutBinding,VkWriteDescriptorSet>>& vec)
 {
 
 	auto wordCount = std::uint32_t(size / sizeof(std::uint32_t));
@@ -17,14 +17,25 @@ SPIRV_READ_BINARY_RESULT get_bindings_from_binary(const uint32_t* words, std::si
 	auto descriptorSet = spvModule.descriptor_sets->bindings;
 	for (int i = 0; i < spvModule.descriptor_sets->binding_count; i++)
 	{
+		
 		auto iterSet = descriptorSet + i;
+
 		VkDescriptorSetLayoutBinding binding = {};
 		binding.stageFlags = stage;
 		binding.pImmutableSamplers = nullptr;
 		binding.descriptorCount = (*iterSet)->count;
 		binding.descriptorType = spv_descriptor_to_vk_descriptor((*iterSet)->descriptor_type);
+		
+		VkWriteDescriptorSet wset = {};
+		
+		wset.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		wset.pNext = nullptr;
+		wset.descriptorType = binding.descriptorType;
+		wset.descriptorCount = binding.descriptorCount;
+		wset.dstBinding = (*iterSet)->binding;
+		
 
-		vec.push_back(binding);
+		vec.push_back({ binding ,wset });
 	}
 	return SPIRV_READ_BINARY_RESULT_OK;
 }

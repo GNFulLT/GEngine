@@ -18,7 +18,7 @@ public:
 	void create(VkDevice dev, VkImageView imageView, uint32_t width, uint32_t height, const std::vector<VkClearValue>& clearValues,
 		VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE, VkSubpassDependency* dependencies = 0,int dependencyCount = 0);
 
-	void destroy(VkDevice dev);
+	void destroy(VkDevice dev,bool forResize = false);
 
 	inline void begin(VkCommandBuffer cmd, int index = 0)
 	{

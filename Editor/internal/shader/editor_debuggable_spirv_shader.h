@@ -11,6 +11,7 @@ class EditorDebuggableSPIRVShader : public ISpirvShader
 {
 public:
 	EditorDebuggableSPIRVShader(uint32_t byteSize, uint32_t* words, const glslang_input_t& usedInput);
+	~EditorDebuggableSPIRVShader();
 	// Inherited via ISpirvShader
 	virtual SPIRV_SHADER_STAGE get_spirv_stage() override;
 	virtual uint32_t get_size() override;

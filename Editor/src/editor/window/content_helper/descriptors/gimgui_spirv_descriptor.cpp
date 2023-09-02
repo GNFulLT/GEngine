@@ -80,7 +80,6 @@ void GImGuiSpirvDescriptor::draw_menu_for_file(std::filesystem::path path)
 						auto debugger = shader->get_debugger();
 						auto fileName = path.filename().string();
 						EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(), fileName, "inspector", true);
-						p_shaderManager->get_layout_bindings_from(shader);
 						delete shader;
 					}
 				}
@@ -106,7 +105,6 @@ void GImGuiSpirvDescriptor::draw_menu_for_file(std::filesystem::path path)
 							auto debugger = shader->get_debugger();
 							auto fileName = path.filename().string();
 							EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(), fileName, "inspector", true);
-							p_shaderManager->get_layout_bindings_from(shader);
 							delete shader;
 						}
 					}
