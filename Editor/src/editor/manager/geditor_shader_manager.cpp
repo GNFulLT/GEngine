@@ -1,3 +1,4 @@
+#include "volk.h"
 #include "internal/manager/geditor_shader_manager.h"
 #include <glslang/Public/resource_limits_c.h>
 #include <glslang/Include/glslang_c_interface.h>
@@ -44,6 +45,11 @@ void GEditorShaderManager::editor_init()
 void GEditorShaderManager::destroy()
 {
 	m_defaultShaderMng->get()->destroy();
+}
+
+std::expected<std::vector<VkDescriptorSetLayoutBinding>, SHADER_LAYOUT_BINDING_ERROR> GEditorShaderManager::get_layout_bindings_from(ISpirvShader* shaderHandle)
+{
+	return m_defaultShaderMng->get()->get_layout_bindings_from(shaderHandle);
 }
 
 std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GEditorShaderManager::create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes)

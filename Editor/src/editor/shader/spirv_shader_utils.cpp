@@ -4,33 +4,53 @@
 
 std::expected<std::vector<char>, READ_SHADER_FILE_ERROR> read_shader_bytes(std::filesystem::path fileName)
 {
-	auto path = fileName.string();
-	FILE* file = fopen(path.c_str(), "r");
 
-	if (!file)
+	std::ifstream stream(fileName, std::ios::ate | std::ios::binary);
+
+	if (!stream.good())
 	{
 		return std::unexpected(READ_SHADER_FILE_ERROR_FILE_NOT_FOUND);
 	}
 
-	fseek(file, 0L, SEEK_END);
-	const auto bytesinfile = ftell(file);
-	fseek(file, 0L, SEEK_SET);
+	size_t fileSize = (size_t)stream.tellg();
 
-	char* buffer = (char*)malloc(bytesinfile + 1);
-	
-	const size_t bytesread = fread(buffer, 1, bytesinfile, file);
-	fclose(file);
+	std::vector<char> bytesC(stream.tellg());
 
-	std::vector<char> buff(bytesread);
+	stream.seekg(0);
+	stream.read(bytesC.data(), fileSize);
 
-	for (int i = 0; i < bytesread; i++)
-	{
-		buff[i] = *(buffer + i);
-	}
+	stream.close();
 
-	free(buffer);
+	return bytesC;
 
-	return buff;
+	//auto path = fileName.string();
+	//FILE* file = fopen(path.c_str(), "r");
+
+	//if (!file)
+	//{
+	//	return std::unexpected(READ_SHADER_FILE_ERROR_FILE_NOT_FOUND);
+	//}
+
+	//fseek(file, 0L, SEEK_END);
+	//const auto bytesinfile = ftell(file);
+	//fseek(file, 0L, SEEK_SET);
+
+	//char* buffer = (char*)malloc(bytesinfile + 1);
+	//
+	//const size_t bytesread = fread(buffer, 1, bytesinfile, file);
+	//
+	//fclose(file);
+
+	//std::vector<char> buff(bytesread);
+
+	//for (int i = 0; i < bytesread; i++)
+	//{
+	//	buff[i] = *(buffer + i);
+	//}
+
+	//free(buffer);
+
+	//return buff;
 }
 
 SPIRV_SHADER_STAGE get_stage_from_spirv_file_name(const char* fileName)

@@ -22,6 +22,7 @@ class IGVulkanViewport;
 class IGVulkanGraphicPipeline;
 class IVulkanShaderStage;
 class IGVulkanGraphicPipelineState;
+class IGVulkanDescriptorPool;
 
 
 class GVulkanLogicalDevice : public IGVulkanLogicalDevice

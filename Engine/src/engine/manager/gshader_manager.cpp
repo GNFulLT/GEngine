@@ -8,6 +8,7 @@
 #include "spirv-tools/libspirv.h"
 #include "internal/engine/shader/gspirv_byte_shader.h"
 #include "internal/engine/rendering/vulkan/gvulkan_shader_stage.h"
+#include "internal/engine/shader/spirv_parser.h"
 
 std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shader_text(const std::string& text, SPIRV_SHADER_STAGE stage, SPIRV_SOURCE_TYPE sourceType)
 {
@@ -83,6 +84,18 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shade
 std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GShaderManager::create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes)
 {
 	return new GVulkanShaderStage(shaderRes);
+}
+
+std::expected<std::vector<VkDescriptorSetLayoutBinding>, SHADER_LAYOUT_BINDING_ERROR> GShaderManager::get_layout_bindings_from(ISpirvShader* shaderHandle)
+{
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+	auto res = get_bindings_from_binary(shaderHandle->get_spirv_words(), shaderHandle->get_size(), layoutBindings);
+	if (res != SPIRV_READ_BINARY_RESULT_OK)
+	{
+		return std::unexpected(SHADER_LAYOUT_BINDING_ERROR_UNKNOWN);
+	}
+
+	return layoutBindings;
 }
 
 bool GShaderManager::init()

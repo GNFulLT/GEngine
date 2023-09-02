@@ -35,3 +35,6 @@
 [submodule "ThirdParty/spirv_cross"]
 	path = ThirdParty/spirv_cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "ThirdParty/spirv-reflect"]
+	path = ThirdParty/spirv-reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect.git

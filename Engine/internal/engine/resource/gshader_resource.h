@@ -5,6 +5,7 @@
 
 class IGVulkanLogicalDevice;
 class GResourceManager;
+struct VkDescriptorSetLayout_T;
 
 class GShaderResource :public IGShaderResource
 {
@@ -33,7 +34,7 @@ private:
 	IGVulkanLogicalDevice* m_boundedDevice;
 	SPIRV_SHADER_STAGE m_stage;
 	std::string m_entyPointName;
-
+	VkDescriptorSetLayout_T* m_setLayout;
 };
 
 #endif // GSHADER_RESOURCE_H

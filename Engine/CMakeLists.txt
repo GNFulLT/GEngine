@@ -32,7 +32,13 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
  "internal/engine/manager/ginjection_manager.h" "src/engine/manager/ginjection_manager.cpp" "include/engine/shader/ispirv_shader.h" "include/engine/resource/igshader_resource.h" 
  "include/engine/manager/igshader_manager.h" "internal/engine/manager/gshader_manager.h" "src/engine/manager/gshader_manager.cpp" "internal/engine/shader/spirv_shader_utils.h" "src/engine/utils.cpp"
  "internal/engine/utils.h" "src/engine/shader/spirv_shader_utils.cpp" "internal/engine/resource/gshader_resource.h" "src/engine/resource/gshader_resource.cpp" "internal/engine/shader/gspirv_shader.h" 
- "src/engine/shader/gspirv_shader.cpp" "include/engine/manager/ijob_manager.h" "internal/engine/manager/gjob_manager.h" "src/engine/manager/gjob_manager.cpp" "include/engine/time_unit.h" "internal/engine/shader/gspirv_byte_shader.h" "src/engine/shader/gspirv_byte_shader.cpp" "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline.h" "src/engine/rendering/vulkan/gvulkan_graphic_pipeline.cpp" "internal/engine/rendering/vulkan/gvulkan_shader_stage.h" "src/engine/rendering/vulkan/gvulkan_shader_stage.cpp" "include/engine/rendering/vulkan/ivulkan_shader_stage.h" "include/engine/rendering/vulkan/ivulkan_graphic_pipeline.h" "include/engine/rendering/vulkan/ivulkan_graphic_pipeline_state.h" "include/engine/rendering/vulkan/ivulkan_renderpass.h" "include/engine/rendering/vulkan/ivulkan_pipeline_layout.h" "internal/engine/rendering/vulkan/gvulkan_pipeline_layout.h" "src/engine/rendering/vulkan/gvulkan_pipeline_layout.cpp" "include/engine/rendering/vulkan/ivulkan_descriptor_pool.h" "internal/engine/rendering/vulkan/gvulkan_descriptor_pool.h" "src/engine/rendering/vulkan/gvulkan_descriptor_pool.cpp" "include/engine/rendering/vulkan/ivulkan_swapchain.h")
+ "src/engine/shader/gspirv_shader.cpp" "include/engine/manager/ijob_manager.h" "internal/engine/manager/gjob_manager.h" "src/engine/manager/gjob_manager.cpp" "include/engine/time_unit.h" 
+ "internal/engine/shader/gspirv_byte_shader.h" "src/engine/shader/gspirv_byte_shader.cpp" "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline.h" 
+ "src/engine/rendering/vulkan/gvulkan_graphic_pipeline.cpp" "internal/engine/rendering/vulkan/gvulkan_shader_stage.h" "src/engine/rendering/vulkan/gvulkan_shader_stage.cpp" 
+ "include/engine/rendering/vulkan/ivulkan_shader_stage.h" "include/engine/rendering/vulkan/ivulkan_graphic_pipeline.h" "include/engine/rendering/vulkan/ivulkan_graphic_pipeline_state.h" 
+ "include/engine/rendering/vulkan/ivulkan_renderpass.h" "include/engine/rendering/vulkan/ivulkan_pipeline_layout.h" "internal/engine/rendering/vulkan/gvulkan_pipeline_layout.h" 
+ "src/engine/rendering/vulkan/gvulkan_pipeline_layout.cpp" "include/engine/rendering/vulkan/ivulkan_descriptor_pool.h" "internal/engine/rendering/vulkan/gvulkan_descriptor_pool.h" 
+ "src/engine/rendering/vulkan/gvulkan_descriptor_pool.cpp" "include/engine/rendering/vulkan/ivulkan_swapchain.h"   "internal/engine/shader/spirv_parser.h" "src/engine/shader/spirv_parser.cpp")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -45,10 +51,13 @@ target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/.
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glslang/glslang/Include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/taskflow")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross/include")
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect/")
 
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
 set(ENABLE_HLSL 1)
+set(SPIRV_REFLECT_EXAMPLES 0)
+set(SPIRV_REFLECT_STATIC_LIB 1)
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../GObject" GOBJECT)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/volk" VOLK)
@@ -61,6 +70,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/taskflow" TASKFLOW)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-headers" SPIRV_HEADERS)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-tools" SPIRV-TOOLS)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross" SPIRV-CROSS)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect" SPIRV-REFLECT)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 target_compile_definitions(glslang PRIVATE BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)
@@ -75,6 +85,7 @@ target_link_libraries(GEngine_Engine PRIVATE GPUOpen::VulkanMemoryAllocator Vulk
 target_link_libraries(GEngine_Engine PUBLIC glslang MachineIndependent glslang-default-resource-limits SPIRV)
 target_link_libraries(GEngine_Engine PUBLIC SPIRV-Tools-static)
 target_link_libraries(GEngine_Engine PUBLIC spirv-cross-core spirv-cross-hlsl spirv-cross-hlsl)
+target_link_libraries(GEngine_Engine PUBLIC spirv-reflect-static)
 
 include(GenerateExportHeader)
 

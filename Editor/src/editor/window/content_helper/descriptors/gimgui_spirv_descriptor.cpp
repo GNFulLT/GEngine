@@ -1,3 +1,4 @@
+#include "volk.h"
 #include "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h"
 #include "imgui/imgui.h"
 #include "internal/shader/spirv_shader_utils.h"
@@ -66,28 +67,8 @@ void GImGuiSpirvDescriptor::draw_menu_for_file(std::filesystem::path path)
 		{
 			m_loadFileFuture = std::async([=]() {
 				auto spvFile = load_spv_file(path);
-				//X TODO : SAFE CONVERT
-				GSpirvByteShader* shader = (GSpirvByteShader*)spvFile;
-				if (!shader->is_debug_active())
+				if (spvFile != nullptr)
 				{
-					EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e("Couldn't disassemble spv file");
-				}
-				else
-				{
-					auto debugger = shader->get_debugger();
-					auto fileName = path.filename().string();
-					EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(), fileName, "inspector", true);
-					delete shader;
-				}
-				});
-		}
-		else
-		{
-			auto state = m_loadFileFuture.wait_for(std::chrono::seconds(0));
-			if (state == std::future_status::ready)
-			{
-				m_loadFileFuture = std::async([=]() {
-					auto spvFile = load_spv_file(path);
 					//X TODO : SAFE CONVERT
 					GSpirvByteShader* shader = (GSpirvByteShader*)spvFile;
 					if (!shader->is_debug_active())
@@ -98,8 +79,36 @@ void GImGuiSpirvDescriptor::draw_menu_for_file(std::filesystem::path path)
 					{
 						auto debugger = shader->get_debugger();
 						auto fileName = path.filename().string();
-						EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(),fileName,"inspector",true);
+						EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(), fileName, "inspector", true);
+						p_shaderManager->get_layout_bindings_from(shader);
 						delete shader;
+					}
+				}
+			});
+		}
+		else
+		{
+			auto state = m_loadFileFuture.wait_for(std::chrono::seconds(0));
+			if (state == std::future_status::ready)
+			{
+				m_loadFileFuture = std::async([=]() {
+					auto spvFile = load_spv_file(path);
+					if (spvFile != nullptr)
+					{
+						//X TODO : SAFE CONVERT
+						GSpirvByteShader* shader = (GSpirvByteShader*)spvFile;
+						if (!shader->is_debug_active())
+						{
+							EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e("Couldn't disassemble spv file");
+						}
+						else
+						{
+							auto debugger = shader->get_debugger();
+							auto fileName = path.filename().string();
+							EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->try_to_show_string_in_new_editor(debugger->get_all_uniform_buffers(), fileName, "inspector", true);
+							p_shaderManager->get_layout_bindings_from(shader);
+							delete shader;
+						}
 					}
 				});
 			}
@@ -135,4 +144,5 @@ ISpirvShader* GImGuiSpirvDescriptor::load_spv_file(std::filesystem::path path)
 		auto shader = shaderRes.value();
 		return shader;
 	}
+	return nullptr;
 }

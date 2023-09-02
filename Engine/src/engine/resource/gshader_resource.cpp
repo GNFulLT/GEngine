@@ -10,7 +10,7 @@
 
 GShaderResource::GShaderResource(IGVulkanLogicalDevice* device, std::string_view path)
 {
-
+	m_setLayout = nullptr;
 	m_path = path;
 	m_vkShaderModule = nullptr;
 	m_boundedDevice = device;
@@ -88,6 +88,35 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 
 		spirvShader = spirvRes.value();
 	}
+	auto bindingsRes = shaderManager->get_layout_bindings_from(spirvShader);
+	
+	if (!bindingsRes.has_value())
+	{
+		delete spirvShader;
+		return RESOURCE_INIT_CODE_UNKNOWN_EX;
+	}
+
+
+	auto bindings = bindingsRes.value();
+
+	if (bindings.size() > 0)
+	{
+
+		VkDescriptorSetLayoutCreateInfo crtInfo = {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.bindingCount = uint32_t(bindings.size()),
+			.pBindings = bindings.data()
+		};
+
+		auto desSuc = vkCreateDescriptorSetLayout(m_boundedDevice->get_vk_device(), &crtInfo, nullptr, &m_setLayout);
+		if (desSuc != VK_SUCCESS)
+		{
+			delete spirvShader;
+			return RESOURCE_INIT_CODE_UNKNOWN_EX;
+		}
+	}
 
 
 	VkShaderModuleCreateInfo createInfo = {};
@@ -100,6 +129,9 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 
 	m_stage = spirvShader->get_spirv_stage();
 	m_entyPointName = std::string(spirvShader->get_entry_point_name());
+
+
+
 	delete spirvShader;
 
 	if (res != VK_SUCCESS)

@@ -18,6 +18,7 @@
 #include "internal/window/gimgui_log_window.h"
 #include "internal/manager/geditor_shader_manager.h"
 #include "engine/rendering/vulkan/ivulkan_descriptor_pool.h"
+#include "engine/rendering/vulkan/ivulkan_swapchain.h"
 
 IGVulkanLogicalDevice* s_device;
 
@@ -205,9 +206,19 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
     vkCreateDescriptorSetLayout(dev->get()->as_logical_device()->get_vk_device(),&crtInfo,nullptr,&m_shaderSetLayout);
 
+    std::vector<VkDescriptorSetLayout> layouts(engine->get_swapchain()->get_total_image(),m_shaderSetLayout);
 
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = m_defaultShaderPool->get_vk_descriptor_pool();
+    allocInfo.descriptorSetCount = engine->get_swapchain()->get_total_image();
+    allocInfo.pSetLayouts = layouts.data();
 
-    return true;    
+    std::vector < VkDescriptorSet> sets(engine->get_swapchain()->get_total_image());
+
+   auto rrrs =  vkAllocateDescriptorSets(s_device->get_vk_device(), &allocInfo, sets.data() );
+
+   return true;    
 }
 
 GSharedPtr<IOwningGLogger> EditorApplicationImpl::get_editor_logger()

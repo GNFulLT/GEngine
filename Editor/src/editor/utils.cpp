@@ -59,7 +59,7 @@ FILE_TYPE get_file_type_from_name(const char* str)
         return FILE_TYPE_HLSL;
 
     }
-    else if (endsWith(str, ".hlsl_vertex"))
+    else if (endsWith(str, ".hlsl_vert"))
     {
         return FILE_TYPE_HLSL;
 
@@ -88,7 +88,7 @@ FILE_TYPE get_file_type_from_name(const char* str)
         return FILE_TYPE_GLSL;
 
     }
-    else if (endsWith(str, ".glsl_vertex"))
+    else if (endsWith(str, ".glsl_vert"))
     {
         return FILE_TYPE_GLSL;
 

@@ -8,6 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(GEngine "main.cpp")
 
+set(SPIRV_REFLECT_EXAMPLES 0)
 
 target_include_directories(GEngine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Core/include")
 target_include_directories(GEngine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Engine/include")

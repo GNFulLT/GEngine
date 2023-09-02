@@ -75,7 +75,7 @@ void GImGuiShaderDescriptor::try_to_compile_shader(std::filesystem::path path)
 			// Now write to out
 			std::string recommendName = path.filename().stem().string() + stage_to_extension(val->get_spirv_stage()) + ".spv";
 			//X TODO : SAVE THE FILE TO THE PROJECT DIRECTORY
-			std::ofstream out("./" + recommendName, std::ios::out | std::ios::trunc, std::ofstream::binary);
+			std::ofstream out("./" + recommendName, std::ios::out | std::ios::trunc | std::ios::binary);
 			if (out.good())
 			{
 				//X TODO : ADD ALL ENDIAN SUPPORT
