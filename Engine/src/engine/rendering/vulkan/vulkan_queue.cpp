@@ -21,35 +21,39 @@ GVulkanQueue::GVulkanQueue(GVulkanLogicalDevice* inDevice, uint32_t familyIndex,
 	vkGetDeviceQueue2((VkDevice)inDevice->get_vk_device(),&inf,&m_queue);
 
 	auto queues = inDevice->get_bounded_physical_device()->get_all_queues();
-	m_properties = queues[familyIndex];
+	if (queues.size() > familyIndex)
+	{
+		m_properties = queues[familyIndex];
+
+		if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT)
+		{
+			m_allQueues += "VK_QUEUE_COMPUTE_BIT|";
+		}
+		if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
+		{
+			m_allQueues += "VK_QUEUE_GRAPHICS_BIT|";
+		}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT)
+		{
+			m_allQueues += "VK_QUEUE_TRANSFER_BIT|";
+		}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_SPARSE_BINDING_BIT)
+		{
+			m_allQueues += "VK_QUEUE_SPARSE_BINDING_BIT|";
+		}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_OPTICAL_FLOW_BIT_NV)
+		{
+			m_allQueues += "VK_QUEUE_OPTICAL_FLOW_BIT_NV|";
+		}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_VIDEO_DECODE_BIT_KHR)
+		{
+			m_allQueues += "VK_QUEUE_VIDEO_DECODE_BIT_KHR|";
+		}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_PROTECTED_BIT)
+		{
+			m_allQueues += "VK_QUEUE_PROTECTED_BIT|";
+		}
+		if (m_allQueues.size() != 0)
+		{
+			m_allQueues.pop_back();
+		}
+	}
 	
-	if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT)
-	{
-		m_allQueues += "VK_QUEUE_COMPUTE_BIT|";
-	}
-	if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
-	{
-		m_allQueues += "VK_QUEUE_GRAPHICS_BIT|";
-	}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT)
-	{
-		m_allQueues += "VK_QUEUE_TRANSFER_BIT|";
-	}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_SPARSE_BINDING_BIT)
-	{
-		m_allQueues += "VK_QUEUE_SPARSE_BINDING_BIT|";
-	}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_OPTICAL_FLOW_BIT_NV)
-	{
-		m_allQueues += "VK_QUEUE_OPTICAL_FLOW_BIT_NV|";
-	}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_VIDEO_DECODE_BIT_KHR)
-	{
-		m_allQueues += "VK_QUEUE_VIDEO_DECODE_BIT_KHR|";
-	}if (m_properties.queueFlags & VkQueueFlagBits::VK_QUEUE_PROTECTED_BIT)
-	{
-		m_allQueues += "VK_QUEUE_PROTECTED_BIT|";
-	}
-	if (m_allQueues.size() != 0)
-	{
-		m_allQueues.pop_back();
-	}
 }
 
 VkQueue_T* GVulkanQueue::get_queue() const noexcept

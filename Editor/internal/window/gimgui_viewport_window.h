@@ -6,7 +6,7 @@
 #include <string>
 class IGVulkanViewport;
 class GImGuiWindowStorage;
-
+	
 class GImGuiViewportWindow : public IGImGuiWindowImpl
 {
 public:

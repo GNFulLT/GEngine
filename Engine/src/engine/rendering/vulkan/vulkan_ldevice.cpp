@@ -219,8 +219,12 @@ bool GVulkanLogicalDevice::init()
 
 	m_defaultQueue = GVulkanQueue(this,physicalDevice->get_default_queue_family_index());
 
+	m_logger->log_d("Checking support only transfer");
+
 	if (physicalDevice->does_support_only_transfer())
 	{
+		m_logger->log_d("Transfer queue found creating transfer queue");
+
 		m_transferQueue = GVulkanQueue(this, physicalDevice->get_only_transfer());
 		m_logger->log_d(fmt::format("All bits for transfer queue : {}",m_transferQueue.get_all_supported_operations_as_string()).c_str());
 

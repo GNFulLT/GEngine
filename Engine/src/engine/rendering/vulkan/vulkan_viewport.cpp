@@ -72,12 +72,14 @@ uint32_t GVulkanMainViewport::get_height() const
 
 void GVulkanMainViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
 {
+	cmd->begin();
 	m_renderpass.begin(cmd->get_handle(), m_currentImage);
 }
 
 void GVulkanMainViewport::end_draw_cmd(GVulkanCommandBuffer* cmd)
 {
 	m_renderpass.end(cmd->get_handle());
+	cmd->end();
 }
 
 bool GVulkanMainViewport::can_be_used_as_texture()

@@ -17,6 +17,8 @@ class IGVulkanDescriptorCreator;
 struct VkSurfaceKHR_T;
 class IGVulkanSwapchain;
 class GVulkanFrameData;
+class IGVulkanFrameData;
+class IGVulkanChainedViewport;
 
 class ENGINE_API GEngine
 {
@@ -42,11 +44,21 @@ public:
 
 	IGVulkanViewport* create_offscreen_viewport_depth(IGVulkanDescriptorCreator* descriptor);
 
+	IGVulkanChainedViewport* create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor,uint32_t imageCount);
+
 	void destroy_offscreen_viewport(IGVulkanViewport* port);
 	static GEngine* get_instance();
 
 	IGVulkanSwapchain* get_swapchain();
+
+	uint32_t get_current_frame();
+
+	uint32_t get_frame_count();
+
+	IGVulkanFrameData* get_frame_data_by_index(uint32_t index);
+
 private:
+	void wait_all_frame_data();
 	void exit();
 
 	void tick();

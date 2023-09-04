@@ -27,8 +27,13 @@ GVulkanFrameData::GVulkanFrameData(IGVulkanLogicalDevice* dev, uint32_t imageInd
 	m_renderSemaphore->init();
 
 	m_cmd = m_cmdManager->create_buffer(true);
+	m_cmd->init();
 }
-
+void GVulkanFrameData::wait_fence()
+{
+	//X Wait
+	m_waitQueueFence->wait();
+}
 GVulkanCommandBuffer* GVulkanFrameData::get_cmd()
 {
 	return m_cmd;
@@ -41,10 +46,8 @@ GVulkanCommandBuffer* GVulkanFrameData::get_the_main_cmd()
 
 void GVulkanFrameData::submit_the_cmd()
 {
-	m_waitSemaphores.push_back(m_imageAcquiredSemaphore->get_semaphore());
-	m_waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	VkSemaphore semaphore = m_renderSemaphore->get_semaphore();
-
+	auto cmd = m_cmd->get_handle();
 	VkSubmitInfo inf = {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.pNext = nullptr,
@@ -52,7 +55,7 @@ void GVulkanFrameData::submit_the_cmd()
 		.pWaitSemaphores = m_waitSemaphores.data(),
 		.pWaitDstStageMask = m_waitStages.data(),
 		.commandBufferCount = 1,
-		.pCommandBuffers = m_cmd->get_handle_p(),
+		.pCommandBuffers = &cmd,
 		.signalSemaphoreCount = 1,
 		.pSignalSemaphores = &semaphore
 	};
@@ -73,6 +76,21 @@ void GVulkanFrameData::destroy()
 	m_cmdManager->destroy();
 }
 
+bool GVulkanFrameData::prepare_for_rendering()
+{	
+	//X Reset the fence
+	m_waitQueueFence->reset();
+	m_waitSemaphores.clear();
+	m_waitStages.clear();
+	m_waitSemaphores.push_back(m_imageAcquiredSemaphore->get_semaphore());
+	m_waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	m_cmd->reset();
+
+	
+
+	return true;
+}
+
 GVulkanSemaphore* GVulkanFrameData::get_image_acquired_semaphore()
 {
 	return m_imageAcquiredSemaphore;
@@ -81,6 +99,17 @@ GVulkanSemaphore* GVulkanFrameData::get_image_acquired_semaphore()
 GVulkanSemaphore* GVulkanFrameData::get_render_finished_semaphore()
 {
 	return m_renderSemaphore;
+}
+
+GVulkanCommandBuffer* GVulkanFrameData::create_command_buffer_for_this_frame()
+{
+	return m_cmdManager->create_buffer(true);
+}
+
+void GVulkanFrameData::add_wait_semaphore_for_this_frame(GVulkanSemaphore* waitSemaphore, int stage)
+{
+	m_waitSemaphores.push_back(waitSemaphore->get_semaphore());
+	m_waitStages.push_back(stage);
 }
 
 

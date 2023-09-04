@@ -32,15 +32,10 @@ public:
 
 	virtual void destroy() = 0;
 
-	virtual GVulkanCommandBuffer* get_main_command_buffer() = 0;
-
 	virtual GVulkanCommandBuffer* get_single_time_command_buffer() = 0;
 
 	// DEPRECATED
 	virtual void execute_single_time_command_buffer_and_wait() = 0;	
-
-	virtual GVulkanCommandBuffer* create_cmd_from_main_pool() = 0;
-	virtual void destroy_cmd_main_pool(GVulkanCommandBuffer* cmd) = 0;
 
 	virtual GVulkanSemaphore* create_semaphore(bool isSignaled) = 0;
 

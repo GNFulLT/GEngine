@@ -19,6 +19,9 @@ public:
 		VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE,
 		VkSubpassDependency* dependencies = 0,int dependencyCount = 0, const VkRenderPassCreateInfo* createInfo = 0, VkImageView depthView = 0);
 
+	void create(VkDevice dev, const std::vector<VkImageView>& renderViews, const std::vector<VkImageView>& depthViews, const std::vector<VkClearValue>& clearValues, uint32_t width, uint32_t height, VkFormat format,
+		VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, const VkRenderPassCreateInfo* createInfo, VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE);
+
 	void destroy(VkDevice dev,bool forResize = false);
 
 	inline void begin(VkCommandBuffer cmd, int index = 0)

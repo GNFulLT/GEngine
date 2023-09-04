@@ -23,6 +23,8 @@
 #include "engine/resource/igshader_resource.h"
 #include "engine/rendering/vulkan/ivulkan_shader_stage.h"
 #include "engine/rendering/vulkan/ivulkan_graphic_pipeline.h"
+#include "engine/rendering/igvulkan_frame_data.h"
+#include "engine/rendering/vulkan/igvulkan_chained_viewport.h"
 IGVulkanLogicalDevice* s_device;
 
 inline VkDescriptorSetLayoutBinding descriptor_set_layout_binding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags flags, uint32_t descriptorCount = 1)
@@ -88,8 +90,9 @@ void EditorApplicationImpl::render()
     IGVulkanViewport* mainViewport = m_engine->get_viewport();
     IManagerTable* table = m_engine->get_manager_table();
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
-    GVulkanCommandBuffer* cmd = dev->operator->()->get_main_command_buffer();
-    dev->operator->()->as_logical_device()->begin_command_buffer_record(cmd);
+    auto currIndex = m_engine->get_current_frame();
+    m_renderViewport->set_image_index(currIndex);
+    GVulkanCommandBuffer* cmd = m_engine->get_frame_data_by_index(currIndex)->get_the_main_cmd();
     mainViewport->begin_draw_cmd(cmd);
 
     //X TODO : Layered Architecture here
@@ -98,11 +101,7 @@ void EditorApplicationImpl::render()
 
 
     // Renderpass
-    mainViewport->end_draw_cmd(cmd);
-
-    dev->operator->()->as_logical_device()->end_command_buffer_record(cmd);
-
-   
+    mainViewport->end_draw_cmd(cmd);   
 }
 
 void EditorApplicationImpl::after_render()
@@ -174,7 +173,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
     m_logger->log_d("Creating Render Viewport");
     
-    m_renderViewport = engine->create_offscreen_viewport_depth(m_imguiDescriptorCreator);
+    m_renderViewport = engine->create_offscreen_viewport_depth_chained(m_imguiDescriptorCreator,m_engine->get_frame_count());
 
     m_imguiLayer->set_viewport(m_renderViewport);
 
