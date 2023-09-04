@@ -5,6 +5,8 @@
 #include "GEngine_EXPORT.h"
 #include "public/core/templates/shared_ptr.h"
 
+#include <vector>
+
 class Window;
 class IGVulkanDevice;
 class IGVulkanApp;
@@ -14,6 +16,7 @@ class GVulkanSwapchain;
 class IGVulkanDescriptorCreator;
 struct VkSurfaceKHR_T;
 class IGVulkanSwapchain;
+class GVulkanFrameData;
 
 class ENGINE_API GEngine
 {
@@ -55,6 +58,8 @@ private:
 	GSharedPtr<IGVulkanApp> m_vulkanApp;
 	GVulkanSwapchain* m_vulkanSwapchain;
 	VkSurfaceKHR_T* m_mainSurface;
+	std::vector<GVulkanFrameData*> m_frames;
+	uint32_t m_currentFrame;
 #ifdef _DEBUG
 	bool m_inited = false;
 #endif

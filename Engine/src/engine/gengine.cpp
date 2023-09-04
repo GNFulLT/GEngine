@@ -19,6 +19,7 @@
 #include "internal/engine/manager/gshader_manager.h"
 #include "internal/engine/manager/gjob_manager.h"
 #include "internal/engine/rendering/vulkan/gvulkan_offscreen_depth_viewport.h"
+#include "internal/engine/rendering/gvulkan_frame_data.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -57,6 +58,8 @@ GEngine::GEngine()
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
 	GLoggerManager::set_instance(s_logger);
+
+	m_currentFrame = 0;
 }
 
 void GEngine::run()
@@ -101,7 +104,11 @@ void GEngine::exit()
 
 	m_impl->destroy();
 	//X Before Uninitialize Game
-
+	for (int i = 0; i < m_frames.size(); i++)
+	{
+		m_frames[i]->destroy();
+		delete m_frames[i];
+	}
 	//X Destroy global managers
 	//X Destroy inner things
 	s_logger->log_d("GEngine", "Beginning to destroy main viewport");
@@ -317,6 +324,12 @@ void GEngine::init(GApplicationImpl* impl)
 	}
 
 
+	m_frames.resize(SwapchainImageCount);
+	auto logicalDev = s_device->as_logical_device().get();
+	for (int i = 0; i < m_frames.size(); i++)
+	{
+		m_frames[i] = new GVulkanFrameData(logicalDev,i, logicalDev->get_render_queue());
+	}
 
 #ifdef _DEBUG
 	m_inited = true;
