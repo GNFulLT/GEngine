@@ -4,6 +4,7 @@
 #include "public/platform/window.h"
 #include <memory>
 #include "internal/platform/mouse_glfw.h"
+#include "internal/platform/keyboard_glfw.h"
 
 //X GLFW 
 
@@ -67,7 +68,7 @@ private:
 	GLFWwindow* m_window = nullptr;
 	GLFWmonitor* m_monitor = nullptr;
 	std::unique_ptr<GLFWMouseManager> m_mouseManager;
-
+	std::unique_ptr<GLFWKeyboardManager> m_keyboardManager;
 
 private:
 	//X CALLBACKS
@@ -79,6 +80,10 @@ private:
 	void on_maximized(int maximized);
 	void on_mouse_move(int x, int y);
 	void on_mouse_click(int button,int action,int mods);
+	void on_key(int key, int scancode, int action, int code);
+
+	// Inherited via Window
+	virtual IKeyboardManager* get_keyboard_manager() const override;
 };
 
 #endif // WINDOW_GLFW_H

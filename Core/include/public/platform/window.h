@@ -6,7 +6,7 @@
 #include "public/platform/window_props.h"
 
 class IMouseManager;
-
+class IKeyboardManager;
 class CORE_API Window
 {
 public:
@@ -58,6 +58,8 @@ public:
 	virtual bool wants_close() const = 0;
 
 	virtual IMouseManager* get_mouse_manager() const = 0;
+
+	virtual IKeyboardManager* get_keyboard_manager() const = 0;
 
 protected:
 	GSharedPtr<WindowProps> m_props;

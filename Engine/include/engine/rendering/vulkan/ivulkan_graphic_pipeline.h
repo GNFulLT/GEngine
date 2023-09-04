@@ -5,6 +5,7 @@
 #include <vector>
 
 struct VkPipeline_T;
+class IGVulkanPipelineLayout;
 
 class IGVulkanGraphicPipeline
 {
@@ -14,6 +15,8 @@ public:
 	virtual const std::vector<IVulkanShaderStage*>* get_shader_stages() = 0;
 	
 	virtual VkPipeline_T* get_pipeline() = 0;
+	
+	virtual IGVulkanPipelineLayout* get_pipeline_layout() = 0;
 
 	virtual void destroy() = 0;
 private:

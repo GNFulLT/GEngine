@@ -18,6 +18,7 @@
 #include "internal/engine/manager/ginjection_manager.h"
 #include "internal/engine/manager/gshader_manager.h"
 #include "internal/engine/manager/gjob_manager.h"
+#include "internal/engine/rendering/vulkan/gvulkan_offscreen_depth_viewport.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -351,6 +352,11 @@ IGVulkanApp* GEngine::get_app()
 IGVulkanViewport* GEngine::create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor)
 {
 	return new GVulkanOffScreenViewport(s_device->as_logical_device().get(), descriptor);
+}
+
+IGVulkanViewport* GEngine::create_offscreen_viewport_depth(IGVulkanDescriptorCreator* descriptor)
+{
+	return new GVulkanOffScreenDepthViewport(s_device->as_logical_device().get(), descriptor);
 }
 
 IGVulkanViewport* GEngine::get_viewport()

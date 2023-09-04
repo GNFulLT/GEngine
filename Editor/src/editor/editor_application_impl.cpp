@@ -174,7 +174,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
     m_logger->log_d("Creating Render Viewport");
     
-    m_renderViewport = engine->create_offscreen_viewport(m_imguiDescriptorCreator);
+    m_renderViewport = engine->create_offscreen_viewport_depth(m_imguiDescriptorCreator);
 
     m_imguiLayer->set_viewport(m_renderViewport);
 

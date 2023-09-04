@@ -28,6 +28,9 @@
 #include "internal/engine/rendering/vulkan/gvulkan_multisample_state.h"
 #include "internal/engine/rendering/vulkan/gvulkan_color_blend_state.h"
 #include "internal/engine/rendering/vulkan/gvulkan_viewport_state.h"
+#include "internal/engine/rendering/vulkan/gvulkan_vertex_buffer.h"
+#include "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline_custom_layout.h"
+#include "internal/engine/rendering/vulkan/gvulkan_depth_stencil_state.h"
 
 GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
@@ -562,6 +565,34 @@ bool GVulkanLogicalDevice::create_vma_allocator()
 
 }
 
+IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, IGVulkanGraphicPipelineLayoutCreator* injector)
+{
+	GVulkanGraphicPipelineCustomLayout* cpipe = new GVulkanGraphicPipelineCustomLayout(this,vp->get_render_pass(),shaderStages,states,injector,0);
+	bool inited = cpipe->init();
+	if (!inited)
+	{
+		cpipe->destroy();
+		delete cpipe;
+		return nullptr;
+	}
+
+	return cpipe;
+}
+
+std::expected<IGVulkanVertexBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_vertex_buffer(uint64_t size)
+{
+	auto res = create_buffer(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	if (!res.has_value())
+	{
+		return std::unexpected(res.error());
+	}
+	GVulkanVertexBuffer* buff = new GVulkanVertexBuffer(res.value());
+	return buff;
+}
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_depth_stencil_state()
+{
+	return new GVulkanDepthStencilState();
+}
 std::expected<IGVulkanUniformBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_uniform_buffer(uint32_t size)
 {
 	

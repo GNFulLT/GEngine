@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_library(GEngine_Core SHARED "${CMAKE_CURRENT_SOURCE_DIR}/src/public/gstring.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/public/platform/window.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/public/core/globals.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/src/public/os_str.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/internal/platform/window_glfw.cpp" "include/public/globals.h" "include/public/core/templates/signal/gsignal.h" "include/public/core/templates/better_enum.h" "include/public/core/string/gstring_utils.h" "src/internal/platform/mouse_glfw.cpp")
+"${CMAKE_CURRENT_SOURCE_DIR}/src/public/os_str.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/internal/platform/window_glfw.cpp" "include/public/globals.h" "include/public/core/templates/signal/gsignal.h" "include/public/core/templates/better_enum.h" "include/public/core/string/gstring_utils.h" "src/internal/platform/mouse_glfw.cpp" "include/public/platform/virtual_key_codes.h" "include/public/platform/ikeyboard_manager.h" "internal/platform/keyboard_glfw.h" "src/internal/platform/keyboard_glfw.cpp" "include/public/math/gvec4.h" "include/public/math/gmat4.h" "include/public/math/frustum.h" "include/public/math/gcam.h" "include/public/math/gquat.h" "include/public/math/gtransform.h")
 
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)

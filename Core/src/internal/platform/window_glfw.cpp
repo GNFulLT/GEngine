@@ -41,6 +41,7 @@ uint32_t WindowGLFW::init()
 	}
 
 	m_mouseManager = std::unique_ptr<GLFWMouseManager>(new GLFWMouseManager(m_window));
+	m_keyboardManager = std::unique_ptr<GLFWKeyboardManager>(new GLFWKeyboardManager());
 
 	glfwSetWindowUserPointer(m_window, this);
 
@@ -75,6 +76,12 @@ uint32_t WindowGLFW::init()
 		((WindowGLFW*)glfwGetWindowUserPointer(window))->on_mouse_click(button,action,mods);
 	};
 
+	auto keyCallback = [](GLFWwindow* window,int key,int scancode,int action,int code)
+	{
+		((WindowGLFW*)glfwGetWindowUserPointer(window))->on_key(key,scancode,action,code);
+	};
+	
+	glfwSetKeyCallback(m_window, keyCallback);
 	glfwSetWindowIconifyCallback(m_window, iconifyCallback);
 	glfwSetWindowSizeCallback(m_window, resizeCallback);
 	glfwSetWindowPosCallback(m_window,moveCallback);
@@ -167,6 +174,23 @@ void WindowGLFW::on_mouse_move(int x, int y)
 void WindowGLFW::on_mouse_click(int button, int action, int mods)
 {
 	m_mouseManager->on_mouse_click(button, action, mods);
+}
+
+void WindowGLFW::on_key(int key, int scancode, int action, int code)
+{	
+	if (action == GLFW_PRESS)
+	{
+		m_keyboardManager->key_pressed((KEY_CODE)key);
+	}
+	else
+	{
+		m_keyboardManager->key_released((KEY_CODE)key);
+	}
+}
+
+IKeyboardManager* WindowGLFW::get_keyboard_manager() const
+{
+	return m_keyboardManager.get();
 }
 
 void WindowGLFW::resize(uint32_t x, uint32_t y)

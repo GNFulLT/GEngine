@@ -106,7 +106,7 @@ std::expected<std::string, READ_SHADER_FILE_ERROR> read_shader_file(const char* 
 	}
 
 	std::string code(buffer);
-
+	_freea(buffer);
 	while (code.find("#include ") != code.npos)
 	{
 		const auto pos = code.find("#include ");

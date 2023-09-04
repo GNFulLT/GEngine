@@ -9,6 +9,7 @@ class GVulkanSemaphore;
 class IGShaderResource;
 class IVulkanShaderStage;
 class IGVulkanGraphicPipeline;
+#include "internal/rendering/renderable.h"
 
 #include "public/core/templates/shared_ptr.h"
 class GSceneRenderer
@@ -37,6 +38,8 @@ private:
 	IGVulkanGraphicPipeline* m_graphicPipeline = nullptr;
 	IVulkanShaderStage* m_fragShaderStage = nullptr;
 	IVulkanShaderStage* m_vertexShaderStage = nullptr;
+
+	Renderable* triangle;
 };
 
 #endif // GSCENE_RENDERER_H

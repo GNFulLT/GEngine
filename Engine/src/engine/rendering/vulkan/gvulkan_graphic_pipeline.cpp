@@ -29,6 +29,7 @@ bool GVulkanGraphicPipeline::init()
 {
 	std::unordered_map<VkDescriptorType, int> types;
 	std::vector<VkDescriptorSetLayout_T*> layouts;
+
 	for (int i = 0; i < GEngine::get_instance()->get_swapchain()->get_total_image(); i++)
 	{
 		m_writeSets.emplace(i, std::vector<VkWriteDescriptorSet>());
@@ -240,4 +241,9 @@ const std::vector<IVulkanShaderStage*>* GVulkanGraphicPipeline::get_shader_stage
 VkPipeline_T* GVulkanGraphicPipeline::get_pipeline()
 {
 	return m_vkPipeline;
+}
+
+IGVulkanPipelineLayout* GVulkanGraphicPipeline::get_pipeline_layout()
+{
+	return m_pipelineLayout;
 }

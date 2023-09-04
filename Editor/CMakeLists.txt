@@ -22,7 +22,7 @@ add_library(GEditor SHARED  "src/editor/editor_application_impl.cpp" "src/editor
 "src/editor/window/content_helper/descriptors/gimgui_shader_descriptor.cpp" "internal/window/gimgui_log_window.h" "src/editor/window/gimgui_log_window.cpp" "internal/manager/geditor_shader_manager.h" 
 "src/editor/manager/geditor_shader_manager.cpp" "src/editor/shader/spirv_shader_utils.cpp" "internal/shader/editor_debuggable_spirv_shader.h" "src/editor/shader/editor_debuggable_spirv_shader.cpp"
 "src/editor/shader/gspirv_byte_shader.cpp"
- "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_spirv_descriptor.cpp" "internal/shader/gspirv_shader_debugger.h" "src/editor/shader/gspirv_shader_debugger.cpp")
+ "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_spirv_descriptor.cpp" "internal/shader/gspirv_shader_debugger.h" "src/editor/shader/gspirv_shader_debugger.cpp" "internal/rendering/vertex_types.h" "src/editor/rendering/renderable.cpp" "internal/rendering/vulkan/gdefault_pipeline_injector.h" "src/editor/rendering/vulkan/gdefault_pipeline_injector.cpp" "internal/rendering/vulkan/gvulkan_pipeline_layout_wrapper.h" "src/editor/rendering/vulkan/gvulkan_pipeline_layout_wrapper.cpp")
 
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Core/include")
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Engine/include")
@@ -34,8 +34,10 @@ target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Third
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty")
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glfw/include")
 target_include_directories(GEditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glslang/glslang/")
+target_include_directories(GEditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glm/")
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../Engine" ENGINE)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glm" GLM)
 
 target_link_libraries(GEditor PRIVATE GEngine_Core)
 target_link_libraries(GEditor PRIVATE GEngine_Engine)

@@ -97,7 +97,12 @@ public:
 	virtual IGVulkanGraphicPipelineState* create_default_color_blend_state() override;
 	virtual IGVulkanGraphicPipelineState* create_default_viewport_state(uint32_t width,uint32_t height) override;
 
+	virtual std::expected<IGVulkanVertexBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_vertex_buffer(uint64_t size) override;
 
+	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages,
+		const std::vector<IGVulkanGraphicPipelineState*>& states, IGVulkanGraphicPipelineLayoutCreator* injector) override;
+
+	virtual IGVulkanGraphicPipelineState* create_default_depth_stencil_state() override;
 
 	static GVulkanLogicalDevice* get_instance();
 private:
@@ -126,7 +131,6 @@ private:
 
 	VkDevice m_logicalDevice;
 	VmaAllocator allocator;
-
 
 
 };

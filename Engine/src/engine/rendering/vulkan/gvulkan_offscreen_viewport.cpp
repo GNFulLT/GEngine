@@ -9,7 +9,6 @@
 #include "engine/rendering/vulkan/ivulkan_descriptor.h"
 #include "internal/engine/manager/glogger_manager.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
-
 GVulkanOffScreenViewport::GVulkanOffScreenViewport(IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator)
 {
 	m_boundedDevice = dev;
@@ -17,6 +16,12 @@ GVulkanOffScreenViewport::GVulkanOffScreenViewport(IGVulkanLogicalDevice* dev, I
 	m_image = nullptr;
 	m_descriptorSet = nullptr;
 	m_sampler = nullptr;
+	m_viewport.minDepth = 0;
+	m_viewport.maxDepth = 1;
+	m_viewport.x = 0;
+	m_viewport.y = 0;
+	m_viewport.width = 0;
+	m_viewport.height = 0;
 }
 
 GVulkanOffScreenViewport::~GVulkanOffScreenViewport()
@@ -29,13 +34,16 @@ GVulkanOffScreenViewport::~GVulkanOffScreenViewport()
 
 bool GVulkanOffScreenViewport::init(int width,int height,int vkFormat)
 {
-	m_width = width;
-	m_height = height;
+	assert(width >= 0 && height >= 0);
+
 	VkExtent3D extent = {
 		.width = uint32_t(width),
 		.height = uint32_t(height),
 		.depth = 1
 	};
+	
+	m_viewport.width = width;
+	m_viewport.height = 0;
 
 	uint32_t renderingFamilyIndex = m_boundedDevice->get_render_queue()->get_queue_index();
 
@@ -102,6 +110,8 @@ bool GVulkanOffScreenViewport::init(int width,int height,int vkFormat)
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.srcAccessMask = 0; // or VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	
+
 
 
 	m_renderpass.create((VkDevice)m_boundedDevice->get_vk_device(), m_image->get_vk_image_view(), extent.width, extent.height, clearValues, (VkFormat)vkFormat,
@@ -127,7 +137,7 @@ bool GVulkanOffScreenViewport::init(int width,int height,int vkFormat)
 
 	const VkPhysicalDeviceProperties* properties = m_boundedDevice->get_bounded_physical_device()->get_vk_properties();
 
-	samplerInfo.maxAnisotropy = properties->limits.maxSamplerAnisotropy;
+	samplerInfo.maxAnisotropy = 1.f;
 	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable = VK_FALSE;
@@ -182,17 +192,17 @@ void GVulkanOffScreenViewport::destroy(bool forResize)
 
 void* GVulkanOffScreenViewport::get_vk_current_image_renderpass()
 {
-	return nullptr;
+	return m_renderpass.get_vk_renderpass();
 }
 
 uint32_t GVulkanOffScreenViewport::get_width() const
 {
-	return m_width;
+	return m_viewport.width;
 }
 
 uint32_t GVulkanOffScreenViewport::get_height() const
 {
-	return m_height;
+	return m_viewport.height;
 }
 
 void GVulkanOffScreenViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)

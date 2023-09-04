@@ -114,7 +114,8 @@ void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& vie
 }
 
 
-void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t width, uint32_t height, const std::vector<VkClearValue>& clearValues, VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents, VkSubpassDependency* dependency, int dependencyCount)
+void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t width, uint32_t height, const std::vector<VkClearValue>& clearValues, VkFormat format, VkImageLayout finalLayout,
+	VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents, VkSubpassDependency* dependency, int dependencyCount, const VkRenderPassCreateInfo* createInfo, VkImageView depthView)
 {
 	VkRenderPass handle = nullptr;
 
@@ -127,82 +128,115 @@ void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t wid
 	_subpassContents = subpassContents;
 
 	_clearValues = clearValues;
-	VkAttachmentDescription color_attachment = {};
-	//the attachment will have the format needed by the swapchain
-	color_attachment.format = format;
-	//1 sample, we won't be doing MSAA
-	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 
-	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
-	//X TODO:  No stencil for now
-	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-	// Used as frame buffer
-	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-	color_attachment.finalLayout = finalLayout;
-
-	VkRenderPassCreateInfo create_inf = {};
-	create_inf.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-
-
-	VkAttachmentReference color_attachment_ref = {};
-	//attachment number will index into the pAttachments array in the parent renderpass itself
-	color_attachment_ref.attachment = 0;
-	color_attachment_ref.layout = attachmentReferenceLayout;
-
-	VkSubpassDescription subpass = {};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &color_attachment_ref;
-
-	//connect the color attachment to the info
-	create_inf.attachmentCount = 1;
-	create_inf.pAttachments = &color_attachment;
-	//connect the subpass to the info
-	create_inf.subpassCount = 1;
-	create_inf.pSubpasses = &subpass;
-
-	if (dependency != nullptr && dependencyCount != 0)
+	if (createInfo == nullptr)
 	{
-		create_inf.dependencyCount = dependencyCount;
-		create_inf.pDependencies = dependency;
-	}
+		VkAttachmentDescription color_attachment = {};
+		//the attachment will have the format needed by the swapchain
+		color_attachment.format = format;
+		//1 sample, we won't be doing MSAA
+		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 
-	if (handle != nullptr)
-	{
-		int a = 5;
-		_isFailed = false;
-	}
-	else
-	{
-		if (VK_SUCCESS != vkCreateRenderPass(dev, &create_inf, nullptr, &handle))
+		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		//X TODO:  No stencil for now
+		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		// Used as frame buffer
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		color_attachment.finalLayout = finalLayout;
+
+		VkRenderPassCreateInfo create_inf = {};
+		create_inf.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+
+
+		VkAttachmentReference color_attachment_ref = {};
+		//attachment number will index into the pAttachments array in the parent renderpass itself
+		color_attachment_ref.attachment = 0;
+		color_attachment_ref.layout = attachmentReferenceLayout;
+
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_attachment_ref;
+
+		//connect the color attachment to the info
+		create_inf.attachmentCount = 1;
+		create_inf.pAttachments = &color_attachment;
+		//connect the subpass to the info
+		create_inf.subpassCount = 1;
+		create_inf.pSubpasses = &subpass;
+
+		if (dependency != nullptr && dependencyCount != 0)
 		{
-			_isFailed = true;
+			create_inf.dependencyCount = dependencyCount;
+			create_inf.pDependencies = dependency;
+		}
+		if (handle != nullptr)
+		{
+			int a = 5;
+			_isFailed = false;
 		}
 		else
 		{
-			_isFailed = false;
+			if (VK_SUCCESS != vkCreateRenderPass(dev, &create_inf, nullptr, &handle))
+			{
+				_isFailed = true;
+			}
+			else
+			{
+				_isFailed = false;
+			}
 		}
 	}
+	else
+	{
+
+		if (handle != nullptr)
+		{
+			int a = 5;
+			_isFailed = false;
+		}
+		else
+		{
+			if (VK_SUCCESS != vkCreateRenderPass(dev, createInfo, nullptr, &handle))
+			{
+				_isFailed = true;
+			}
+			else
+			{
+				_isFailed = false;
+			}
+		}
+	}
+	
 	
 	if (!_isFailed)
 	{
 		_info.resize(1);
 
+		VkImageView viewsWithDepth[] = {imageView,depthView};
 		VkFramebufferCreateInfo fb_info = {};
 		fb_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		fb_info.pNext = nullptr;
 
 		fb_info.renderPass = handle;
-		fb_info.attachmentCount = 1;
 		fb_info.width = width;
 		fb_info.height = height;
 		fb_info.layers = 1;
-		fb_info.pAttachments = &imageView;
+		if (depthView == nullptr)
+		{
+			fb_info.attachmentCount = 1;
+			fb_info.pAttachments = &imageView;
+		}
+		else
+		{
+			fb_info.attachmentCount = 2;
+			fb_info.pAttachments = viewsWithDepth;
+		}
 		VkFramebuffer frameBuffer;
 		if (vkCreateFramebuffer(dev, &fb_info, nullptr, &frameBuffer) != VK_SUCCESS)
 		{

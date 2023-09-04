@@ -1,5 +1,6 @@
 #include "volk.h"
 
+#include <cstddef>
 #include <expected>
 #include "internal/rendering/vulkan/gscene_renderer.h"
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
@@ -17,6 +18,12 @@
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "engine/manager/igshader_manager.h"
 #include "engine/rendering/vulkan/ivulkan_graphic_pipeline_state.h"
+#include "engine/rendering/vulkan/igvulkan_vertex_buffer.h"
+#include "internal/rendering/vulkan/gdefault_pipeline_injector.h"
+#include "public/math/gcam.h"
+#include <glm/glm.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 static int ct = 0;
 
@@ -58,6 +65,32 @@ void GSceneRenderer::render_the_scene()
 	vkCmdSetViewport(m_cmd->get_handle(), 0, 1, &m_vkViewport);
 	vkCmdSetScissor(m_cmd->get_handle(), 0, 1, &m_vkScissor);
 	
+	VkDeviceSize offset = 0;
+	VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();
+	vkCmdBindVertexBuffers(m_cmd->get_handle(), 0, 1,&buff, &offset);
+	
+	auto gcamPos = gvec3(1.f, 0.f, -5.f);
+	auto viewMatrix = translate(gcamPos);
+	auto projMatrix = perspective(70.f, m_vkViewport.width / m_vkViewport.height, 0.1f, 1000.f);
+	
+	auto& modelMatrix = triangle->get_model_matrix();
+	auto meshMatrix = projMatrix * viewMatrix * modelMatrix;
+
+	//glm::vec3 camPos = { 0.f,0.f,-2.f };
+
+	//glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+	////camera projection
+	//glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+	//projection[1][1] *= -1;
+	////model rotation
+	//glm::mat4 model = glm::mat4(1.f);
+
+	////calculate final mesh matrix
+	//glm::mat4 mesh_matrix = projection * view * model;
+
+
+	vkCmdPushConstants(m_cmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &meshMatrix);
+
 	vkCmdDraw(m_cmd->get_handle(), 3, 1, 0, 0);
 
 	vp->end_draw_cmd(m_cmd);
@@ -142,33 +175,75 @@ bool GSceneRenderer::init()
 	}
 
 	std::vector<IGVulkanGraphicPipelineState*> m_states;
+	
+	//we will have just 1 vertex buffer binding, with a per-vertex rate
+	VkVertexInputBindingDescription mainBinding = {};
+	mainBinding.binding = 0;
+	mainBinding.stride = sizeof(Vertex_1);
+	mainBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	m_states.push_back(s_device->create_vertex_input_state(nullptr, nullptr));
+	std::vector< VkVertexInputBindingDescription> bindingDescriptions;
+	bindingDescriptions.push_back(mainBinding);
+
+	std::vector<VkVertexInputAttributeDescription> inputAttributes;
+
+	inputAttributes.resize(2);
+
+	auto positionAttribute = &inputAttributes[0];
+	positionAttribute->binding = 0;
+	positionAttribute->location = 0;
+	positionAttribute->format = VK_FORMAT_R32G32B32_SFLOAT;
+	positionAttribute->offset = offsetof(Vertex_1, position);
+
+	auto colorAttribute = &inputAttributes[1];
+	colorAttribute->binding = 0;
+	colorAttribute->location = 1;
+	colorAttribute->format = VK_FORMAT_R32G32B32_SFLOAT;
+	colorAttribute->offset = offsetof(Vertex_1, color);
+
+	
+
+
+	m_states.push_back(s_device->create_vertex_input_state(&bindingDescriptions, &inputAttributes));
 	m_states.push_back(s_device->create_default_input_assembly_state());
 	m_states.push_back(s_device->create_default_rasterization_state());
 	m_states.push_back(s_device->create_default_none_multisample_state());
 	m_states.push_back(s_device->create_default_color_blend_state());
 	m_states.push_back(s_device->create_default_viewport_state(1920, 1080));
+	m_states.push_back(s_device->create_default_depth_stencil_state());
 
 	std::vector<IVulkanShaderStage*> shaderStages;
 	shaderStages.push_back(m_vertexShaderStage);
 	shaderStages.push_back(m_fragShaderStage);
 
-	m_graphicPipeline = s_device->create_and_init_default_graphic_pipeline_for_vp(m_viewport, shaderStages, m_states);
+	m_graphicPipeline = s_device->create_and_init_graphic_pipeline_injector_for_vp(m_viewport, shaderStages, m_states,new GDefaultPipelineInjector(s_device));
 
 	for (int i = 0; i < m_states.size(); i++)
 	{
 		auto state =  m_states[i];
 		delete state;
 	}
+	std::vector<Vertex_1> pos;
+	pos.resize(3);
 
+	pos[0].position = { 1.f,1.f,0.f };
+	pos[1].position = { -1.f, 1.f, 0.0f };
+	pos[2].position = { 0.f,-1.f, 0.0f };
 
+	pos[0].color = { 0.f,0.f,1.f };
+	pos[1].color = { 0.f,0.f,1.f };
+	pos[2].color = { 0.f,0.f,1.f };
 
+	triangle = new Renderable(s_device,pos);
+
+	triangle->init();
 	return true;
 }
 
 void GSceneRenderer::destroy()
 {
+	triangle->destroy();
+	delete triangle;
 	if (m_graphicPipeline != nullptr)
 	{
 		m_graphicPipeline->destroy();

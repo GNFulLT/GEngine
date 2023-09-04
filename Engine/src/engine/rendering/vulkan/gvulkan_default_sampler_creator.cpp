@@ -24,7 +24,7 @@ std::expected<IGVulkanSampler*, std::string> GDefaultSamplerCreator::create_samp
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;
+	samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 	
 
 	VkSampler sampler = 0;

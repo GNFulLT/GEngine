@@ -14,6 +14,8 @@ class IVulkanImage;
 class IGVulkanDevice;
 class IGVulkanPipelineLayout;
 class IGVulkanGraphicPipeline;
+class IGVulkanVertexBuffer;
+class IGVulkanGraphicPipelineLayoutCreator;
 
 struct VkImageCreateInfo;
 enum VkDescriptorType;
@@ -73,6 +75,7 @@ public:
 
 	virtual std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_buffer(uint64_t size, uint32_t bufferUsageFlags, VmaMemoryUsage memoryUsageFlag) = 0;
 
+	virtual std::expected< IGVulkanVertexBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_vertex_buffer(uint64_t size) = 0;
 
 	virtual std::expected< IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> create_image(const VkImageCreateInfo* imageCreateInfo, VmaMemoryUsage memoryUsageFlag) = 0;
 
@@ -113,9 +116,15 @@ public:
 
 	virtual IGVulkanGraphicPipelineState* create_default_color_blend_state() = 0;
 
+	//X Stencil test is off for the default state
+	virtual IGVulkanGraphicPipelineState* create_default_depth_stencil_state() = 0;
 
 	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_for_vp(IGVulkanViewport* vp,
 		const std::vector< IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states) = 0;
+
+
+	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages, 
+		const std::vector<IGVulkanGraphicPipelineState*>& states, IGVulkanGraphicPipelineLayoutCreator* injector) = 0;
 private:
 };
 

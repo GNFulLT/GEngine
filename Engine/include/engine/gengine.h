@@ -37,6 +37,8 @@ public:
 
 	IGVulkanViewport* create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor);
 
+	IGVulkanViewport* create_offscreen_viewport_depth(IGVulkanDescriptorCreator* descriptor);
+
 	void destroy_offscreen_viewport(IGVulkanViewport* port);
 	static GEngine* get_instance();
 
