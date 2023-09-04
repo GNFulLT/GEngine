@@ -25,8 +25,6 @@ GVulkanDevice::GVulkanDevice(GWeakPtr<IGVulkanApp> app) : m_vulkanApp(app)
 	auto fenceManager = new GVulkanFenceManager(vulkanLogicalDevice);
 	auto semaphoreManager = new GVulkanSemaphoreManager(vulkanLogicalDevice);
 
-
-
 	m_defaultCommandManager = GSharedPtr<GVulkanCommandBufferManager>(commandManager);
 	m_fenceManager = GSharedPtr<GVulkanFenceManager>(fenceManager);
 	m_semaphoreManager = GSharedPtr<GVulkanSemaphoreManager>(semaphoreManager);
@@ -38,7 +36,6 @@ GVulkanDevice::~GVulkanDevice()
 {
 	if (!m_destroyed)
 	{
-
 		m_defaultCommandManager->destroy();
 
 		m_vulkanLogicalDevice->destroy();
@@ -96,7 +93,6 @@ bool GVulkanDevice::init()
 	m_mainCommandBuffer->init();
 	m_singleTimeCommandBuffer->init();
 	
-	m_renderingFence->wait();
 	m_destroyed = true;
 	is_inited = true;
 	return true;

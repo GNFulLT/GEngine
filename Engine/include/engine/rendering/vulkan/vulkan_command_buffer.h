@@ -4,7 +4,7 @@
 
 #include "engine/GEngine_EXPORT.h"
 
-class GVulkanLogicalDevice;
+class IGVulkanLogicalDevice;
 class IGVulkanQueue;
 
 struct VkCommandPool_T;
@@ -15,7 +15,7 @@ struct VkCommandBuffer_T;
 class ENGINE_API GVulkanCommandPool
 {
 public:
-	GVulkanCommandPool(GVulkanLogicalDevice* inDevice, IGVulkanQueue* queue,bool onlyPoolCanReset = true);
+	GVulkanCommandPool(IGVulkanLogicalDevice* inDevice, IGVulkanQueue* queue,bool onlyPoolCanReset = true);
 	~GVulkanCommandPool();
 
 	bool is_valid();
@@ -33,7 +33,7 @@ public:
 private:
 	VkCommandPool_T* m_commandPool;
 	// GSHARED PTR MAYBE
-	GVulkanLogicalDevice* m_device;
+	IGVulkanLogicalDevice* m_device;
 	IGVulkanQueue* m_boundedQueue;
 	bool m_isSelfResetAllowed;
 #ifdef _DEBUG
@@ -45,7 +45,7 @@ private:
 class ENGINE_API GVulkanCommandBuffer
 {
 public:
-	GVulkanCommandBuffer(GVulkanLogicalDevice* inDevice,GVulkanCommandPool* pool,bool isPrimary);
+	GVulkanCommandBuffer(IGVulkanLogicalDevice* inDevice,GVulkanCommandPool* pool,bool isPrimary);
 	~GVulkanCommandBuffer();
 	bool init();
 
@@ -62,7 +62,7 @@ public:
 
 private:
 	GVulkanCommandPool* m_ownerPool;
-	GVulkanLogicalDevice* m_device;
+	IGVulkanLogicalDevice* m_device;
 	VkCommandBuffer_T* m_cmd;
 	bool m_isPrimary;
 
@@ -75,7 +75,7 @@ private:
 class ENGINE_API GVulkanCommandBufferManager
 {
 public:
-	GVulkanCommandBufferManager(GVulkanLogicalDevice* inDevice, IGVulkanQueue* queue, bool onlyPoolCanReset = true);
+	GVulkanCommandBufferManager(IGVulkanLogicalDevice* inDevice, IGVulkanQueue* queue, bool onlyPoolCanReset = true);
 
 	bool init();
 
@@ -94,7 +94,7 @@ public:
 	bool reset_pool();
 
 private:
-	GVulkanLogicalDevice* m_device;
+	IGVulkanLogicalDevice* m_device;
 	IGVulkanQueue* m_queue;
 	GVulkanCommandPool* m_pool;
 	bool m_isSelfResetAllowed;

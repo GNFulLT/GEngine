@@ -4,7 +4,7 @@
 #include "internal/engine/rendering/vulkan/vulkan_queue.h"
 #include "public/core/templates/memnewd.h"
 
-GVulkanCommandPool::GVulkanCommandPool(GVulkanLogicalDevice* inDevice, IGVulkanQueue* queue,bool onlyPoolCanReset) : m_device(inDevice)
+GVulkanCommandPool::GVulkanCommandPool(IGVulkanLogicalDevice* inDevice, IGVulkanQueue* queue,bool onlyPoolCanReset) : m_device(inDevice)
 {
 	m_boundedQueue = queue;
 	m_commandPool = nullptr;
@@ -64,7 +64,7 @@ bool GVulkanCommandPool::reset_pool()
 	return VK_SUCCESS == vkResetCommandPool((VkDevice)m_device->get_vk_device(), m_commandPool, 0);
 }
 
-GVulkanCommandBuffer::GVulkanCommandBuffer(GVulkanLogicalDevice* inDevice, GVulkanCommandPool* pool,bool isPrimary)
+GVulkanCommandBuffer::GVulkanCommandBuffer(IGVulkanLogicalDevice* inDevice, GVulkanCommandPool* pool,bool isPrimary)
 {
 	m_ownerPool = pool;
 	m_device = inDevice;
@@ -129,7 +129,7 @@ void GVulkanCommandBuffer::end()
 	vkEndCommandBuffer(m_cmd);
 }
 
-GVulkanCommandBufferManager::GVulkanCommandBufferManager(GVulkanLogicalDevice* inDevice, IGVulkanQueue* queue, bool onlyPoolCanReset)
+GVulkanCommandBufferManager::GVulkanCommandBufferManager(IGVulkanLogicalDevice* inDevice, IGVulkanQueue* queue, bool onlyPoolCanReset)
 {
 	m_queue = queue;
 	m_device = inDevice;

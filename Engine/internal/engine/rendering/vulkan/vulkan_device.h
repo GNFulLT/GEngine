@@ -97,8 +97,6 @@ private:
 	GSharedPtr<GVulkanCommandBufferManager> m_defaultCommandManager;
 	GVulkanCommandBuffer* m_mainCommandBuffer;
 	GVulkanCommandBuffer* m_singleTimeCommandBuffer;
-
-
 	// FRAME 
 
 	std::vector<std::pair<GVulkanSemaphore*,int>> m_frameWaitSemaphores;
