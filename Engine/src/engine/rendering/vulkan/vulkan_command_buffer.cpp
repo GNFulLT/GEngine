@@ -109,6 +109,11 @@ VkCommandBuffer_T* GVulkanCommandBuffer::get_handle()
 	return m_cmd;
 }
 
+VkCommandBuffer_T** GVulkanCommandBuffer::get_handle_p()
+{
+	return &m_cmd;
+}
+
 void GVulkanCommandBuffer::begin()
 {
 	VkCommandBufferBeginInfo inf = {};

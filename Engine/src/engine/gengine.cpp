@@ -211,7 +211,7 @@ void GEngine::after_render()
 	inf.pWaitSemaphores = wSemaphores.data();
 
 	vkQueueSubmit(s_device->as_logical_device()->get_render_queue()->get_queue(), 1, &inf, s_device->get_queue_fence()->get_fence());
-
+	//X Wait here to present the last image
 	m_vulkanSwapchain->present_image(1,s_device->get_render_complete_semaphore());
 }
 
@@ -315,6 +315,7 @@ void GEngine::init(GApplicationImpl* impl)
 		s_logger->log_c("GEngine", "Unknown error occured while initializing swapchain. Engine shutdown");
 		return;
 	}
+
 
 
 #ifdef _DEBUG

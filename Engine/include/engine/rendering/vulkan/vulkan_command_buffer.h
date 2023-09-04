@@ -54,6 +54,7 @@ public:
 	void destroy();
 	
 	VkCommandBuffer_T* get_handle();
+	VkCommandBuffer_T** get_handle_p();
 
 	void begin();
 
