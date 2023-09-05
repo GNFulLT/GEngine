@@ -32,7 +32,7 @@ bool GVulkanCommandPool::init()
 	createInfo.flags = 0;
 	createInfo.queueFamilyIndex = m_boundedQueue->get_queue_index();
 
-	if (m_isSelfResetAllowed)
+	if (!m_isSelfResetAllowed)
 	{
 		createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	}
@@ -91,7 +91,10 @@ bool GVulkanCommandBuffer::init()
 
 	return VK_SUCCESS == vkAllocateCommandBuffers((VkDevice)m_device->get_vk_device(),&allocateInf,&m_cmd);
 }
-
+void GVulkanCommandBuffer::reset()
+{
+	vkResetCommandBuffer(m_cmd, 0);
+}
 bool GVulkanCommandBuffer::is_valid()
 {
 	return m_cmd != nullptr;

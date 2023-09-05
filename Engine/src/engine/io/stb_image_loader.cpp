@@ -32,7 +32,7 @@ GImage_Descriptor* STBImageLoader::load(std::string_view path,int dedicatedForma
 	img->width = texWidth;
 	img->height = texHeight;
 	if(dedicatedFormat == -1)
-		img->format = texChannels == 4 ? VK_FORMAT_B8G8R8A8_SRGB : VK_FORMAT_B8G8R8_SRGB;
+		img->format = texChannels == 4 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_B8G8R8_UNORM;
 	else
 	{
 		img->format = (VkFormat)dedicatedFormat;

@@ -49,23 +49,13 @@ public:
 
 	virtual void destroy() override;
 
-	virtual GVulkanCommandBuffer* get_main_command_buffer() override;
-
 	virtual GVulkanCommandBuffer* get_single_time_command_buffer() override;
 
 	virtual void execute_single_time_command_buffer_and_wait() override;
 
-	bool prepare_for_rendering();
-
 	GVulkanSemaphore* get_image_acquired_semaphore();
 	GVulkanSemaphore* get_render_complete_semaphore();
-	GVulkanFence* get_queue_fence();
-
-
-	virtual GVulkanCommandBuffer* create_cmd_from_main_pool() override;
 	
-	virtual void destroy_cmd_main_pool(GVulkanCommandBuffer* cmd) override;
-
 	virtual void add_wait_semaphore_for_this_frame(GVulkanSemaphore* semaphore,int pipelineStageFlag) override;
 
 	virtual GVulkanSemaphore* create_semaphore(bool isSignaled) override;

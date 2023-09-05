@@ -15,6 +15,7 @@ struct VkDescriptorSetLayout_T;
 class IGShaderResource;
 class IVulkanShaderStage;
 class IGVulkanGraphicPipeline;
+class IGVulkanChainedViewport;
 
 class EditorApplicationImpl : public GApplicationImpl
 {
@@ -49,7 +50,7 @@ public:
 
 	ImGuiLayer* get_editor_layer();
 private:
-	IGVulkanViewport* m_renderViewport;
+	IGVulkanChainedViewport* m_renderViewport;
 	ImGuiLayer* m_imguiLayer;
 	GImGuiDescriptorCreator* m_imguiDescriptorCreator;
 	GSharedPtr<IOwningGLogger> m_logger;

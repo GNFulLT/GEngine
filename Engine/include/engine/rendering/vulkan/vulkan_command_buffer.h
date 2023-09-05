@@ -53,6 +53,8 @@ public:
 
 	void destroy();
 	
+	void reset();
+
 	VkCommandBuffer_T* get_handle();
 	VkCommandBuffer_T** get_handle_p();
 

@@ -45,13 +45,22 @@ public:
 
 	// Inherited via IGVulkanViewport
 	virtual IGVulkanRenderPass* get_render_pass() override;
-	GVulkanLogicalDevice* m_device;
+
+
+	virtual const VkViewport* get_viewport_area() const noexcept override;
+	virtual const VkRect2D* get_scissor_area() const noexcept override;
+
+
 private:
+	GVulkanLogicalDevice* m_device;
 	GVulkanRenderpass m_renderpass;
 	uint32_t m_sizeX;
 	uint32_t m_sizeY;
 	uint32_t m_currentImage;
 	const std::vector<VkImageView_T*>* m_imageViews;
+
+	VkViewport m_viewport;
+	VkRect2D m_scissor;
 
 };
 

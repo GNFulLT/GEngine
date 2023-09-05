@@ -6,6 +6,8 @@
 #include "public/core/templates/shared_ptr.h"
 
 #include <vector>
+#include <queue>
+#include <functional>
 
 class Window;
 class IGVulkanDevice;
@@ -17,6 +19,8 @@ class IGVulkanDescriptorCreator;
 struct VkSurfaceKHR_T;
 class IGVulkanSwapchain;
 class GVulkanFrameData;
+class IGVulkanFrameData;
+class IGVulkanChainedViewport;
 
 class ENGINE_API GEngine
 {
@@ -42,11 +46,22 @@ public:
 
 	IGVulkanViewport* create_offscreen_viewport_depth(IGVulkanDescriptorCreator* descriptor);
 
+	IGVulkanChainedViewport* create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor,uint32_t imageCount);
+
 	void destroy_offscreen_viewport(IGVulkanViewport* port);
 	static GEngine* get_instance();
 
 	IGVulkanSwapchain* get_swapchain();
+
+	uint32_t get_current_frame();
+
+	uint32_t get_frame_count();
+
+	IGVulkanFrameData* get_frame_data_by_index(uint32_t index);
+
+	void add_recreation(std::function<void()> recreationFun);
 private:
+	void wait_all_frame_data();
 	void exit();
 
 	void tick();
@@ -60,6 +75,9 @@ private:
 	VkSurfaceKHR_T* m_mainSurface;
 	std::vector<GVulkanFrameData*> m_frames;
 	uint32_t m_currentFrame;
+
+
+	std::queue<std::function<void()>> m_recreationQueues;
 #ifdef _DEBUG
 	bool m_inited = false;
 #endif

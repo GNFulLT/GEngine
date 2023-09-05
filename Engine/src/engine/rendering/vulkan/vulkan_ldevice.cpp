@@ -219,8 +219,12 @@ bool GVulkanLogicalDevice::init()
 
 	m_defaultQueue = GVulkanQueue(this,physicalDevice->get_default_queue_family_index());
 
+	m_logger->log_d("Checking support only transfer");
+
 	if (physicalDevice->does_support_only_transfer())
 	{
+		m_logger->log_d("Transfer queue found creating transfer queue");
+
 		m_transferQueue = GVulkanQueue(this, physicalDevice->get_only_transfer());
 		m_logger->log_d(fmt::format("All bits for transfer queue : {}",m_transferQueue.get_all_supported_operations_as_string()).c_str());
 
@@ -360,7 +364,7 @@ std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::
 
 	VmaAllocationCreateInfo dimg_allocinfo = {};
 	if (memoryUsageFlag == 0)
-		dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		dimg_allocinfo.usage = VMA_MEMORY_USAGE_AUTO;
 	else
 		dimg_allocinfo.usage = memoryUsageFlag;
 	

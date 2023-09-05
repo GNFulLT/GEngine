@@ -127,10 +127,6 @@ void GVulkanDevice::destroy()
 	m_destroyed = true;
 }
 
-GVulkanCommandBuffer* GVulkanDevice::get_main_command_buffer()
-{
-	return m_mainCommandBuffer;
-}
 
 GVulkanCommandBuffer* GVulkanDevice::get_single_time_command_buffer()
 {
@@ -153,11 +149,6 @@ void GVulkanDevice::execute_single_time_command_buffer_and_wait()
 	vkQueueWaitIdle(m_vulkanLogicalDevice->get_render_queue()->get_queue());
 }
 
-bool GVulkanDevice::prepare_for_rendering()
-{	
-	return reset_things();
-}
-
 GVulkanSemaphore* GVulkanDevice::get_image_acquired_semaphore()
 {
 	return m_imageAcquiredSemaphore;
@@ -166,24 +157,6 @@ GVulkanSemaphore* GVulkanDevice::get_image_acquired_semaphore()
 GVulkanSemaphore* GVulkanDevice::get_render_complete_semaphore()
 {
 	return m_presentationSemaphore;
-}
-
-GVulkanFence* GVulkanDevice::get_queue_fence()
-{
-	return m_renderingFence;
-}
-
-GVulkanCommandBuffer* GVulkanDevice::create_cmd_from_main_pool()
-{
-	auto cmd =  m_defaultCommandManager->create_buffer(true);
-	cmd->init();
-	return cmd;
-}
-
-void GVulkanDevice::destroy_cmd_main_pool(GVulkanCommandBuffer* cmd)
-{
-	cmd->destroy();
-	delete cmd;
 }
 
 void GVulkanDevice::add_wait_semaphore_for_this_frame(GVulkanSemaphore* semaphore,int pipelineStageFlag)
@@ -218,7 +191,6 @@ const std::vector<std::pair<GVulkanSemaphore*,int>>* GVulkanDevice::get_wait_sem
 bool GVulkanDevice::reset_things()
 {
 	m_defaultCommandManager->reset_pool();
-	m_renderingFence->reset();
 	m_frameWaitSemaphores.clear();
 
 	return true;

@@ -1,4 +1,4 @@
-#include "internal/engine/rendering/vulkan/gvulkan_offscreen_depth_viewport.h"
+#include "internal/engine/rendering/vulkan/gvulkan_chained_viewport.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "engine/rendering/vulkan/ivulkan_pdevice.h"
 #include <vma/vk_mem_alloc.h>
@@ -11,13 +11,12 @@
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include <array>
 
-GVulkanOffScreenDepthViewport::GVulkanOffScreenDepthViewport(IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator)
+GVulkanChainedViewport::GVulkanChainedViewport(IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator, uint32_t imageCount)
 {
 	m_boundedDevice = dev;
-	m_descriptorCreator = descriptorCreator;
-	m_image = nullptr;
-	m_depthImage = nullptr;
-	m_descriptorSet = nullptr;
+	m_creator = descriptorCreator;
+	m_imageCount = imageCount;
+	m_currentImage = 0;
 	m_sampler = nullptr;
 	m_viewport.minDepth = 0;
 	m_viewport.maxDepth = 1;
@@ -26,32 +25,48 @@ GVulkanOffScreenDepthViewport::GVulkanOffScreenDepthViewport(IGVulkanLogicalDevi
 	m_viewport.width = 0;
 	m_viewport.height = 0;
 	m_scissor.offset = { 0,0 };
-
 }
 
-void* GVulkanOffScreenDepthViewport::get_vk_current_image_renderpass()
+void GVulkanChainedViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
 {
-	return m_renderpass.get_vk_renderpass();
+	cmd->begin();
+	m_renderpass.begin(cmd->get_handle(), m_currentImage);
 }
 
-uint32_t GVulkanOffScreenDepthViewport::get_width() const
+void GVulkanChainedViewport::destroy(bool forResize)
 {
-	return m_viewport.width;
+	for (int i = 0; i < m_depthImages.size(); i++)
+	{
+		m_depthImages[i]->unload();
+		delete m_depthImages[i];
+		m_renderImages[i]->unload();
+		delete m_renderImages[i];
+		m_descriptorSets[i]->destroy_dtor();
+	}
+	m_depthImages.clear();
+	m_renderImages.clear();
+	m_descriptorSets.clear();
+
+	if (!m_renderpass.is_failed())
+	{
+		m_renderpass.destroy(m_boundedDevice->get_vk_device(), forResize);
+	}
+	if (m_sampler != nullptr)
+	{
+		vkDestroySampler(m_boundedDevice->get_vk_device(), m_sampler, nullptr);
+		m_sampler = nullptr;
+	}
 }
 
-uint32_t GVulkanOffScreenDepthViewport::get_height() const
+bool GVulkanChainedViewport::init(int width, int height, int vkFormat)
 {
-	return m_viewport.height;
-}
-
-bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
-{
+	m_renderImages.resize(m_imageCount);
+	m_depthImages.resize(m_imageCount);
 	m_format = (VkFormat)vkFormat;
 	m_depthFormat = VK_FORMAT_D16_UNORM;
 	m_viewport.width = width;
 	m_viewport.height = height;
-	m_scissor.extent.width = width;
-	m_scissor.extent.height = height;
+	m_scissor.extent = { unsigned int(width),unsigned int(height) };
 
 	VkExtent3D extent = {
 		.width = uint32_t(width),
@@ -61,10 +76,6 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 	uint32_t renderingFamilyIndex = m_boundedDevice->get_render_queue()->get_queue_index();
 
 	{
-		// X TODO : HARD CODED
-		
-
-
 		VkImageCreateInfo inf = {};
 		inf.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		inf.pNext = nullptr;
@@ -83,37 +94,38 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 		inf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 		// VMA_MEMORY_USAGE_CPU_COPY intented to copy the image from gpu to use as a texture the last image
-		auto res = m_boundedDevice->create_image(&inf, VMA_MEMORY_USAGE_CPU_COPY);
-
-		if (!res.has_value())
+		for (int i = 0; i < m_renderImages.size(); i++)
 		{
-			// X TODO : LOGGER
-			return false;
+			auto res = m_boundedDevice->create_image(&inf, VMA_MEMORY_USAGE_CPU_COPY);
+
+			if (!res.has_value())
+			{
+				// X TODO : LOGGER
+				return false;
+			}
+
+			auto image = res.value();
+			m_renderImages[i] = image;
+			//X Create image view
+			VkImageSubresourceRange range = {};
+			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			range.layerCount = 1;
+			range.baseMipLevel = 0;
+			range.baseArrayLayer = 0;
+			range.levelCount = 1;
+
+			VkImageViewCreateInfo viewInfo = {};
+			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewInfo.pNext = nullptr;
+			viewInfo.format = (VkFormat)vkFormat;
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.flags = 0;
+			viewInfo.subresourceRange = range;
+
+			image->create_image_view(&viewInfo);
 		}
-
-		m_image = res.value();
-
-		VkImageSubresourceRange range = {};
-		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		range.layerCount = 1;
-		range.baseMipLevel = 0;
-		range.baseArrayLayer = 0;
-		range.levelCount = 1;
-
-		VkImageViewCreateInfo viewInfo = {};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.pNext = nullptr;
-		viewInfo.format = (VkFormat)vkFormat;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.flags = 0;
-		viewInfo.subresourceRange = range;
-		viewInfo.image = m_image->get_vk_image();
-
-		m_image->create_image_view(&viewInfo);
-
 	}
-	
-	//X Now create the depth image
+	//X Do same for depth images
 	{
 		VkImageCreateInfo inf = {};
 		inf.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -132,34 +144,38 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 		inf.extent = extent;
 		inf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		auto res = m_boundedDevice->create_image(&inf, VMA_MEMORY_USAGE_GPU_ONLY);
-		if (!res.has_value())
+		for (int i = 0; i < m_depthImages.size(); i++)
 		{
-			// X TODO : LOGGER
-			return false;
+			auto res = m_boundedDevice->create_image(&inf, VMA_MEMORY_USAGE_GPU_ONLY);
+			if (!res.has_value())
+			{
+				// X TODO : LOGGER
+				return false;
+			}
+
+			auto depthImage = res.value();
+			m_depthImages[i] = depthImage;
+
+			//X Create the image view
+			VkImageSubresourceRange range = {};
+			range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+			range.layerCount = 1;
+			range.baseMipLevel = 0;
+			range.baseArrayLayer = 0;
+			range.levelCount = 1;
+
+			VkImageViewCreateInfo viewInfo = {};
+			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewInfo.pNext = nullptr;
+			viewInfo.format = m_depthFormat;
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.flags = 0;
+			viewInfo.subresourceRange = range;
+
+			depthImage->create_image_view(&viewInfo);
 		}
 
-		m_depthImage = res.value();
-		
-
-		VkImageSubresourceRange range = {};
-		range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		range.layerCount = 1;
-		range.baseMipLevel = 0;
-		range.baseArrayLayer = 0;
-		range.levelCount = 1;
-
-		VkImageViewCreateInfo viewInfo = {};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.pNext = nullptr;
-		viewInfo.format = m_depthFormat;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.flags = 0;
-		viewInfo.subresourceRange = range;
-	
-		m_depthImage->create_image_view(&viewInfo);
 	}
-
 
 	std::vector<VkClearValue> clearValues;
 	clearValues.push_back({ {0.f,1.f,0.f,1.f} });
@@ -186,7 +202,7 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 	attchmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attchmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attchmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	
+
 	//X Attachment references
 	VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 	VkAttachmentReference depthReference = { 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
@@ -204,19 +220,20 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 
 	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependencies[0].dstSubpass = 0;
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = 0;
 
 	dependencies[1].srcSubpass = 0;
 	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
 	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+	dependencies[1].dependencyFlags = 0;
 
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -226,16 +243,17 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 	renderPassInfo.pSubpasses = &subpassDescription;
 	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
 	renderPassInfo.pDependencies = dependencies.data();
+	std::vector<VkImageView> renderViews(m_renderImages.size());
+	std::vector<VkImageView> depthViews(m_renderImages.size());
 
-	m_renderpass.create(m_boundedDevice->get_vk_device(), m_image->get_vk_image_view(), extent.width, extent.height, clearValues, (VkFormat)vkFormat,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		VK_SUBPASS_CONTENTS_INLINE, nullptr, 0,&renderPassInfo, m_depthImage->get_vk_image_view());
-
-	if (m_renderpass.is_failed())
+	for (int i = 0; i < m_renderImages.size(); i++)
 	{
-		return false;
+		renderViews[i] = m_renderImages[i]->get_vk_image_view();
+		depthViews[i] = m_depthImages[i]->get_vk_image_view();
 	}
 
+	m_renderpass.create(m_boundedDevice->get_vk_device(), renderViews, depthViews, clearValues,
+		uint32_t(m_viewport.width), uint32_t(m_viewport.height),(VkFormat)m_format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,&renderPassInfo);
 
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -265,84 +283,77 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 	}
 
 	// Now create descriptors
-
-	auto desRes = m_descriptorCreator->create_descriptor_set_for_texture(m_image, m_sampler);
-
-	if (!desRes.has_value())
+	m_descriptorSets.resize(m_renderImages.size());
+	for (int i = 0; i < m_renderImages.size(); i++)
 	{
-		//X TODO : LOGGER
-		return false;
-	}
+		auto desRes = m_creator->create_descriptor_set_for_texture(m_renderImages[i], m_sampler);
 
-	m_descriptorSet = desRes.value();
+		if (!desRes.has_value())
+		{
+			//X TODO : LOGGER
+			return false;
+		}
+
+		m_descriptorSets[i] = desRes.value();
+	}
+	
 
 	return true;
 }
 
-void GVulkanOffScreenDepthViewport::destroy(bool forResize)
+uint32_t GVulkanChainedViewport::get_height() const
 {
-	if (m_depthImage != nullptr)
-	{
-		m_depthImage->unload();
-		delete m_depthImage;
-		m_depthImage = nullptr;
-	}
-	if (m_image != nullptr)
-	{
-		m_image->unload();
-		delete m_image;
-		m_image = nullptr;
-	}
-	if (!m_renderpass.is_failed())
-	{
-		m_renderpass.destroy(m_boundedDevice->get_vk_device(), forResize);
-	}
-	if (m_sampler != nullptr)
-	{
-		vkDestroySampler(m_boundedDevice->get_vk_device(), m_sampler, nullptr);
-		m_sampler = nullptr;
-	}
-	if (m_descriptorSet != nullptr)
-	{
-		m_descriptorSet->destroy_dtor();
-		m_descriptorSet = nullptr;
-	}
+	return m_viewport.height;
 }
 
-void GVulkanOffScreenDepthViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
+uint32_t GVulkanChainedViewport::get_width() const
 {
-	cmd->begin();
-	m_renderpass.begin(cmd->get_handle());
+	return m_viewport.width;
 }
 
-void GVulkanOffScreenDepthViewport::end_draw_cmd(GVulkanCommandBuffer* cmd)
+void* GVulkanChainedViewport::get_vk_current_image_renderpass()
 {
+	return m_renderpass.get_vk_renderpass();
+}
 
+void GVulkanChainedViewport::end_draw_cmd(GVulkanCommandBuffer* cmd)
+{
 	m_renderpass.end(cmd->get_handle());
+
 	cmd->end();
 }
 
-IGVulkanRenderPass* GVulkanOffScreenDepthViewport::get_render_pass()
+IGVulkanRenderPass* GVulkanChainedViewport::get_render_pass()
 {
 	return &m_renderpass;
 }
 
-bool GVulkanOffScreenDepthViewport::can_be_used_as_texture()
+bool GVulkanChainedViewport::can_be_used_as_texture()
 {
 	return true;
 }
 
-IGVulkanDescriptorSet* GVulkanOffScreenDepthViewport::get_descriptor()
+IGVulkanDescriptorSet* GVulkanChainedViewport::get_descriptor()
 {
-	return m_descriptorSet;
+	return m_descriptorSets[m_currentImage];
 }
 
-const VkViewport* GVulkanOffScreenDepthViewport::get_viewport_area() const noexcept
+void GVulkanChainedViewport::set_image_index(uint32_t index)
+{
+	m_currentImage = index;
+}
+
+uint32_t GVulkanChainedViewport::get_image_count()
+{
+	return m_renderImages.size();
+}
+
+const VkViewport* GVulkanChainedViewport::get_viewport_area() const noexcept
 {
 	return &m_viewport;
 }
 
-const VkRect2D* GVulkanOffScreenDepthViewport::get_scissor_area() const noexcept
+const VkRect2D* GVulkanChainedViewport::get_scissor_area() const noexcept
 {
 	return &m_scissor;
 }

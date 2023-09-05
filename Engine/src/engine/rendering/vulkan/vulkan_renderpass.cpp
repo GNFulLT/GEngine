@@ -6,6 +6,75 @@ GVulkanRenderpass::GVulkanRenderpass()
 	_isFailed = true;
 	_subpassContents = VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE;
 }
+void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& renderViews, const std::vector<VkImageView>& depthViews, const std::vector<VkClearValue>& clearValues, uint32_t width, uint32_t height,
+	VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, const VkRenderPassCreateInfo* createInfo, VkSubpassContents subpassContents)
+{
+	VkRenderPass handle = nullptr;
+
+	if (_info.size() > 0 && _info[0].renderPass != nullptr)
+	{
+		handle = _info[0].renderPass;
+	}
+	_info = {};
+
+	_subpassContents = subpassContents;
+
+	_clearValues = clearValues;
+
+	if (handle != nullptr)
+	{
+		int a = 5;
+		_isFailed = false;
+	}
+	else
+	{
+		if (VK_SUCCESS != vkCreateRenderPass(dev, createInfo, nullptr, &handle))
+		{
+			_isFailed = true;
+		}
+		else
+		{
+			_isFailed = false;
+		}
+	}
+
+	if (!_isFailed)
+	{
+		_info.resize(renderViews.size());
+		for (int i = 0; i < renderViews.size(); i++)
+		{
+			VkFramebufferCreateInfo fb_info = {};
+			fb_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			fb_info.pNext = nullptr;
+
+			VkImageView viewsWithDepth[] = { renderViews[i],depthViews[i]};
+
+			fb_info.renderPass = handle;
+			fb_info.attachmentCount = 2;
+			fb_info.width = width;
+			fb_info.height = height;
+			fb_info.layers = 1;
+			fb_info.pAttachments = viewsWithDepth;
+			VkFramebuffer frameBuffer;
+			if (vkCreateFramebuffer(dev, &fb_info, nullptr, &frameBuffer) != VK_SUCCESS)
+			{
+				_isFailed = true;
+				break;
+			}
+			else
+			{
+				_isFailed = false;
+				_info[i].sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+				_info[i].renderPass = handle;
+				_info[i].framebuffer = frameBuffer;
+				_info[i].renderArea.extent.width = width;
+				_info[i].renderArea.extent.height = height;
+				_info[i].clearValueCount = (uint32_t)_clearValues.size();
+				_info[i].pClearValues = _clearValues.data();
+			}
+		}
+	}
+}
 
 void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& views, std::vector<C_GVec2>& sizes, const std::vector<VkClearValue>& clearValues, VkFormat format, VkImageLayout finalLayout, VkImageLayout attachmentReferenceLayout, VkSubpassContents subpassContents)
 {
@@ -60,6 +129,17 @@ void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& vie
 	create_inf.subpassCount = 1;
 	create_inf.pSubpasses = &subpass;
 	
+	VkSubpassDependency dependency{};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	create_inf.dependencyCount = 1;
+	create_inf.pDependencies = &dependency;
+
 	if (handle != nullptr)
 	{
 		int a = 5;

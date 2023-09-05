@@ -16,8 +16,8 @@ TransferOpTransferQueue::TransferOpTransferQueue(GVulkanLogicalDevice* dev,uint3
 {
 	m_transferQueue = dev->get_resource_queue();
 	m_transferCmdCount = transferCmdCount;
-	m_transferCommandManager = std::unique_ptr<GVulkanCommandBufferManager>(new GVulkanCommandBufferManager(dev,m_transferQueue, false));
-	m_transferOwnershipCommandManager = std::unique_ptr<GVulkanCommandBufferManager>(new GVulkanCommandBufferManager(dev, dev->get_render_queue(), false));
+	m_transferCommandManager = std::unique_ptr<GVulkanCommandBufferManager>(new GVulkanCommandBufferManager(dev,m_transferQueue, true));
+	m_transferOwnershipCommandManager = std::unique_ptr<GVulkanCommandBufferManager>(new GVulkanCommandBufferManager(dev, dev->get_render_queue(), true));
 	m_fenceManager = std::unique_ptr<GVulkanFenceManager>(new GVulkanFenceManager(dev));
 	m_boundedDevice = dev;
 	m_semaphoreManager = std::unique_ptr<GVulkanSemaphoreManager>(new GVulkanSemaphoreManager(dev));
@@ -194,7 +194,7 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 	inf->pQueueFamilyIndices = &index;
 
 
-	auto res = m_boundedDevice->create_image(inf, VMA_MEMORY_USAGE_CPU_COPY);
+	auto res = m_boundedDevice->create_image(inf, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	if (!res.has_value())
 	{
@@ -300,6 +300,12 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 		&region
 	);
 
+	sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.srcQueueFamilyIndex = m_transferQueue->get_queue_index();
 	barrier.dstQueueFamilyIndex = m_boundedDevice->get_render_queue()->get_queue_index();
 
@@ -324,11 +330,10 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	info.commandBufferCount = 1;
 	info.pCommandBuffers = &buff;
-	info.signalSemaphoreCount = 1;
-	info.pSignalSemaphores = &signalSemaphore;
+	info.signalSemaphoreCount = 0;
+	info.pSignalSemaphores = nullptr;
 
-	vkQueueSubmit(m_transferQueue->get_queue(), 1, &info, nullptr);
-
+	vkQueueSubmit(m_transferQueue->get_queue(), 1, &info, m_transferCommandBuffersFences[thandle->get_index()]->get_fence());
 
 	// Now give the owner ship to the transer op queue
 	//X TODO : Thread Count
@@ -339,10 +344,10 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 		
 		cmd = m_transferOwnershipCommandBuffers[thandle->get_index()];
 
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -367,13 +372,17 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 		info2.commandBufferCount = 1;
 		info2.pCommandBuffers = &bfbf;
 		info2.pWaitDstStageMask = &flag;
-		info2.waitSemaphoreCount = 1;
-		info2.pWaitSemaphores = &signalSemaphore;
+		info2.waitSemaphoreCount = 0;
+		info2.pWaitSemaphores = nullptr;
 
+
+		m_transferCommandBuffersFences[thandle->get_index()]->wait();
+		m_transferCommandBuffersFences[thandle->get_index()]->reset();
 
 		vkQueueSubmit(m_boundedDevice->get_render_queue()->get_queue(),1,&info2,m_transferCommandBuffersFences[thandle->get_index()]->get_fence());
+
 		m_transferCommandBuffersFences[thandle->get_index()]->wait();
-		
+		m_transferCommandBuffersFences[thandle->get_index()]->reset();
 
 		vkResetCommandBuffer(m_transferCommandBuffers[thandle->get_index()]->get_handle(), 0);
 		vkResetCommandBuffer(m_transferOwnershipCommandBuffers[thandle->get_index()]->get_handle(), 0);

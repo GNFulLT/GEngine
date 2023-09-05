@@ -20,12 +20,14 @@
 #include "internal/engine/manager/gjob_manager.h"
 #include "internal/engine/rendering/vulkan/gvulkan_offscreen_depth_viewport.h"
 #include "internal/engine/rendering/gvulkan_frame_data.h"
+#include "internal/engine/rendering/vulkan/gvulkan_chained_viewport.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 static uint32_t SwapchainImageCount = 3;
+static uint32_t FRAME_IN_FLIGHT = 2;
 
 static GVulkanDevice* s_device;
 static GLoggerManager* s_logger;
@@ -83,20 +85,34 @@ void GEngine::run()
 		{
 			request_exit();
 		}
-		if (m_vulkanSwapchain->need_handle())
+		if (m_vulkanSwapchain->need_handle() || !m_recreationQueues.empty())
 		{
-			s_device->get_queue_fence()->wait();
+			wait_all_frame_data();
+			if(m_vulkanSwapchain->need_handle())
+				m_vulkanSwapchain->handle();
 
-			m_vulkanSwapchain->handle();
+			while (!m_recreationQueues.empty())
+			{
+				auto fun = m_recreationQueues.front();
+				m_recreationQueues.pop();
+				fun();
+			}
 		}
 		tick();
 	}
 	
-	s_device->get_queue_fence()->wait();
+	wait_all_frame_data();
 
 	exit();
 }
 
+void GEngine::wait_all_frame_data()
+{
+	for (int i = 0; i < m_frames.size(); i++)
+	{
+		m_frames[i]->wait_fence();
+	}
+}
 
 void GEngine::exit()
 {
@@ -173,55 +189,39 @@ void GEngine::tick()
 	}
 }
 
+void GEngine::add_recreation(std::function<void()> recreationFun)
+{
+	m_recreationQueues.emplace(recreationFun);
+}
 bool GEngine::before_render()
 {
-	s_device->get_queue_fence()->wait();
-	return m_vulkanSwapchain->acquire_draw_image(s_device->get_image_acquired_semaphore()) && s_device->prepare_for_rendering();
+
+	m_frames[m_currentFrame]->wait_fence();
+	return m_vulkanSwapchain->acquire_draw_image(m_frames[m_currentFrame]->get_image_acquired_semaphore()) && m_frames[m_currentFrame]->prepare_for_rendering();
 	
 }
 
 void GEngine::after_render()
 {
-	VkCommandBuffer buff = s_device->get_main_command_buffer()->get_handle();
+	m_frames[m_currentFrame]->submit_the_cmd();
 
-	VkSemaphore semaphores = s_device->get_render_complete_semaphore()->get_semaphore();
-	VkSemaphore waitSemaphore = s_device->get_image_acquired_semaphore()->get_semaphore();
-	auto waitSemaphores = s_device->get_wait_semaphores();
-	
-	std::vector<VkSemaphore> wSemaphores(waitSemaphores->size() + 1);
-	
-	wSemaphores[0] = waitSemaphore;
-	
-	for (int i = 1; i < (*waitSemaphores).size()+1; i++)
-	{
-		wSemaphores[i] = (*waitSemaphores)[i - 1].first->get_semaphore();
-	}
-
-	VkSubmitInfo inf = {};
-	
-	std::vector< VkPipelineStageFlags> waitStages(waitSemaphores->size() + 1);
-	waitStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-	for (int i = 1; i < (*waitSemaphores).size() + 1; i++)
-	{
-		waitStages[i] = (*waitSemaphores)[i - 1].second;
-	}
-	
-	inf.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	inf.pNext = nullptr;
-	inf.commandBufferCount = 1;
-	inf.pCommandBuffers = &buff;
-	inf.signalSemaphoreCount = 1;
-	inf.pSignalSemaphores = &semaphores;
-	inf.pWaitDstStageMask = waitStages.data();
-	inf.waitSemaphoreCount = wSemaphores.size();
-	inf.pWaitSemaphores = wSemaphores.data();
-
-	vkQueueSubmit(s_device->as_logical_device()->get_render_queue()->get_queue(), 1, &inf, s_device->get_queue_fence()->get_fence());
 	//X Wait here to present the last image
-	m_vulkanSwapchain->present_image(1,s_device->get_render_complete_semaphore());
+	m_vulkanSwapchain->present_image(1, m_frames[m_currentFrame]->get_render_finished_semaphore());
+	m_currentFrame = (m_currentFrame + 1) % FRAME_IN_FLIGHT;
+}
+uint32_t GEngine::get_current_frame()
+{
+	return m_currentFrame;
 }
 
+uint32_t GEngine::get_frame_count()
+{
+	return m_frames.size();
+}
+IGVulkanFrameData* GEngine::get_frame_data_by_index(uint32_t index)
+{
+	return m_frames[m_currentFrame];
+}
 //IGVulkanMainViewport* GEngine::create_viewport(int width, int height)
 //{
 //	return new GVulkanMainViewport();
@@ -324,7 +324,7 @@ void GEngine::init(GApplicationImpl* impl)
 	}
 
 
-	m_frames.resize(SwapchainImageCount);
+	m_frames.resize(FRAME_IN_FLIGHT);
 	auto logicalDev = s_device->as_logical_device().get();
 	for (int i = 0; i < m_frames.size(); i++)
 	{
@@ -371,6 +371,11 @@ IGVulkanViewport* GEngine::create_offscreen_viewport(IGVulkanDescriptorCreator* 
 IGVulkanViewport* GEngine::create_offscreen_viewport_depth(IGVulkanDescriptorCreator* descriptor)
 {
 	return new GVulkanOffScreenDepthViewport(s_device->as_logical_device().get(), descriptor);
+}
+
+IGVulkanChainedViewport* GEngine::create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor, uint32_t imageCount)
+{
+	return new GVulkanChainedViewport(s_device->as_logical_device().get(), descriptor,imageCount);
 }
 
 IGVulkanViewport* GEngine::get_viewport()

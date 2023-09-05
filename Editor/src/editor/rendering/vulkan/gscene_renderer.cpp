@@ -24,16 +24,14 @@
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include "engine/rendering/igvulkan_frame_data.h"
 
 static int ct = 0;
-
+static int perFrameCmd = 2;
 GSceneRenderer::GSceneRenderer(IGVulkanViewport* viewport,IGVulkanDevice* device)
 {
 	m_viewport = viewport;
 	m_device = device;
-	m_cmd = nullptr;
-	m_semaphore = nullptr;
-
 	m_vkViewport.height = viewport->get_height();
 	m_vkViewport.width = viewport->get_width();
 	m_vkViewport.minDepth = 0;
@@ -43,31 +41,31 @@ GSceneRenderer::GSceneRenderer(IGVulkanViewport* viewport,IGVulkanDevice* device
 
 	m_vkScissor.extent = { viewport->get_width(),viewport->get_height() };
 	m_vkScissor.offset = {0,0};
+	triangle = nullptr;
 }
 
 void GSceneRenderer::render_the_scene()
 {
-	m_device->add_wait_semaphore_for_this_frame(m_semaphore, (int)VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-	
+
+	auto currIndex = EditorApplicationImpl::get_instance()->m_engine->get_current_frame();
+	auto frameData = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(currIndex);
+	auto cmdIndex = m_currentCmdIndex[currIndex];
+	auto frameCmd = m_frameCmds[currIndex][cmdIndex];
+
+	frameData->add_wait_semaphore_for_this_frame(m_frameSemaphores[currIndex], (int)VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	frameCmd->reset();
+
 	auto vp = m_viewport;
-	vp->begin_draw_cmd(m_cmd);
+	vp->begin_draw_cmd(frameCmd);
 
-	vkCmdBindPipeline(m_cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
+	vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
 
-	if (m_vkViewport.height != m_viewport->get_height() || m_vkViewport.width != m_viewport->get_width())
-	{
-		m_vkViewport.height = m_viewport->get_height();
-		m_vkViewport.width = m_viewport->get_width();
-		m_vkScissor.extent.width = m_vkViewport.width;
-		m_vkScissor.extent.height = m_vkViewport.height;
-	}
-
-	vkCmdSetViewport(m_cmd->get_handle(), 0, 1, &m_vkViewport);
-	vkCmdSetScissor(m_cmd->get_handle(), 0, 1, &m_vkScissor);
+	vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
+	vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
 	
 	VkDeviceSize offset = 0;
 	VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();
-	vkCmdBindVertexBuffers(m_cmd->get_handle(), 0, 1,&buff, &offset);
+	vkCmdBindVertexBuffers(frameCmd->get_handle(), 0, 1,&buff, &offset);
 	
 	auto gcamPos = gvec3(1.f, 0.f, -5.f);
 	auto viewMatrix = translate(gcamPos);
@@ -89,14 +87,14 @@ void GSceneRenderer::render_the_scene()
 	//glm::mat4 mesh_matrix = projection * view * model;
 
 
-	vkCmdPushConstants(m_cmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &meshMatrix);
+	vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &meshMatrix);
 
-	vkCmdDraw(m_cmd->get_handle(), 3, 1, 0, 0);
+	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);
 
-	vp->end_draw_cmd(m_cmd);
+	vp->end_draw_cmd(frameCmd);
 
-	auto cmd = m_cmd->get_handle();
-	auto smph = m_semaphore->get_semaphore();
+	auto cmd = frameCmd->get_handle();
+	auto smph = m_frameSemaphores[currIndex]->get_semaphore();
 	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 	VkSubmitInfo inf = {};
@@ -111,16 +109,32 @@ void GSceneRenderer::render_the_scene()
 
 
 
-	m_device->execute_cmd_from_main(m_cmd,&inf,nullptr);
+	m_device->execute_cmd_from_main(frameCmd,&inf,nullptr);
 
+	//m_currentCmdIndex[currIndex] = (m_currentCmdIndex[currIndex] + 1) % perFrameCmd;
 }
 
 bool GSceneRenderer::init()
 {
 	EditorApplicationImpl::get_instance()->get_editor_logger()->log_d("Create the main cmd");
-	m_cmd = m_device->create_cmd_from_main_pool();
+	auto frameCount = EditorApplicationImpl::get_instance()->m_engine->get_frame_count();
 
-	m_semaphore = m_device->create_semaphore(false);
+	for (int i = 0; i < frameCount; i++)
+	{
+		m_frameCmds.push_back(std::vector<GVulkanCommandBuffer*>());
+		for (int j = 0; j < perFrameCmd; j++)
+		{
+			auto fdata = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(i);
+			auto cmd = fdata->create_command_buffer_for_this_frame();
+			cmd->init();
+			m_frameCmds[i].push_back(cmd);
+		}
+		m_currentCmdIndex.push_back(0);
+		m_frameSemaphores.push_back(m_device->create_semaphore(false));
+	}
+
+
+	
 
 	auto table = EditorApplicationImpl::get_instance()->m_engine->get_manager_table();
 
@@ -262,9 +276,17 @@ void GSceneRenderer::destroy()
 		m_basicVertexShader->destroy();
 	}
 
-	m_device->destroy_semaphore(m_semaphore);
-	m_device->destroy_cmd_main_pool(m_cmd);
-	m_cmd = nullptr;
+	for (int i = 0; i < m_frameCmds.size(); i++)
+	{
+		for (int j = 0; j < perFrameCmd; j++)
+		{
+			m_frameCmds[i][j]->destroy();
+			delete m_frameCmds[i][j];
+
+		}
+		m_device->destroy_semaphore(m_frameSemaphores[i]);
+	}
+	
 }
 
 void GSceneRenderer::set_the_viewport(IGVulkanViewport* viewport)

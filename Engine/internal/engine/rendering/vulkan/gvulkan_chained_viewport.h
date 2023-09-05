@@ -1,20 +1,24 @@
-#ifndef GVULKAN_OFFSCREEN_DEPTH_VIEWPORT_H
-#define GVULKAN_OFFSCREEN_DEPTH_VIEWPORT_H
+#ifndef GVULKAN_CHAINED_VIEWPORT_H
+#define GVULKAN_CHAINED_VIEWPORT_H
 
 
 #include "volk.h"
 
-#include "engine/rendering/vulkan/ivulkan_viewport.h"
+#include "engine/rendering/vulkan/igvulkan_chained_viewport.h"
 #include "internal/engine/rendering/vulkan/vulkan_renderpass.h"
+#include <vector>
+#include <cstdint>
+
 class IGVulkanLogicalDevice;
 class IVulkanImage;
 class IGVulkanDescriptorCreator;
 class IGVulkanDescriptorSet;
 
-class GVulkanOffScreenDepthViewport : public IGVulkanViewport
+class GVulkanChainedViewport : public IGVulkanChainedViewport
 {
 public:
-	GVulkanOffScreenDepthViewport(IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator);
+	GVulkanChainedViewport(IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator,uint32_t imageCount);
+
 
 
 	// Inherited via IGVulkanViewport
@@ -28,29 +32,35 @@ public:
 	virtual IGVulkanRenderPass* get_render_pass() override;
 	virtual bool can_be_used_as_texture() override;
 	virtual IGVulkanDescriptorSet* get_descriptor() override;
+
+
+
+	// Inherited via IGVulkanChainedViewport
+	virtual void set_image_index(uint32_t index) override;
+	virtual uint32_t get_image_count() override;
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
-	GVulkanRenderpass m_renderpass;
-	VkSampler_T* m_sampler;
+	IGVulkanDescriptorCreator* m_creator;
 
-	//X Render Image
-	IVulkanImage* m_image;
-	//X Depth Image
-	IVulkanImage* m_depthImage;
-	//X Bounded pool
-	IGVulkanDescriptorCreator* m_descriptorCreator;
-	//X Texture set
-	IGVulkanDescriptorSet* m_descriptorSet;
+	GVulkanRenderpass m_renderpass;
+
+	std::vector<IVulkanImage*> m_renderImages;
+	std::vector<IVulkanImage*> m_depthImages;
+	std::vector<IGVulkanDescriptorSet*> m_descriptorSets;
 
 	VkViewport m_viewport;
 	VkRect2D m_scissor;
 
+	VkSampler_T* m_sampler;
+
 	VkFormat m_format;
 	VkFormat m_depthFormat;
+	uint32_t m_imageCount;
 
-	// Inherited via IGVulkanViewport
+	uint32_t m_currentImage;
+
+	// Inherited via IGVulkanChainedViewport
 	virtual const VkViewport* get_viewport_area() const noexcept override;
 	virtual const VkRect2D* get_scissor_area() const noexcept override;
 };
-
-#endif // GVULKAN_OFFSCREEN_DEPTH_VIEWPORT_H
+#endif // GVULKAN_CHAINED_VIEWPORT_H

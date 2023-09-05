@@ -44,6 +44,14 @@ private:
 	IGVulkanDescriptorSet* m_descriptorSet;
 	
 	VkViewport m_viewport;
+	VkRect2D m_scissor;
+
+
+	// Inherited via IGVulkanViewport
+	virtual const VkViewport* get_viewport_area() const noexcept override;
+
+	virtual const VkRect2D* get_scissor_area() const noexcept override;
+
 };
 
 #endif // GVULKAN_OFFSCREEN_VIEWPORT_H
