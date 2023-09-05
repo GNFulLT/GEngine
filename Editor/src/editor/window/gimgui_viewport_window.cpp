@@ -4,6 +4,8 @@
 #include "volk.h"
 #include "engine/rendering/vulkan/ivulkan_descriptor.h"
 #include <algorithm>
+#include "editor/editor_application_impl.h"
+#include "engine/gengine.h"
 
 GImGuiViewportWindow::GImGuiViewportWindow()
 {
@@ -14,13 +16,11 @@ GImGuiViewportWindow::GImGuiViewportWindow()
 void GImGuiViewportWindow::set_the_viewport(IGVulkanViewport* viewport)
 {
 	m_viewport = viewport;
+
+	m_viewport->init(640, 320, VkFormat::VK_FORMAT_B8G8R8A8_UNORM);
+	m_initedTheViewportFirstTime = true;
 	
-	if (!m_initedTheViewportFirstTime)
-	{
-		m_viewport->init(640, 320, VkFormat::VK_FORMAT_B8G8R8A8_UNORM);
-		m_initedTheViewportFirstTime = true;
-		return;
-	}
+	return;
 }
 
 bool GImGuiViewportWindow::init()
@@ -52,11 +52,13 @@ void GImGuiViewportWindow::render()
 
 void GImGuiViewportWindow::on_resize()
 {
-	m_viewport->destroy(true);
-	if (m_storage->width > 0 && m_storage->width < 1920 && m_storage->height > 0 && m_storage->height < 1080)
-	{
+	EditorApplicationImpl::get_instance()->m_engine->add_recreation([&]() {
+		assert(m_storage->width > 0 && m_storage->height > 0);
+		m_viewport->destroy(true);
 		m_viewport->init(m_storage->width, m_storage->height, VkFormat::VK_FORMAT_B8G8R8A8_UNORM);
-	}
+	});
+
+	
 }
 
 void GImGuiViewportWindow::on_data_update()

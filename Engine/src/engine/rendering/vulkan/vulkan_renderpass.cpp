@@ -129,6 +129,17 @@ void GVulkanRenderpass::create(VkDevice dev, const std::vector<VkImageView>& vie
 	create_inf.subpassCount = 1;
 	create_inf.pSubpasses = &subpass;
 	
+	VkSubpassDependency dependency{};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	create_inf.dependencyCount = 1;
+	create_inf.pDependencies = &dependency;
+
 	if (handle != nullptr)
 	{
 		int a = 5;

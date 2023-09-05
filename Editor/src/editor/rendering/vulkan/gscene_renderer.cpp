@@ -41,10 +41,12 @@ GSceneRenderer::GSceneRenderer(IGVulkanViewport* viewport,IGVulkanDevice* device
 
 	m_vkScissor.extent = { viewport->get_width(),viewport->get_height() };
 	m_vkScissor.offset = {0,0};
+	triangle = nullptr;
 }
 
 void GSceneRenderer::render_the_scene()
 {
+
 	auto currIndex = EditorApplicationImpl::get_instance()->m_engine->get_current_frame();
 	auto frameData = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(currIndex);
 	auto cmdIndex = m_currentCmdIndex[currIndex];
@@ -52,6 +54,7 @@ void GSceneRenderer::render_the_scene()
 
 	frameData->add_wait_semaphore_for_this_frame(m_frameSemaphores[currIndex], (int)VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	frameCmd->reset();
+
 	auto vp = m_viewport;
 	vp->begin_draw_cmd(frameCmd);
 
@@ -116,6 +119,7 @@ void GSceneRenderer::render_the_scene()
 
 	m_device->execute_cmd_from_main(frameCmd,&inf,nullptr);
 
+	//m_currentCmdIndex[currIndex] = (m_currentCmdIndex[currIndex] + 1) % perFrameCmd;
 }
 
 bool GSceneRenderer::init()

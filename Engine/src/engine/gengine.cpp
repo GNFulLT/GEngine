@@ -85,11 +85,18 @@ void GEngine::run()
 		{
 			request_exit();
 		}
-		if (m_vulkanSwapchain->need_handle())
+		if (m_vulkanSwapchain->need_handle() || !m_recreationQueues.empty())
 		{
 			wait_all_frame_data();
+			if(m_vulkanSwapchain->need_handle())
+				m_vulkanSwapchain->handle();
 
-			m_vulkanSwapchain->handle();
+			while (!m_recreationQueues.empty())
+			{
+				auto fun = m_recreationQueues.front();
+				m_recreationQueues.pop();
+				fun();
+			}
 		}
 		tick();
 	}
@@ -182,8 +189,13 @@ void GEngine::tick()
 	}
 }
 
+void GEngine::add_recreation(std::function<void()> recreationFun)
+{
+	m_recreationQueues.emplace(recreationFun);
+}
 bool GEngine::before_render()
 {
+
 	m_frames[m_currentFrame]->wait_fence();
 	return m_vulkanSwapchain->acquire_draw_image(m_frames[m_currentFrame]->get_image_acquired_semaphore()) && m_frames[m_currentFrame]->prepare_for_rendering();
 	

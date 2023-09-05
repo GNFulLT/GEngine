@@ -6,6 +6,8 @@
 #include "public/core/templates/shared_ptr.h"
 
 #include <vector>
+#include <queue>
+#include <functional>
 
 class Window;
 class IGVulkanDevice;
@@ -57,6 +59,7 @@ public:
 
 	IGVulkanFrameData* get_frame_data_by_index(uint32_t index);
 
+	void add_recreation(std::function<void()> recreationFun);
 private:
 	void wait_all_frame_data();
 	void exit();
@@ -72,6 +75,9 @@ private:
 	VkSurfaceKHR_T* m_mainSurface;
 	std::vector<GVulkanFrameData*> m_frames;
 	uint32_t m_currentFrame;
+
+
+	std::queue<std::function<void()>> m_recreationQueues;
 #ifdef _DEBUG
 	bool m_inited = false;
 #endif
