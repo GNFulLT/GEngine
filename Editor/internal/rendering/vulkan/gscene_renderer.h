@@ -27,8 +27,9 @@ public:
 private:
 	IGVulkanDevice* m_device;
 	IGVulkanViewport* m_viewport;
-	std::vector< GVulkanCommandBuffer*> m_frameCmds;
+	std::vector< std::vector<GVulkanCommandBuffer*>> m_frameCmds;
 	std::vector< GVulkanSemaphore*> m_frameSemaphores;
+	std::vector<uint32_t> m_currentCmdIndex;
 
 	VkViewport m_vkViewport;
 	VkRect2D m_vkScissor;

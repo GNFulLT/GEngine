@@ -27,7 +27,7 @@
 #include "engine/rendering/igvulkan_frame_data.h"
 
 static int ct = 0;
-
+static int perFrameCmd = 2;
 GSceneRenderer::GSceneRenderer(IGVulkanViewport* viewport,IGVulkanDevice* device)
 {
 	m_viewport = viewport;
@@ -47,7 +47,8 @@ void GSceneRenderer::render_the_scene()
 {
 	auto currIndex = EditorApplicationImpl::get_instance()->m_engine->get_current_frame();
 	auto frameData = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(currIndex);
-	auto frameCmd = m_frameCmds[currIndex];
+	auto cmdIndex = m_currentCmdIndex[currIndex];
+	auto frameCmd = m_frameCmds[currIndex][cmdIndex];
 
 	frameData->add_wait_semaphore_for_this_frame(m_frameSemaphores[currIndex], (int)VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	frameCmd->reset();
@@ -124,10 +125,15 @@ bool GSceneRenderer::init()
 
 	for (int i = 0; i < frameCount; i++)
 	{
-		auto fdata = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(i);
-		auto cmd = fdata->create_command_buffer_for_this_frame();
-		cmd->init();
-		m_frameCmds.push_back(cmd);
+		m_frameCmds.push_back(std::vector<GVulkanCommandBuffer*>());
+		for (int j = 0; j < perFrameCmd; j++)
+		{
+			auto fdata = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(i);
+			auto cmd = fdata->create_command_buffer_for_this_frame();
+			cmd->init();
+			m_frameCmds[i].push_back(cmd);
+		}
+		m_currentCmdIndex.push_back(0);
 		m_frameSemaphores.push_back(m_device->create_semaphore(false));
 	}
 
@@ -276,9 +282,13 @@ void GSceneRenderer::destroy()
 
 	for (int i = 0; i < m_frameCmds.size(); i++)
 	{
-		m_frameCmds[i]->destroy();
+		for (int j = 0; j < perFrameCmd; j++)
+		{
+			m_frameCmds[i][j]->destroy();
+			delete m_frameCmds[i][j];
+
+		}
 		m_device->destroy_semaphore(m_frameSemaphores[i]);
-		delete m_frameCmds[i];
 	}
 	
 }
