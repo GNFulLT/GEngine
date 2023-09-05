@@ -60,16 +60,8 @@ void GSceneRenderer::render_the_scene()
 
 	vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
 
-	if (m_vkViewport.height != m_viewport->get_height() || m_vkViewport.width != m_viewport->get_width())
-	{
-		m_vkViewport.height = m_viewport->get_height();
-		m_vkViewport.width = m_viewport->get_width();
-		m_vkScissor.extent.width = m_vkViewport.width;
-		m_vkScissor.extent.height = m_vkViewport.height;
-	}
-
-	vkCmdSetViewport(frameCmd->get_handle(), 0, 1, &m_vkViewport);
-	vkCmdSetScissor(frameCmd->get_handle(), 0, 1, &m_vkScissor);
+	vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
+	vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
 	
 	VkDeviceSize offset = 0;
 	VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();

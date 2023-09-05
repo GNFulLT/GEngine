@@ -13,6 +13,14 @@ GVulkanMainViewport::GVulkanMainViewport(GVulkanLogicalDevice* inDevice, uint32_
 	m_sizeY = sizeY;
 	m_currentImage = 0;
 	m_imageViews = nullptr;
+	m_viewport.height = 0;
+	m_viewport.width = 0;
+	m_viewport.minDepth = 0;
+	m_viewport.maxDepth = 1;
+	m_viewport.x = 0;
+	m_viewport.y = 0;
+	m_scissor.offset = { 0,0 };
+	m_scissor.extent = { 0,0 };
 }
 
 GVulkanMainViewport::~GVulkanMainViewport()
@@ -22,6 +30,10 @@ GVulkanMainViewport::~GVulkanMainViewport()
 bool GVulkanMainViewport::init(int width, int height,int format)
 {
 	assert(m_imageViews != nullptr);
+	m_viewport.width = width;
+	m_viewport.height = height;
+	m_scissor.extent.height = height;
+	m_scissor.extent.width = width;
 	//X TODO GDNEWDA
 	std::vector<C_GVec2> sizes(m_imageViews->size());
 	for (int i = 0; i < sizes.size(); i++)
@@ -95,4 +107,13 @@ IGVulkanDescriptorSet* GVulkanMainViewport::get_descriptor()
 IGVulkanRenderPass* GVulkanMainViewport::get_render_pass()
 {
 	return &m_renderpass;
+}
+
+const VkViewport* GVulkanMainViewport::get_viewport_area() const noexcept
+{
+	return &m_viewport;
+}
+const VkRect2D* GVulkanMainViewport::get_scissor_area() const noexcept
+{
+	return &m_scissor;
 }

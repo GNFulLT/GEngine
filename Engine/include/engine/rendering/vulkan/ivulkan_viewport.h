@@ -9,6 +9,9 @@ class GVulkanSemaphore;
 class IGVulkanDescriptorSet;
 class IGVulkanRenderPass;
 
+struct VkRect2D;
+struct VkViewport;
+
 class ENGINE_API IGVulkanViewport
 {
 public:
@@ -31,6 +34,9 @@ public:
 
 	virtual bool can_be_used_as_texture() = 0;
 	
+	virtual const VkViewport* get_viewport_area() const noexcept = 0;
+	virtual const VkRect2D* get_scissor_area() const noexcept = 0;
+
 	// If the viewport couldn't be used as texture it returns null
 	virtual IGVulkanDescriptorSet* get_descriptor() = 0;
 private:

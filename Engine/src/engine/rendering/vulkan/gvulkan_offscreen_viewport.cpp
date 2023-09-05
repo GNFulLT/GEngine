@@ -22,6 +22,7 @@ GVulkanOffScreenViewport::GVulkanOffScreenViewport(IGVulkanLogicalDevice* dev, I
 	m_viewport.y = 0;
 	m_viewport.width = 0;
 	m_viewport.height = 0;
+	m_scissor.offset = { 0,0 };
 }
 
 GVulkanOffScreenViewport::~GVulkanOffScreenViewport()
@@ -43,7 +44,9 @@ bool GVulkanOffScreenViewport::init(int width,int height,int vkFormat)
 	};
 	
 	m_viewport.width = width;
-	m_viewport.height = 0;
+	m_viewport.height = height;
+	m_scissor.extent.width = width;
+	m_scissor.extent.height = height;
 
 	uint32_t renderingFamilyIndex = m_boundedDevice->get_render_queue()->get_queue_index();
 
@@ -225,6 +228,16 @@ bool GVulkanOffScreenViewport::can_be_used_as_texture()
 IGVulkanDescriptorSet* GVulkanOffScreenViewport::get_descriptor()
 {
 	return m_descriptorSet;
+}
+
+const VkViewport* GVulkanOffScreenViewport::get_viewport_area() const noexcept
+{
+	return &m_viewport;
+}
+
+const VkRect2D* GVulkanOffScreenViewport::get_scissor_area() const noexcept
+{
+	return &m_scissor;
 }
 
 IGVulkanRenderPass* GVulkanOffScreenViewport::get_render_pass()

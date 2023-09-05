@@ -49,7 +49,8 @@ private:
 	std::vector<IGVulkanDescriptorSet*> m_descriptorSets;
 
 	VkViewport m_viewport;
-	
+	VkRect2D m_scissor;
+
 	VkSampler_T* m_sampler;
 
 	VkFormat m_format;
@@ -57,5 +58,9 @@ private:
 	uint32_t m_imageCount;
 
 	uint32_t m_currentImage;
+
+	// Inherited via IGVulkanChainedViewport
+	virtual const VkViewport* get_viewport_area() const noexcept override;
+	virtual const VkRect2D* get_scissor_area() const noexcept override;
 };
 #endif // GVULKAN_CHAINED_VIEWPORT_H

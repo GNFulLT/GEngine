@@ -24,6 +24,7 @@ GVulkanChainedViewport::GVulkanChainedViewport(IGVulkanLogicalDevice* dev, IGVul
 	m_viewport.y = 0;
 	m_viewport.width = 0;
 	m_viewport.height = 0;
+	m_scissor.offset = { 0,0 };
 }
 
 void GVulkanChainedViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
@@ -65,6 +66,7 @@ bool GVulkanChainedViewport::init(int width, int height, int vkFormat)
 	m_depthFormat = VK_FORMAT_D16_UNORM;
 	m_viewport.width = width;
 	m_viewport.height = height;
+	m_scissor.extent = { unsigned int(width),unsigned int(height) };
 
 	VkExtent3D extent = {
 		.width = uint32_t(width),
@@ -344,4 +346,14 @@ void GVulkanChainedViewport::set_image_index(uint32_t index)
 uint32_t GVulkanChainedViewport::get_image_count()
 {
 	return m_renderImages.size();
+}
+
+const VkViewport* GVulkanChainedViewport::get_viewport_area() const noexcept
+{
+	return &m_viewport;
+}
+
+const VkRect2D* GVulkanChainedViewport::get_scissor_area() const noexcept
+{
+	return &m_scissor;
 }

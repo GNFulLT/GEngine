@@ -194,7 +194,7 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 	inf->pQueueFamilyIndices = &index;
 
 
-	auto res = m_boundedDevice->create_image(inf, VMA_MEMORY_USAGE_CPU_COPY);
+	auto res = m_boundedDevice->create_image(inf, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	if (!res.has_value())
 	{

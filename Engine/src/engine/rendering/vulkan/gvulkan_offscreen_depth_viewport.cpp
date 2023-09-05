@@ -25,6 +25,7 @@ GVulkanOffScreenDepthViewport::GVulkanOffScreenDepthViewport(IGVulkanLogicalDevi
 	m_viewport.y = 0;
 	m_viewport.width = 0;
 	m_viewport.height = 0;
+	m_scissor.offset = { 0,0 };
 
 }
 
@@ -49,6 +50,8 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 	m_depthFormat = VK_FORMAT_D16_UNORM;
 	m_viewport.width = width;
 	m_viewport.height = height;
+	m_scissor.extent.width = width;
+	m_scissor.extent.height = height;
 
 	VkExtent3D extent = {
 		.width = uint32_t(width),
@@ -332,4 +335,14 @@ bool GVulkanOffScreenDepthViewport::can_be_used_as_texture()
 IGVulkanDescriptorSet* GVulkanOffScreenDepthViewport::get_descriptor()
 {
 	return m_descriptorSet;
+}
+
+const VkViewport* GVulkanOffScreenDepthViewport::get_viewport_area() const noexcept
+{
+	return &m_viewport;
+}
+
+const VkRect2D* GVulkanOffScreenDepthViewport::get_scissor_area() const noexcept
+{
+	return &m_scissor;
 }

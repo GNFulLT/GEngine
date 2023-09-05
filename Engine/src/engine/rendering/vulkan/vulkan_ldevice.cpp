@@ -364,7 +364,7 @@ std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::
 
 	VmaAllocationCreateInfo dimg_allocinfo = {};
 	if (memoryUsageFlag == 0)
-		dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		dimg_allocinfo.usage = VMA_MEMORY_USAGE_AUTO;
 	else
 		dimg_allocinfo.usage = memoryUsageFlag;
 	
