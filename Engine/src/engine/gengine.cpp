@@ -22,6 +22,7 @@
 #include "internal/engine/rendering/gvulkan_frame_data.h"
 #include "internal/engine/rendering/vulkan/gvulkan_chained_viewport.h"
 #include "internal/engine/manager/gcamera_manager.h"
+#include "internal/engine/manager/gtimer_manager.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -37,12 +38,14 @@ static GEngine* s_engine;
 static GJobManager* s_jobManager;
 static ManagerTable* s_managerTable;
 static IGCameraManager* s_cameraManager;
+static GTimerManager* s_timer;
 GEngine::GEngine()
 {
 	m_window = create_default_window();
 	m_impl = nullptr;
 
 	//X TODO : USE GDNEWD
+	s_timer = new GTimerManager();
 	m_vulkanApp = GSharedPtr<IGVulkanApp>(new GVulkanApp());
 	s_managerTable = gdnew(ManagerTable);
 	m_managerTable = s_managerTable;
@@ -78,6 +81,10 @@ void GEngine::run()
 	while (!get_exited()) {
 		//X Tick Counter
 		//X CPU GPU PERFORMANCE TRACKERS
+		auto deltaTime = s_timer->calculate_delta_time();
+		int fps = 0;
+		bool calculatedNewFps = s_timer->calc_fps(fps);
+
 		//X OnTick BeforeTick maybe
 		//X Before tick pump messages and check global vals
 		m_window->pump_messages();
@@ -100,7 +107,7 @@ void GEngine::run()
 				fun();
 			}
 		}
-		tick();
+		tick(deltaTime);
 	}
 	
 	wait_all_frame_data();
@@ -158,12 +165,17 @@ void GEngine::exit()
 
 	s_logger->log_d("GEngine", "Beginning to destroy global manager containers");
 
+
+	//X TODO WILL BE DELETED
+	delete s_timer;
+
 	// X Delete table
 	((ManagerTable*)m_managerTable)->delete_managers();
 	delete m_managerTable;
+
 }
 
-void GEngine::tick()
+void GEngine::tick(double deltaTime)
 {
 
 	//X BeforeUpdate
@@ -172,6 +184,8 @@ void GEngine::tick()
 
 	if (m_impl->before_update())
 	{
+		s_cameraManager->update(deltaTime);
+
 		m_impl->update();
 
 		m_impl->after_update();

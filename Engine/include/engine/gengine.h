@@ -64,7 +64,7 @@ private:
 	void wait_all_frame_data();
 	void exit();
 
-	void tick();
+	void tick(double deltaTime);
 	bool before_render();
 	void after_render();
 	Window* m_window;

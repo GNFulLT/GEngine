@@ -31,6 +31,8 @@ bool GCameraManager::init()
 
 	s_static = this;
 
+	m_defaultPositioner->init();
+
 	return true;
 }
 
@@ -49,9 +51,7 @@ void GCameraManager::destroy()
 
 void GCameraManager::update(float deltaTime)
 {
-	m_selectedPositioner->update(deltaTime);
-	
-	
+	m_selectedPositioner->update(deltaTime);	
 }
 
 ICameraPositioner* GCameraManager::get_current_positioner()
