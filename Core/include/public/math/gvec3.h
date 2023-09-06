@@ -59,6 +59,26 @@ struct gvec3
 	}
 };
 
+inline void operator*=(gvec3 & l, float r) noexcept
+{
+	l.x *= r;
+	l.y *= r;
+	l.z *= r;
+}
+
+inline void operator-=(gvec3& l, const gvec3& r) noexcept
+{
+	l.x -= r.x;
+	l.y -= r.y;
+	l.z -= r.z;
+}
+
+inline void operator+=(gvec3& l, const gvec3& r) noexcept
+{
+	l.x += r.x;
+	l.y += r.y;
+	l.z += r.z;
+}
 
 inline gvec3 operator+(const gvec3& l, const gvec3& r) noexcept
 {

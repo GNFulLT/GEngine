@@ -3,6 +3,7 @@
 
 #include "engine/rendering/icamera_positioner.h"
 #include "public/math/gmat4.h"
+#include "public/math/gquat.h"
 
 class IKeyboardManager;
 
@@ -27,6 +28,16 @@ private:
 	gmat4 m_projMatrix;
 
 	gvec3 m_campos = gvec3(1.f, 0.f, -5.f);
+	gvec3 m_camDir;
+	gvec3 m_camUp = gvec3(0.f, 1.f, 0.f);
+	gquat m_camOrientation;
+
+	gvec3 m_camSpeed;
+
+	float m_damping = 0.1f;
+	float m_fastCoef = 2.f;
+	float m_acceleration = 150.f;
+	float m_maxSpeed = 10.0f;
 
 	IKeyboardManager* p_keyboardManager;
 };

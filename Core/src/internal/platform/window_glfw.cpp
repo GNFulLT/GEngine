@@ -182,7 +182,7 @@ void WindowGLFW::on_key(int key, int scancode, int action, int code)
 	{
 		m_keyboardManager->key_pressed((KEY_CODE)key);
 	}
-	else
+	else if(action == GLFW_RELEASE)
 	{
 		m_keyboardManager->key_released((KEY_CODE)key);
 	}

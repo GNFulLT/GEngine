@@ -38,9 +38,12 @@ struct gmat4
 	union
 	{
 		struct {
-			gvec4 right;
-			gvec4 up;
-			gvec4 forward;
+			gvec3 left;
+			float leftEye;
+			gvec3 up;
+			float upEye;
+			gvec3 forward;
+			float forwardEye;
 			gvec4 position;
 		};
 
@@ -131,7 +134,28 @@ struct gmat4
 		}
 		*this = adjugate() * (1.0f / det);
 	}
+	
+	inline gvec3 fw() const noexcept
+	{
+		return gvec3(
+			-zx,-zy,-zz
+		);
+	}
 };
+
+inline void operator-=(gvec3& l, const gvec4& r)
+{
+	l.x -= r.x;
+	l.y -= r.y;
+	l.z -= r.z;
+}
+
+inline void operator+=(gvec3& l, const gvec4& r)
+{
+	l.x += r.x;
+	l.y += r.y;
+	l.z += r.z;
+}
 
 inline bool operator==(const gmat4& a, const gmat4& b) {
 	for (int i = 0; i < 16; ++i) {

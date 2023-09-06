@@ -8,41 +8,71 @@
 #include "engine/manager/iglogger_manager.h"
 #include "public/platform/ikeyboard_manager.h"
 
+#include <algorithm>
 
-GFpsCameraPositioner::GFpsCameraPositioner()
+GFpsCameraPositioner::GFpsCameraPositioner() : m_camDir(gvec3(0.f, 0.f, 1.f))
 {
 	m_projMatrix = perspective(70.f, 16.f / 9.f, 0.1f, 1000.f);
-	m_viewMatrix = translate(m_campos);
+	m_viewMatrix = look_at(m_campos,m_campos+m_camDir,m_camUp);
 	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
 	p_keyboardManager = nullptr;
-
+	m_camSpeed = { 0,0,0 };
 
 }
 
 void GFpsCameraPositioner::update(float deltaTime)
 {
+	gvec3 accel = { 0,0,0 };
+	
 	if (p_keyboardManager->is_key_pressed(KEY_W))
-	{
-		m_campos.z += 1.f * deltaTime;
-		((GSharedPtr<IGLoggerManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_LOGGER))->get()->log_i("GFPSCameraPositioner", "PRESSSING W");
-	}
+		accel += (m_viewMatrix.forward);
+
 	if (p_keyboardManager->is_key_pressed(KEY_S))
+		accel -= (m_viewMatrix.forward);
+
+	if (p_keyboardManager->is_key_pressed(KEY_D))
+		accel -= (m_viewMatrix.left);
+
+	if (p_keyboardManager->is_key_pressed(KEY_A))
+		accel += (m_viewMatrix.left);
+		
+	if (m_camSpeed.len() != 0.f)
 	{
-		m_campos.z -= 1.f * deltaTime;
+		auto dampingC = std::min(1.f, (1.f / m_damping) * deltaTime);
+		m_camSpeed -= m_camSpeed * dampingC;
 	}
-	m_viewMatrix = translate(m_campos);
-	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
+
+	bool isFast = false;
+	if (p_keyboardManager->is_key_pressed(KEY_SHIFT))
+		isFast = true;
+	if (isFast)
+		accel *= m_fastCoef;
+
+	m_camSpeed += accel * m_acceleration * deltaTime;
+	const float maxSpeed = isFast ? m_maxSpeed * m_fastCoef : m_maxSpeed;
+	if (m_camSpeed.len() > maxSpeed)
+	{
+		m_camSpeed.normalize();
+		m_camSpeed *= maxSpeed;
+	}
+
+	m_campos += m_camSpeed * deltaTime;
+
+	//X Build the view matr
+	
+
 }
 
 const gmat4* GFpsCameraPositioner::get_view_proj_projection()
-{
-	
+{	
+	m_viewMatrix = m_camOrientation.to_mat4() * translate(m_campos);
+	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
 	return &m_viewProjMatrix;
 }
 
 const gvec3* GFpsCameraPositioner::get_position()
 {
-	return nullptr;
+	return &m_campos;
 }
 
 bool GFpsCameraPositioner::init()
