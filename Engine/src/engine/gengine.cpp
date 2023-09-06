@@ -184,7 +184,7 @@ void GEngine::tick()
 
 		if (before_render() && m_impl->before_render())
 		{
-			s_cameraManager->render(m_currentFrame);
+			//s_cameraManager->render(m_currentFrame);
 			m_impl->render();
 			after_render();
 			m_impl->after_render();
@@ -329,7 +329,7 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 
-	inited = (*cameraManager)->init();
+	inited = s_cameraManager->init();
 	
 	if (!inited)
 	{
