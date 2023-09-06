@@ -64,10 +64,9 @@ void GVulkanBuffer::copy_data_to_device_memory(const void* src, uint32_t size)
 {
 	//X TODO : CHECK AND SHOULD RETURN RESPONSE
 	void* data = nullptr;
-	VkDeviceMemory mem = get_device_memory();
-	vkMapMemory((VkDevice)m_boundedDevice->get_vk_device(),mem , 0, size, 0, &data);
+	vmaMapMemory(m_allocatorRef, m_allocationBlock, &data);
 	memcpy(data, src, size);
-	vkUnmapMemory((VkDevice)m_boundedDevice->get_vk_device(),mem);
+	vmaUnmapMemory(m_allocatorRef, m_allocationBlock);
 }
 
 uint32_t GVulkanBuffer::get_size()

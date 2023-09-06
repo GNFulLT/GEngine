@@ -60,7 +60,7 @@ void GSceneRenderer::render_the_scene()
 
 	vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
 	//X TODO : Layout Cache
-	//m_graphicPipeline->bind_sets(frameCmd,currIndex);
+	m_graphicPipeline->bind_sets(frameCmd,currIndex);
 
 	vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
 	vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
@@ -83,14 +83,8 @@ void GSceneRenderer::render_the_scene()
 	////calculate final mesh matrix
 	//glm::mat4 mesh_matrix = projection * view * model;
 
-	auto gcamPos = gvec3(1.f, 0.f, -5.f);
-	auto viewMatrix = translate(gcamPos);
-	auto projMatrix = perspective(70.f, m_vkViewport.width / m_vkViewport.height, 0.1f, 1000.f);
-
 	auto& modelMatrix = triangle->get_model_matrix();
-	auto meshMatrix = projMatrix * viewMatrix * modelMatrix;
-
-	vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &meshMatrix);
+	vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &modelMatrix);
 
 	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);
 
@@ -233,7 +227,7 @@ bool GSceneRenderer::init()
 	shaderStages.push_back(m_vertexShaderStage);
 	shaderStages.push_back(m_fragShaderStage);
 
-	m_graphicPipeline = s_device->create_and_init_graphic_pipeline_injector_for_vp(m_viewport, shaderStages, m_states,new GDefaultPipelineInjector(s_device));
+	m_graphicPipeline = s_device->create_and_init_default_graphic_pipeline_injector_for_vp(m_viewport, shaderStages, m_states,m_frameCmds.size());
 
 	for (int i = 0; i < m_states.size(); i++)
 	{

@@ -16,27 +16,19 @@ GCameraManager::GCameraManager(uint32_t framesInFlight)
 bool GCameraManager::init()
 {
 	auto ldev = ((GSharedPtr<IGVulkanDevice>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE))->get()->as_logical_device().get();
-	//for (int i = 0; i < m_framesInFlight; i++)
-	//{
-	//	auto buffRes = ldev->create_uniform_buffer(sizeof(gmat4));
-	//	if (!buffRes.has_value())
-	//	{
-	//		return false;
-	//	}
+	for (int i = 0; i < m_framesInFlight; i++)
+	{
+		auto buffRes = ldev->create_uniform_buffer(sizeof(gmat4));
+		if (!buffRes.has_value())
+		{
+			return false;
+		}
 
 
-	//	auto buff = buffRes.value();
-	//	m_uniformBuffers.push_back(buff);
-	//}
-	//
-	//auto buffRes = ldev->create_uniform_buffer(sizeof(gmat4));
-	//if (!buffRes.has_value())
-	//{
-	//	return false;
-	//}
+		auto buff = buffRes.value();
+		m_uniformBuffers.push_back(buff);
+	}
 
-	//auto buff = buffRes.value();
-	//m_uniformBuffers.push_back(buff);
 	s_static = this;
 
 	return true;

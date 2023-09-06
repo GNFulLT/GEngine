@@ -12,6 +12,7 @@
 #include "engine/rendering/vulkan/ivulkan_swapchain.h"
 #include "engine/gengine.h"
 #include "engine/rendering/vulkan/ivulkan_shader_info.h"
+#include "engine/rendering/vulkan/vulkan_command_buffer.h"
 
 GVulkanGraphicPipelineCustomLayout::GVulkanGraphicPipelineCustomLayout(IGVulkanLogicalDevice* dev, IGVulkanRenderPass* boundedRenderpass, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, IGVulkanGraphicPipelineLayoutCreator* creator, int flag)
 {
@@ -21,11 +22,6 @@ GVulkanGraphicPipelineCustomLayout::GVulkanGraphicPipelineCustomLayout(IGVulkanL
 	m_pipelineStates = states;
 	m_layoutCreator = creator;
 	m_flag = flag;
-}
-
-void GVulkanGraphicPipelineCustomLayout::bind_sets(GVulkanCommandBuffer* cmd,uint32_t frame)
-{
-
 }
 
 bool GVulkanGraphicPipelineCustomLayout::init()
@@ -43,6 +39,7 @@ bool GVulkanGraphicPipelineCustomLayout::init()
 	{
 		return false;
 	}
+
 	m_pipelineLayout = res.value();
 
 	VkGraphicsPipelineCreateInfo info = {};
@@ -107,6 +104,7 @@ void GVulkanGraphicPipelineCustomLayout::destroy()
 {
 	if (m_layoutCreator != nullptr)
 	{
+		m_layoutCreator->destroy();
 		delete m_layoutCreator;
 		m_layoutCreator = nullptr;
 	}
@@ -127,4 +125,9 @@ void GVulkanGraphicPipelineCustomLayout::destroy()
 		m_graphicPool = nullptr;
 
 	}
+}
+
+void GVulkanGraphicPipelineCustomLayout::bind_sets(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout->get_vk_pipeline_layout(), 0, 1, &m_descriptorSets[frameIndex], 0, nullptr);
 }
