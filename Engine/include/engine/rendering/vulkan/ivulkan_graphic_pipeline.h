@@ -6,7 +6,7 @@
 
 struct VkPipeline_T;
 class IGVulkanPipelineLayout;
-
+class GVulkanCommandBuffer;
 class IGVulkanGraphicPipeline
 {
 public:
@@ -19,6 +19,9 @@ public:
 	virtual IGVulkanPipelineLayout* get_pipeline_layout() = 0;
 
 	virtual void destroy() = 0;
+
+	//X TODO : WILL BE ERASED HERE
+	virtual void bind_sets(GVulkanCommandBuffer* cmd,uint32_t frameIndex) {};
 private:
 };
 

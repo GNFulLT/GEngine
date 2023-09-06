@@ -21,6 +21,7 @@
 #include "internal/engine/rendering/vulkan/gvulkan_offscreen_depth_viewport.h"
 #include "internal/engine/rendering/gvulkan_frame_data.h"
 #include "internal/engine/rendering/vulkan/gvulkan_chained_viewport.h"
+#include "internal/engine/manager/gcamera_manager.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -35,7 +36,7 @@ static GResourceManager* s_resourceManager;
 static GEngine* s_engine;
 static GJobManager* s_jobManager;
 static ManagerTable* s_managerTable;
-
+static IGCameraManager* s_cameraManager;
 GEngine::GEngine()
 {
 	m_window = create_default_window();
@@ -56,6 +57,7 @@ GEngine::GEngine()
 	s_managerTable->set_manager(ENGINE_MANAGER_RESOURCE, new GSharedPtr<IGResourceManager>(s_resourceManager));
 	s_managerTable->set_manager(ENGINE_MANAGER_JOB, new GSharedPtr<IJobManager>(s_jobManager));
 	s_managerTable->set_manager(ENGINE_MANAGER_SHADER, new GSharedPtr<IGShaderManager>(new GShaderManager()));
+	s_managerTable->set_manager(ENGINE_MANAGER_CAMERA, new GSharedPtr<IGCameraManager>(new GCameraManager(FRAME_IN_FLIGHT)));
 
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
@@ -128,6 +130,8 @@ void GEngine::exit()
 	//X Destroy global managers
 	//X Destroy inner things
 	s_logger->log_d("GEngine", "Beginning to destroy main viewport");
+	
+	s_cameraManager->destroy();
 
 	m_vulkanSwapchain->destroy();
 
@@ -180,6 +184,7 @@ void GEngine::tick()
 
 		if (before_render() && m_impl->before_render())
 		{
+			s_cameraManager->render(m_currentFrame);
 			m_impl->render();
 			after_render();
 			m_impl->after_render();
@@ -254,7 +259,8 @@ void GEngine::init(GApplicationImpl* impl)
 
 	GSharedPtr<IGVulkanDevice>* graphicDevice = (GSharedPtr<IGVulkanDevice>*)m_managerTable->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
 	GSharedPtr<IGShaderManager>* shaderManager = (GSharedPtr<IGShaderManager>*)s_managerTable->get_engine_manager_managed(ENGINE_MANAGER_SHADER);
-
+	GSharedPtr<IGCameraManager>* cameraManager = (GSharedPtr<IGCameraManager>*)s_managerTable->get_engine_manager_managed(ENGINE_MANAGER_CAMERA);
+	s_cameraManager = cameraManager->get();
 
 	s_logger->log_d("GEngine","Beginning to initialize window");
 
@@ -323,6 +329,13 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 
+	inited = (*cameraManager)->init();
+	
+	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing camera. Engine shutdown");
+		return;
+	}
 
 	m_frames.resize(FRAME_IN_FLIGHT);
 	auto logicalDev = s_device->as_logical_device().get();

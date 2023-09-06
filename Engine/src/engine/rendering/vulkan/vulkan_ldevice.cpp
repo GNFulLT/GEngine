@@ -31,6 +31,8 @@
 #include "internal/engine/rendering/vulkan/gvulkan_vertex_buffer.h"
 #include "internal/engine/rendering/vulkan/gvulkan_graphic_pipeline_custom_layout.h"
 #include "internal/engine/rendering/vulkan/gvulkan_depth_stencil_state.h"
+#include "internal/engine/rendering/vulkan/gvulkan_camera_pipeline_layout_creator.h"
+#include "internal/engine/manager/gcamera_manager.h"
 
 GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
@@ -569,6 +571,18 @@ bool GVulkanLogicalDevice::create_vma_allocator()
 
 }
 
+IGVulkanDescriptorPool* GVulkanLogicalDevice::create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap, uint32_t frameInFlight)
+{
+	GVulkanVectorizedDescriptorPool* pool = new GVulkanVectorizedDescriptorPool(this, frameInFlight, typeMap);
+	auto res = pool->init();
+	if (!res)
+	{
+		delete pool;
+		return nullptr;
+	}
+	return pool;
+}
+
 IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, IGVulkanGraphicPipelineLayoutCreator* injector)
 {
 	GVulkanGraphicPipelineCustomLayout* cpipe = new GVulkanGraphicPipelineCustomLayout(this,vp->get_render_pass(),shaderStages,states,injector,0);
@@ -592,6 +606,20 @@ std::expected<IGVulkanVertexBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogica
 	}
 	GVulkanVertexBuffer* buff = new GVulkanVertexBuffer(res.value());
 	return buff;
+}
+IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_default_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight)
+{
+	auto injector = new GVulkanCameraLayoutCreator(this, *GCameraManager::s_static->get_buffers(), framesInFlight);
+	GVulkanGraphicPipelineCustomLayout* cpipe = new GVulkanGraphicPipelineCustomLayout(this, vp->get_render_pass(), shaderStages, states, injector, 0);
+	bool inited = cpipe->init();
+	if (!inited)
+	{
+		cpipe->destroy();
+		delete cpipe;
+		return nullptr;
+	}
+
+	return cpipe;
 }
 IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_depth_stencil_state()
 {

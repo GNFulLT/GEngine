@@ -60,7 +60,7 @@ VkDeviceMemory_T* GVulkanBuffer::get_device_memory()
 	return inf.deviceMemory;
 }
 
-void GVulkanBuffer::copy_data_to_device_memory(void* src, uint32_t size)
+void GVulkanBuffer::copy_data_to_device_memory(const void* src, uint32_t size)
 {
 	//X TODO : CHECK AND SHOULD RETURN RESPONSE
 	void* data = nullptr;

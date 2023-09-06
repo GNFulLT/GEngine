@@ -22,7 +22,7 @@ public:
 
 	virtual VkDeviceMemory_T* get_device_memory() = 0;
 
-	virtual void copy_data_to_device_memory(void* src,uint32_t size) = 0;
+	virtual void copy_data_to_device_memory(const void* src,uint32_t size) = 0;
 
 	virtual uint32_t get_size() = 0;
 

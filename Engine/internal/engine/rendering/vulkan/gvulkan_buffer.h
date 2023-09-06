@@ -24,7 +24,7 @@ public:
 
 	virtual VkDeviceMemory_T* get_device_memory() override;
 
-	virtual void copy_data_to_device_memory(void* src, uint32_t size) override;
+	virtual void copy_data_to_device_memory(const void* src, uint32_t size) override;
 
 	virtual uint32_t get_size() override;
 

@@ -65,7 +65,7 @@ GVulkanPhysicalDevice::~GVulkanPhysicalDevice()
 
 bool GVulkanPhysicalDevice::init()
 {
-	bool restrictedToDiscreteGpu = false;
+	bool restrictedToDiscreteGpu = true;
 
 
 	GLoggerManager::get_instance()->log_d(TAG,"Getting vulkan app from global");

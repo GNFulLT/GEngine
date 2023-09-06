@@ -13,7 +13,7 @@ public:
 
 	virtual void update(float deltaTime) = 0;
 
-	virtual const gmat4* get_view_projection() = 0;
+	virtual const gmat4* get_view_proj_projection() = 0;
 	
 	virtual const gvec3* get_position() = 0;
 private:

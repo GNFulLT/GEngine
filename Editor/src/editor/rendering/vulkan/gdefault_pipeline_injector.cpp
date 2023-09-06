@@ -32,7 +32,7 @@ std::expected<IGVulkanPipelineLayout*, LAYOUT_CREATOR_ERROR> GDefaultPipelineInj
 
 	VkPipelineLayout layout;
 
-	auto res = vkCreatePipelineLayout(m_boundedDevice->get_vk_device(), &inf, nullptr, &layout);
+	auto res = vkCreatePipelineLayout(m_boundedDevice->get_vk_device(), &inf, nullptr, &layout); 
 	
 	if (res != VK_SUCCESS)
 	{

@@ -26,6 +26,8 @@ public:
 	virtual const std::vector<IVulkanShaderStage*>* get_shader_stages() override;
 	virtual VkPipeline_T* get_pipeline() override;
 	virtual void destroy() override;
+	
+	virtual void bind_sets(GVulkanCommandBuffer* cmd,uint32_t frameIndex) override;
 
 	bool init();
 private:

@@ -59,6 +59,8 @@ void GSceneRenderer::render_the_scene()
 	vp->begin_draw_cmd(frameCmd);
 
 	vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
+	//X TODO : Layout Cache
+	//m_graphicPipeline->bind_sets(frameCmd,currIndex);
 
 	vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
 	vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
@@ -67,12 +69,7 @@ void GSceneRenderer::render_the_scene()
 	VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();
 	vkCmdBindVertexBuffers(frameCmd->get_handle(), 0, 1,&buff, &offset);
 	
-	auto gcamPos = gvec3(1.f, 0.f, -5.f);
-	auto viewMatrix = translate(gcamPos);
-	auto projMatrix = perspective(70.f, m_vkViewport.width / m_vkViewport.height, 0.1f, 1000.f);
-	
-	auto& modelMatrix = triangle->get_model_matrix();
-	auto meshMatrix = projMatrix * viewMatrix * modelMatrix;
+	//auto& modelMatrix = triangle->get_model_matrix();
 
 	//glm::vec3 camPos = { 0.f,0.f,-2.f };
 
@@ -86,6 +83,12 @@ void GSceneRenderer::render_the_scene()
 	////calculate final mesh matrix
 	//glm::mat4 mesh_matrix = projection * view * model;
 
+	auto gcamPos = gvec3(1.f, 0.f, -5.f);
+	auto viewMatrix = translate(gcamPos);
+	auto projMatrix = perspective(70.f, m_vkViewport.width / m_vkViewport.height, 0.1f, 1000.f);
+
+	auto& modelMatrix = triangle->get_model_matrix();
+	auto meshMatrix = projMatrix * viewMatrix * modelMatrix;
 
 	vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &meshMatrix);
 

@@ -6,6 +6,7 @@
 #include "engine/manager/ijob_manager.h"
 #include "engine/manager/igshader_manager.h"
 #include "engine/manager/igresource_manager.h"
+#include "engine/manager/igcamera_manager.h"
 
 void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 {
@@ -57,6 +58,9 @@ void* ManagerTable::swap_and_get_managed(ENGINE_MANAGER mng, void* ptr)
 	case ENGINE_MANAGER_SHADER:
 		managedPtr = new GSharedPtr<IGShaderManager>((IGShaderManager*)ptr);
 		break;
+	case ENGINE_MANAGER_CAMERA:
+		managedPtr = new GSharedPtr<IGCameraManager>((IGCameraManager*)ptr);
+		break;
 	default:
 		break;
 	}
@@ -89,6 +93,9 @@ void ManagerTable::delete_and_swap(ENGINE_MANAGER mng, void* ptr)
 		break;
 	case ENGINE_MANAGER_SHADER:
 		managedPtr = new GSharedPtr<IGShaderManager>((IGShaderManager*)ptr);
+		break;
+	case ENGINE_MANAGER_CAMERA:
+		managedPtr = new GSharedPtr<IGCameraManager>((IGCameraManager*)ptr);
 		break;
 	default:
 		break;
@@ -123,6 +130,8 @@ void ManagerTable::delete_manager(ENGINE_MANAGER manager)
 	case ENGINE_MANAGER_SHADER:
 		delete (GSharedPtr<IGShaderManager>*)mng;
 		break;
+	case ENGINE_MANAGER_CAMERA:
+		delete (GSharedPtr<IGCameraManager>*)mng;
 	default:
 		break;
 	}
@@ -157,5 +166,9 @@ void ManagerTable::delete_managers()
 	{
 		//X TODO : DELETE LOGGER
 		delete (GSharedPtr<IGShaderManager>*)shader;
+	}
+	if (auto camera = get_engine_manager_managed(ENGINE_MANAGER_CAMERA); camera != nullptr)
+	{
+		delete (GSharedPtr<IGCameraManager>*)camera;
 	}
 }

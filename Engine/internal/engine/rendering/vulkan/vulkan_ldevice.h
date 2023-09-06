@@ -102,9 +102,15 @@ public:
 	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages,
 		const std::vector<IGVulkanGraphicPipelineState*>& states, IGVulkanGraphicPipelineLayoutCreator* injector) override;
 
+
+	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages,
+		const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight);
+
 	virtual IGVulkanGraphicPipelineState* create_default_depth_stencil_state() override;
 
 	static GVulkanLogicalDevice* get_instance();
+
+	virtual IGVulkanDescriptorPool* create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap, uint32_t frameInFlight) override;
 private:
 	bool create_vma_allocator();
 
@@ -131,6 +137,7 @@ private:
 
 	VkDevice m_logicalDevice;
 	VmaAllocator allocator;
+
 
 
 };

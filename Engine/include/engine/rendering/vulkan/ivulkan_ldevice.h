@@ -93,7 +93,10 @@ public:
 
 	virtual IGVulkanDescriptorPool* create_and_init_default_pool(uint32_t uniformBufferCount, uint32_t storageBufferCount, uint32_t samplerCount) =0;
 
+	//X Deprecated
 	virtual IGVulkanDescriptorPool* create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap) = 0;
+
+	virtual IGVulkanDescriptorPool* create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap,uint32_t frameInFlight) = 0;
 
 	virtual IGVulkanPipelineLayout* create_and_init_vector_pipeline_layout(const std::vector<VkDescriptorSetLayout_T*>& layouts) = 0;
 
@@ -125,8 +128,14 @@ public:
 
 	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages, 
 		const std::vector<IGVulkanGraphicPipelineState*>& states, IGVulkanGraphicPipelineLayoutCreator* injector) = 0;
+
+
+	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages,
+		const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight) = 0;
 private:
 };
+
+
 
 
 #endif // IVULKAN_L_DEVICE_H

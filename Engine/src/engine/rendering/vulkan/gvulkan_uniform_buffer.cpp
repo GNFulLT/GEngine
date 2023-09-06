@@ -30,7 +30,7 @@ VkDeviceMemory_T* GVulkanUniformBuffer::get_device_memory()
 	return m_buff->get_device_memory();
 }
 
-void GVulkanUniformBuffer::copy_data_to_device_memory(void* src, uint32_t size)
+void GVulkanUniformBuffer::copy_data_to_device_memory(const void* src, uint32_t size)
 {
 	m_buff->copy_data_to_device_memory(src, size);
 }

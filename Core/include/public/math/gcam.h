@@ -5,14 +5,14 @@
 #include "frustum.h"
 #include <cassert>
 
-gmat4 perspective(float fov, float aspect, float n, float f) {
+inline gmat4 perspective(float fov, float aspect, float n, float f) {
     float ymax = n * tanf(fov * GPI / 360.0f);
     float xmax = ymax * aspect;
     return frustum(-xmax, xmax, -ymax, ymax, n, f);
 }
 
 
-gmat4 ortho(float l, float r, float b, float t,
+inline gmat4 ortho(float l, float r, float b, float t,
     float n, float f) {
     if (l == r || t == b || n == f) {
         assert(false);
@@ -25,7 +25,7 @@ gmat4 ortho(float l, float r, float b, float t,
     );
 }
 
-gmat4 look_at(const gvec3& position, const gvec3& target,
+inline gmat4 look_at(const gvec3& position, const gvec3& target,
     const gvec3& up) {
     gvec3 f = (target - position).normalized() * -1.0f;
     gvec3 r = cross(up, f); // Right handed

@@ -4,7 +4,7 @@
 #include "public/math/gmat4.h"
 
 // http://www.songho.ca/opengl/gl_projectionmatrix.html
-gmat4 frustum(float l, float r, float b,
+inline gmat4 frustum(float l, float r, float b,
     float t, float n, float f) {
     if (l == r || t == b || n == f) {
         return gmat4(); 
