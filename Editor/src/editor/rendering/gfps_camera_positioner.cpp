@@ -13,16 +13,13 @@
 #include "editor/editor_application_impl.h"
 #include <glm/gtx/euler_angles.hpp>
 
-GEditorFPSCameraPositioner::GEditorFPSCameraPositioner(ImGuiWindowManager* windowManager) : m_camDir(gvec3(0.f, 0.f, -1.f))
+
+GEditorFPSCameraPositioner::GEditorFPSCameraPositioner(ImGuiWindowManager* windowManager) 
 {
 	p_windowManager = windowManager;
 	p_mouseManager = nullptr;
-	m_projMatrix = perspective(70.f, 16.f / 9.f, 0.1f, 1000.f);
-	m_viewMatrix =	look_at(m_campos,m_campos+m_camDir,m_camUp);
-	m_camOrientation = mat4_to_quat(m_viewMatrix);
-	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
-	p_keyboardManager = nullptr;
-	m_camSpeed = { 0,0,0 };
+	m_projection = glm::perspective(70.f, 16.f / 9.f, 0.1f, 1000.f);
+	cameraOrientation_ = glm::lookAt(cameraPosition_,cameraPosition_ + glm::vec3(0,0,-1), up_);
 
 }
 
@@ -104,9 +101,7 @@ void GEditorFPSCameraPositioner::update(float deltaTime)
 
 const gmat4* GEditorFPSCameraPositioner::get_view_proj_projection()
 {	
-	m_viewMatrix = m_camOrientation.to_mat4() * translate(m_campos);
-	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
-	return &m_viewProjMatrix;
+	
 }
 
 const gvec3* GEditorFPSCameraPositioner::get_position()
@@ -123,36 +118,12 @@ bool GEditorFPSCameraPositioner::init()
 }
 
 void GEditorFPSCameraPositioner::setup_up_vector()
-{/*
-	m_viewMatrix = m_camOrientation * translate(m_campos);
+{
 
-	const glm::mat4 view = glm::mat4(m_viewMatrix.xx, m_viewMatrix.xy, m_viewMatrix.xz, m_viewMatrix.xw, m_viewMatrix.yx, m_viewMatrix.yy, m_viewMatrix.yz, m_viewMatrix.yw, m_viewMatrix.zx
-		, m_viewMatrix.zy, m_viewMatrix.zz, m_viewMatrix.zw,m_viewMatrix.tx, m_viewMatrix.ty, m_viewMatrix.tz, m_viewMatrix.tw);
-	const glm::vec3 dir = -glm::vec3(view[0][2], view[1][2], view[2][2]);
-	auto cameraPosition_ = glm::vec3(m_campos.x, m_campos.y, m_campos.z);
-	auto cameraOrientation_ = glm::lookAt(cameraPosition_, cameraPosition_ + dir, glm::vec3(0,1,0));
-	m_camOrientation = gmat4(&cameraOrientation_.operator[](0).x);*/
-
-
-	/*m_viewMatrix = m_camOrientation.to_mat4() * translate(m_campos);
-	auto dir = gvec3(-m_viewMatrix.xx,-m_viewMatrix.yx,-m_viewMatrix.zx);
-	auto t = look_at(m_campos,dir, m_camUp);
-	m_camOrientation =	mat4_to_quat(t);
-
-	m_viewMatrix = m_camOrientation * translate(m_campos);
-	auto dir = gvec3(m_viewMatrix.xx, m_viewMatrix.yx, m_viewMatrix.zx);
-	m_camOrientation = look_at(m_campos, dir, m_camUp);*/
-
-	m_viewMatrix = m_camOrientation.to_mat4() * translate(m_campos);
-	auto dir = gvec3(-m_viewMatrix.xx, -m_viewMatrix.yx, -m_viewMatrix.zx);
-	m_viewMatrix = look_at(m_campos, m_campos + m_camDir, m_camUp);
-	m_camOrientation = mat4_to_quat(m_viewMatrix);
 }
 
 const void* GEditorFPSCameraPositioner::get_matrix() const noexcept
 {
-	m_viewMatrix = m_camOrientation.to_mat4() * translate(m_campos);
-	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
-	return &m_viewProjMatrix;;
+	
 }
 

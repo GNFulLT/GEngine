@@ -4,6 +4,7 @@
 #include "engine/rendering/icamera_positioner.h"
 #include "public/math/gmat4.h"
 #include "public/math/gquat.h"
+#include <glm/gtx/euler_angles.hpp>
 #include <utility>
 
 class IKeyboardManager;
@@ -26,20 +27,12 @@ private:
 
 	void setup_up_vector();
 
-	mutable gmat4 m_viewProjMatrix;
-
-	mutable gmat4 m_viewMatrix;
-
-	gmat4 m_projMatrix;
-
-	gvec3 m_campos = gvec3(1.f, 0.f, -5.f);
-	gvec3 m_camDir;
-	gvec3 m_camUp = gvec3(0.f, 1.f, 0.f);
-	
-	
-	gquat m_camOrientation;
-
-	gvec3 m_camSpeed;
+	glm::vec2 mousePos_ = glm::vec2(0);
+	glm::vec3 cameraPosition_ = glm::vec3(0.0f, 10.0f, 10.0f);
+	glm::quat cameraOrientation_ = glm::quat(glm::vec3(0));
+	glm::vec3 moveSpeed_ = glm::vec3(0.0f);
+	glm::vec3 up_ = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::mat4 m_projection;
 
 	float m_damping = 0.1f;
 	float m_fastCoef = 2.f;
