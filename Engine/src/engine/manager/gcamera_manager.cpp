@@ -11,6 +11,7 @@ GCameraManager::GCameraManager(uint32_t framesInFlight)
 	m_defaultPositioner = new GFpsCameraPositioner();
 	m_selectedPositioner = m_defaultPositioner;
 	m_framesInFlight = framesInFlight;
+	m_boundedDevice = nullptr;
 }
 
 bool GCameraManager::init()
@@ -66,6 +67,16 @@ const std::vector<IGVulkanUniformBuffer*>* GCameraManager::get_buffers()
 
 void GCameraManager::render(uint32_t frame)
 {
-	auto viewProj = m_selectedPositioner->get_view_proj_projection();
+	auto viewProj = m_selectedPositioner->get_matrix();
 	m_uniformBuffers[frame]->copy_data_to_device_memory(viewProj, sizeof(gmat4));
+}
+
+void GCameraManager::set_positioner(ICameraPositioner* positioner)
+{
+	//X ATTACH AND DETACH FUNCS
+	bool inited = positioner->init();
+	if (inited)
+	{
+		m_selectedPositioner = positioner;
+	}
 }

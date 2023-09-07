@@ -24,6 +24,8 @@ public:
 
 	virtual void render(uint32_t frame) override;
 
+	virtual void set_positioner(ICameraPositioner* positioner) override;
+
 	inline static GCameraManager* s_static;
 private:
 	ICameraPositioner* m_selectedPositioner;
@@ -35,6 +37,7 @@ private:
 	uint32_t m_framesInFlight;
 
 	std::vector<IGVulkanUniformBuffer*> m_uniformBuffers;
+
 };
 
 

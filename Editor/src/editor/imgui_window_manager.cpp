@@ -187,7 +187,6 @@ void ImGuiWindowManager::render_main_menu()
 {
 	if (ImGui::BeginMainMenuBar())
 	{
-		
 		ImGui::End();
 	}
 }
@@ -211,6 +210,15 @@ void ImGuiWindowManager::try_to_show_string_in_new_editor(const std::string& con
 	bool created = create_imgui_window(win, GIMGUIWINDOWDIR_RIGHT);
 	if (!created)
 		delete win;
+}
+
+GImGuiWindow* ImGuiWindowManager::get_window_if_exist(std::string_view name)
+{
+	if (auto window = m_windowMap.find(std::string(name)); window != m_windowMap.end())
+	{
+		return window->second;
+	}
+	return nullptr;
 }
 
 void ImGuiWindowManager::render_main_dockspace()

@@ -25,6 +25,10 @@
 #include "engine/rendering/vulkan/ivulkan_graphic_pipeline.h"
 #include "engine/rendering/igvulkan_frame_data.h"
 #include "engine/rendering/vulkan/igvulkan_chained_viewport.h"
+#include "internal/rendering/gfps_camera_positioner.h"
+#include "engine/imanager_table.h"
+#include "engine/manager/igcamera_manager.h"
+
 IGVulkanLogicalDevice* s_device;
 
 inline VkDescriptorSetLayoutBinding descriptor_set_layout_binding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags flags, uint32_t descriptorCount = 1)
@@ -91,7 +95,7 @@ void EditorApplicationImpl::render()
     IManagerTable* table = m_engine->get_manager_table();
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
     auto currIndex = m_engine->get_current_frame();
-    m_renderViewport->set_image_index(currIndex);
+    //m_renderViewport->set_image_index(currIndex);
     GVulkanCommandBuffer* cmd = m_engine->get_frame_data_by_index(currIndex)->get_the_main_cmd();
     mainViewport->begin_draw_cmd(cmd);
 
@@ -173,7 +177,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
     m_logger->log_d("Creating Render Viewport");
     
-    m_renderViewport = engine->create_offscreen_viewport_depth_chained(m_imguiDescriptorCreator,m_engine->get_frame_count());
+    m_renderViewport = engine->create_offscreen_viewport_depth(m_imguiDescriptorCreator);
 
     m_imguiLayer->set_viewport(m_renderViewport);
 
@@ -183,6 +187,9 @@ bool EditorApplicationImpl::init(GEngine* engine)
         m_logWindwLogger->add_sink(logWin->create_sink());
     }
 
+    m_fpsCameraPositioner.reset(new GEditorFPSCameraPositioner(m_imguiLayer->get_window_manager()));
+
+    ((GSharedPtr<IGCameraManager>*)engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get()->set_positioner(m_fpsCameraPositioner.get());
   
    return true;    
 }

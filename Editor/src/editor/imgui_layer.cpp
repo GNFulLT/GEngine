@@ -20,8 +20,9 @@
 #include "internal/window/gimgui_texteditor_window.h"
 #include "internal/window/gimgui_content_browser_window.h"
 #include "internal/window/gimgui_log_window.h"
-
 #include "internal/menu/gtheme_menu.h"
+
+
 
 ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* app, IGVulkanDevice* dev)
 {
@@ -167,6 +168,7 @@ bool ImGuiLayer::init()
 		delete m_logWindow;
 		m_logWindow = nullptr;
 	}
+
 	return true;
 }
 

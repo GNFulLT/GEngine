@@ -4,13 +4,16 @@
 #include "engine/rendering/icamera_positioner.h"
 #include "public/math/gmat4.h"
 #include "public/math/gquat.h"
+#include <utility>
 
 class IKeyboardManager;
+class ImGuiWindowManager;
+class IMouseManager;
 
-class GFpsCameraPositioner : public ICameraPositioner
+class GEditorFPSCameraPositioner : public ICameraPositioner
 {
 public:
-	GFpsCameraPositioner();
+	GEditorFPSCameraPositioner(ImGuiWindowManager* windowManager);
 
 	virtual void update(float deltaTime) override;
 
@@ -19,19 +22,21 @@ public:
 	virtual const gvec3* get_position() override;
 
 	virtual bool init() override;
-
-	virtual const void* get_matrix() const noexcept override;
 private:
 
-	gmat4 m_viewProjMatrix;
+	void setup_up_vector();
 
-	gmat4 m_viewMatrix;
+	mutable gmat4 m_viewProjMatrix;
+
+	mutable gmat4 m_viewMatrix;
 
 	gmat4 m_projMatrix;
 
 	gvec3 m_campos = gvec3(1.f, 0.f, -5.f);
 	gvec3 m_camDir;
 	gvec3 m_camUp = gvec3(0.f, 1.f, 0.f);
+	
+	
 	gquat m_camOrientation;
 
 	gvec3 m_camSpeed;
@@ -41,7 +46,15 @@ private:
 	float m_acceleration = 150.f;
 	float m_maxSpeed = 10.0f;
 
+	bool m_firstClick = true;
+	std::pair<int, int> m_mousePos;
+	
 	IKeyboardManager* p_keyboardManager;
+	IMouseManager* p_mouseManager;
+	ImGuiWindowManager* p_windowManager;
+
+	// Inherited via ICameraPositioner
+	virtual const void* get_matrix() const noexcept override;
 };
 
 #endif // GVULKAN_FPS_CAMERA_CONTROLLER_H

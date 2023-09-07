@@ -15,6 +15,8 @@ class GImGuiTextEditorWindow;
 class GImGuiContentBrowserWindow;
 class GImGuiLogWindow;
 
+
+
 class ImGuiLayer
 {
 public:
@@ -45,6 +47,7 @@ private:
 	GImGuiViewportWindow* m_renderViewportWindow;
 	GImGuiContentBrowserWindow* m_contentBrowserWindow;
 	GSceneRenderer* m_sceneRenderer;
+
 };
 
 #endif // IMGUI_LAYER_H

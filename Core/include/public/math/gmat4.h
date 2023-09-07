@@ -240,7 +240,7 @@ inline void transpose(gmat4& m) {
 	M4SWAP(m.tz, m.zw);
 }
 
-inline gmat4 translate(gvec3& pos) noexcept
+inline gmat4 translate(const gvec3& pos) noexcept
 {
 	return gmat4(
 		1.f, 0.f, 0.f, 0.f,

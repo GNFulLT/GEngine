@@ -4,6 +4,7 @@
 #include "engine/gapplication_impl.h"
 #include "editor/GEngine_EXPORT.h"
 #include "public/core/templates/shared_ptr.h"
+#include <memory>
 
 class GEngine;
 class ImGuiLayer;
@@ -16,6 +17,7 @@ class IGShaderResource;
 class IVulkanShaderStage;
 class IGVulkanGraphicPipeline;
 class IGVulkanChainedViewport;
+class GEditorFPSCameraPositioner;
 
 class EditorApplicationImpl : public GApplicationImpl
 {
@@ -50,13 +52,16 @@ public:
 
 	ImGuiLayer* get_editor_layer();
 private:
-	IGVulkanChainedViewport* m_renderViewport;
+	IGVulkanViewport* m_renderViewport;
 	ImGuiLayer* m_imguiLayer;
 	GImGuiDescriptorCreator* m_imguiDescriptorCreator;
 	GSharedPtr<IOwningGLogger> m_logger;
 	GSharedPtr<IOwningGLogger> m_logWindwLogger;
 	inline static EditorApplicationImpl* s_instance;
-	
+
+
+	std::unique_ptr<GEditorFPSCameraPositioner> m_fpsCameraPositioner;
+
 };
 
 

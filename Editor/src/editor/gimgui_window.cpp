@@ -52,6 +52,8 @@ void GImGuiWindow::render()
 			}
 		}
 		m_impl->render();
+
+		m_focused = ImGui::IsWindowFocused();
 	}
 	ImGui::End();
 
@@ -103,6 +105,11 @@ bool GImGuiWindow::wants_docking()
 bool GImGuiWindow::wants_destroy()
 {
 	return !m_isShown;
+}
+
+bool GImGuiWindow::is_focused() const noexcept
+{
+	return m_focused;
 }
 
 GIMGUIWINDOWDIR GImGuiWindow::get_dock_dir()

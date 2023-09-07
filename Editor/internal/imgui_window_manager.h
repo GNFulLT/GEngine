@@ -7,7 +7,7 @@
 #include "public/core/templates/shared_ptr.h"
 #include "public/platform/imouse_manager.h"
 #include <filesystem>
-
+#include <string_view>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -25,9 +25,13 @@ enum WINDOW_OP
 	WINDOW_OP_EXTRACT
 };
 
+
+
 class ImGuiWindowManager
 {
 public:
+	inline constexpr static std::string_view VIEWPORT_NAME = "Viewport";
+
 	~ImGuiWindowManager();
 	// Multi-thread safe
 	bool create_imgui_window(IGImGuiWindowImpl* impl, GIMGUIWINDOWDIR dir = GIMGUIWINDOWDIR_NONE);
@@ -45,6 +49,8 @@ public:
 	void try_to_open_file_in_new_editor(std::filesystem::path path);
 
 	void try_to_show_string_in_new_editor(const std::string& content, std::string_view name, std::string_view id, bool isReadOnly = true);
+
+	GImGuiWindow* get_window_if_exist(std::string_view name);
 private:
 	void render_main_dockspace();
 

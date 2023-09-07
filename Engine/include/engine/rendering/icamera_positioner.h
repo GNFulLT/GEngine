@@ -17,6 +17,8 @@ public:
 	
 	virtual const gvec3* get_position() = 0;
 
+	virtual const void* get_matrix() const noexcept = 0;
+
 	virtual bool init() { return true; };
 private:
 };

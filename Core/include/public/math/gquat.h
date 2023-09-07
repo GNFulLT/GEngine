@@ -214,6 +214,22 @@ inline gquat mix(const gquat& from, const gquat& to, float t) {
 	return from * (1.0f - t) + to * t;
 }
 
+inline gquat from_eular_angles(const gvec3& angles)
+{
+	double cr = cos(angles.x * 0.5f);
+	double sr = sin(angles.x * 0.5f);
+	double cp = cos(angles.y * 0.5f);
+	double sp = sin(angles.y * 0.5f);
+	double cy = cos(angles.z * 0.5f);
+	double sy = sin(angles.z * 0.5f);
+	gquat q;
+	q.w = cr * cp * cy + sr * sp * sy;
+	q.x = sr * cp * cy - cr * sp * sy;
+	q.y = cr * sp * cy + sr * cp * sy;
+	q.z = cr * cp * sy - sr * sp * cy;
+	return q;
+}
+
 inline gquat look_rotation(const gvec3& direction, const gvec3& up) {
 	// Find orthonormal basis vectors
 	gvec3 f = direction.normalized();

@@ -37,6 +37,8 @@ public:
 
 	bool wants_destroy();
 
+	bool is_focused() const noexcept;
+
 	GIMGUIWINDOWDIR get_dock_dir();
 private:
 	IGImGuiWindowImpl* m_impl;
@@ -45,6 +47,8 @@ private:
 	uint32_t m_windowId;
 	bool m_isShown = true;
 	std::string m_id;
+
+	bool m_focused = false;
 };
 
 #endif // IMGUI_WINDOW_H

@@ -81,3 +81,9 @@ bool GFpsCameraPositioner::init()
 	return true;
 }
 
+const void* GFpsCameraPositioner::get_matrix() const noexcept
+{
+
+	return &m_viewProjMatrix;
+}
+

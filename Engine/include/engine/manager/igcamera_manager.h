@@ -3,6 +3,9 @@
 
 #include "engine/GEngine_EXPORT.h"
 #include <cstdint>
+
+class ICameraPositioner;
+
 class ENGINE_API IGCameraManager
 {
 public:
@@ -16,6 +19,7 @@ public:
 
 	virtual void render(uint32_t frame) = 0;
 
+	virtual void set_positioner(ICameraPositioner* positioner) = 0;
 private:
 };
 #endif // IGCAMERA_MANAGER_H
