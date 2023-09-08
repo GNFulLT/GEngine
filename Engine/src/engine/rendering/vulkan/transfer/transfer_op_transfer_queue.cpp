@@ -258,7 +258,7 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.mipLevel = 0;
 	region.imageSubresource.baseArrayLayer = 0;
-	region.imageSubresource.layerCount = 1;
+	region.imageSubresource.layerCount = inf->arrayLayers;
 
 	region.imageOffset = { 0, 0, 0 };
 	region.imageExtent = inf->extent;
@@ -274,7 +274,7 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = inf->arrayLayers;
 	barrier.srcAccessMask = 0;
 	barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 

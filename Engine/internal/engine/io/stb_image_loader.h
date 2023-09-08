@@ -15,8 +15,11 @@ public:
 	virtual GImage_Descriptor* load(std::string_view path,int dedicatedFormat = -1) override;
 
 	virtual void unload(GImage_Descriptor* img) override;
+	
+	virtual const std::vector<GIMAGETYPE>* get_supported_image_types() override;
 private:
 	std::string m_name;
+	std::vector<GIMAGETYPE> m_supportedImageTypes;
 };
 
 

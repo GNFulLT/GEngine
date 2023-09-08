@@ -7,6 +7,8 @@
 
 class IImageLoader;
 class IGVulkanDescriptorSet;
+class IVulkanImage;
+class IGVulkanSampler;
 
 class ENGINE_API IGTextureResource : public IResource
 {
@@ -39,6 +41,10 @@ public:
 	IImageLoader* get_loader();
 
 	virtual IGVulkanDescriptorSet* get_descriptor_set() const = 0;
+
+	virtual IVulkanImage* get_vulkan_image() const = 0;
+
+	virtual IGVulkanSampler* get_default_sampler_if_any() = 0;
 protected:
 	IImageLoader* m_loader;
 };

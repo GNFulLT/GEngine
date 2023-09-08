@@ -55,7 +55,7 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
  "src/engine/rendering/vulkan/gvulkan_frame_data.cpp" "include/engine/rendering/igvulkan_frame_data.h" "internal/engine/rendering/vulkan/gvulkan_chained_viewport.h" 
  "src/engine/rendering/vulkan/gvulkan_chained_viewport.cpp" "include/engine/rendering/vulkan/igvulkan_chained_viewport.h" "include/engine/manager/igcamera_manager.h"
  "internal/engine/rendering/vulkan/gvulkan_camera_pipeline_layout_creator.h" "src/engine/rendering/vulkan/gvulkan_camera_pipeline_layout_creator.cpp"
- "src/engine/rendering/vulkan/gvulkan_basic_pipeline_layout.cpp" "internal/engine/rendering/gvulkan_fps_camera_positioner.h" "src/engine/rendering/gvulkan_fps_camera_positioner.cpp" "src/engine/manager/gtimer_manager.cpp")
+ "src/engine/rendering/vulkan/gvulkan_basic_pipeline_layout.cpp" "internal/engine/rendering/gvulkan_fps_camera_positioner.h" "src/engine/rendering/gvulkan_fps_camera_positioner.cpp" "src/engine/manager/gtimer_manager.cpp" "internal/engine/io/cube_image_loader.h" "src/engine/io/cube_image_loader.cpp" "internal/engine/io/bitmap.h" "internal/engine/io/cubemap_utils.h" "src/engine/io/cubemap_utils.cpp")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")

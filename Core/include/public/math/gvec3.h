@@ -20,7 +20,7 @@ struct gvec3
 
 	inline gvec3() : x(0),y(0),z(0) {}
 	inline gvec3(float _x,float _y, float _z) : x(_x),y(_y),z(_z){}
-	inline gvec3(float* begin) : x(begin[0]),y(begin[1]),z(begin[2]) {}
+	inline gvec3(const float* begin) : x(begin[0]),y(begin[1]),z(begin[2]) {}
 
 	inline float len_sq() const noexcept
 	{

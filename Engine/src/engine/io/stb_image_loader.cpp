@@ -6,6 +6,7 @@
 STBImageLoader::STBImageLoader()
 {
 	m_name = "STBImageLoader";
+	m_supportedImageTypes.push_back(GIMAGETYPE_2D);
 }
 
 STBImageLoader::~STBImageLoader()
@@ -15,6 +16,20 @@ STBImageLoader::~STBImageLoader()
 std::string_view STBImageLoader::get_loader_name()
 {
 	return m_name;
+}
+
+bool IImageLoader::has_support_for(GIMAGETYPE type)
+{
+	auto supportedTypes = get_supported_image_types();
+	if (supportedTypes == nullptr)
+		return false;
+	for (auto supportedType : *supportedTypes)
+	{
+		if (supportedType == type)
+			return true;
+	}
+
+	return false;
 }
 
 GImage_Descriptor* STBImageLoader::load(std::string_view path,int dedicatedFormat)
@@ -46,4 +61,9 @@ void STBImageLoader::unload(GImage_Descriptor* img)
 {
 	stbi_image_free(img->pixels);
 	delete img;
+}
+
+const std::vector<GIMAGETYPE>* STBImageLoader::get_supported_image_types()
+{
+	return &m_supportedImageTypes;
 }

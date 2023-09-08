@@ -15,7 +15,7 @@ public:
 
 	virtual const gmat4* get_view_proj_projection() = 0;
 	
-	virtual const gvec3* get_position() = 0;
+	virtual const float* get_position() = 0;
 
 	virtual const void* get_matrix() const noexcept = 0;
 

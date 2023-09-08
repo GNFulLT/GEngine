@@ -190,8 +190,9 @@ bool EditorApplicationImpl::init(GEngine* engine)
     m_fpsCameraPositioner.reset(new GEditorFPSCameraPositioner(m_imguiLayer->get_window_manager()));
 
     ((GSharedPtr<IGCameraManager>*)engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get()->set_positioner(m_fpsCameraPositioner.get());
-  
-   return true;    
+    
+
+    return true;    
 }
 
 GSharedPtr<IOwningGLogger> EditorApplicationImpl::get_editor_logger()

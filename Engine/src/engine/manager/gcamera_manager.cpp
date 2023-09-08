@@ -14,6 +14,11 @@ GCameraManager::GCameraManager(uint32_t framesInFlight)
 	m_boundedDevice = nullptr;
 }
 
+const float* GCameraManager::get_camera_position()
+{
+	return m_selectedPositioner->get_position();
+}
+
 bool GCameraManager::init()
 {
 	auto ldev = ((GSharedPtr<IGVulkanDevice>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE))->get()->as_logical_device().get();
@@ -79,4 +84,16 @@ void GCameraManager::set_positioner(ICameraPositioner* positioner)
 	{
 		m_selectedPositioner = positioner;
 	}
+}
+
+IGVulkanUniformBuffer* GCameraManager::get_camera_buffer_for_frame(uint32_t frame)
+{
+	if (frame >= m_uniformBuffers.size())
+		return nullptr;
+	return m_uniformBuffers[frame];
+}
+
+uint32_t GCameraManager::get_camera_buffer_count()
+{
+	return m_uniformBuffers.size();;
 }

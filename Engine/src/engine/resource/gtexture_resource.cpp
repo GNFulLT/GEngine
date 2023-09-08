@@ -89,11 +89,11 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	imageExtent.depth = 1;
 
 	uint32_t index = m_boundedDevice->get_render_queue()->get_queue_index();
-
+	
 	VkImageCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	info.pNext = nullptr;
-	info.flags = 0;
+	info.flags = m_imageDescriptor->flag;
 	info.imageType = gtype_to_image_type(m_imageDescriptor->imageType);
 	info.format = m_imageDescriptor->format;
 	info.extent = imageExtent;
@@ -120,6 +120,7 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	ivinfo.subresourceRange.levelCount = 1;
 	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
+	m_loader->inject_create_image_info(&info,&ivinfo);
 
 	auto imageRes = m_boundedDevice->get_transfer_operation()->init_image_to_the_gpu_from_cpu_sleep(&info,&ivinfo,m_size,m_imageDescriptor->pixels);
 	// Unload the m_imageDescriptor
@@ -146,17 +147,19 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 	}
 
 	m_inUsageSampler = samplerRes.value();
-
-
-	auto descriptorRes = m_descriptorCreator->create_descriptor_set_for_texture(m_gpuBuffer, m_inUsageSampler->get_vk_sampler());
-
-
-	if (!descriptorRes.has_value())
+	
+	if (m_descriptorCreator != nullptr)
 	{
-		return RESOURCE_INIT_CODE_UNKNOWN_EX;
-	}
+		auto descriptorRes = m_descriptorCreator->create_descriptor_set_for_texture(m_gpuBuffer, m_inUsageSampler->get_vk_sampler());
 
-	m_descriptorSet = descriptorRes.value();
+
+		if (!descriptorRes.has_value())
+		{
+			return RESOURCE_INIT_CODE_UNKNOWN_EX;
+		}
+
+		m_descriptorSet = descriptorRes.value();
+	}
 
 	return RESOURCE_INIT_CODE_OK;
 }
@@ -196,7 +199,11 @@ std::uint64_t GTextureResource::calculateSize() const
 	else
 	{
 		m_size = m_imageDescriptor->channelCount* m_imageDescriptor->width* m_imageDescriptor->height;
+		if (m_imageDescriptor->size != 0)
+			m_size = m_imageDescriptor->size;
+
 	}
+
 	return m_size;
 }
 
@@ -213,6 +220,16 @@ IGVulkanDescriptorSet* GTextureResource::get_descriptor_set() const
 void GTextureResource::destroy_impl()
 {
 	m_creatorOwner->destroy_texture_resource(this);
+}
+
+IVulkanImage* GTextureResource::get_vulkan_image() const
+{
+	return m_gpuBuffer;
+}
+
+IGVulkanSampler* GTextureResource::get_default_sampler_if_any()
+{
+	return m_inUsageSampler;
 }
 
 

@@ -70,9 +70,9 @@ const gmat4* GFpsCameraPositioner::get_view_proj_projection()
 	return &m_viewProjMatrix;
 }
 
-const gvec3* GFpsCameraPositioner::get_position()
+const float* GFpsCameraPositioner::get_position()
 {
-	return &m_campos;
+	return &m_campos.x;
 }
 
 bool GFpsCameraPositioner::init()

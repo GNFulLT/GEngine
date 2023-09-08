@@ -9,6 +9,8 @@ class GVulkanSemaphore;
 class IGShaderResource;
 class IVulkanShaderStage;
 class IGVulkanGraphicPipeline;
+class GCubeRenderer;
+
 #include "internal/rendering/renderable.h"
 
 #include "public/core/templates/shared_ptr.h"
@@ -39,6 +41,8 @@ private:
 	IGVulkanGraphicPipeline* m_graphicPipeline = nullptr;
 	IVulkanShaderStage* m_fragShaderStage = nullptr;
 	IVulkanShaderStage* m_vertexShaderStage = nullptr;
+
+	GSharedPtr<GCubeRenderer> m_cubemapRenderer;
 
 	Renderable* triangle;
 };

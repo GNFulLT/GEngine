@@ -20,6 +20,8 @@ struct GImage_Descriptor
 	std::uint8_t* pixels;
 	std::size_t channelCount;
 	GIMAGETYPE imageType;
+	std::uint32_t flag = 0;
+	std::uint32_t size = 0;
 };
 
 #endif // GIMAGE_DESCRIPTOR_H

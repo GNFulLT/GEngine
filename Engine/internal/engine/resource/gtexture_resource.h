@@ -43,6 +43,10 @@ public:
 	virtual IGVulkanDescriptorSet* get_descriptor_set() const override;
 
 	virtual void destroy_impl() override;
+
+	virtual IVulkanImage* get_vulkan_image() const override;
+
+	virtual IGVulkanSampler* get_default_sampler_if_any() override;
 private:
 	std::string m_filePath;
 	IGVulkanLogicalDevice* m_boundedDevice;
@@ -56,6 +60,8 @@ private:
 	IGVulkanDescriptorSet* m_descriptorSet;
 
 	int m_dedicatedFormat;
+
+
 };
 
 #endif // GTEXTURE_RESOURCE_H

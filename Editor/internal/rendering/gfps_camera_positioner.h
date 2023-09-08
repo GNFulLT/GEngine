@@ -20,7 +20,7 @@ public:
 
 	virtual const gmat4* get_view_proj_projection() override;
 
-	virtual const gvec3* get_position() override;
+	virtual const float* get_position() override;
 
 	virtual bool init() override;
 private:
@@ -38,6 +38,9 @@ private:
 	float m_fastCoef = 2.f;
 	float m_acceleration = 150.f;
 	float m_maxSpeed = 10.0f;
+	float mouseSpeed_ = 0.01f;
+
+	mutable glm::mat4 m_viewProj;
 
 	bool m_firstClick = true;
 	std::pair<int, int> m_mousePos;

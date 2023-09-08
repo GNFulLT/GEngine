@@ -25,6 +25,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include "engine/rendering/igvulkan_frame_data.h"
+#include "internal/rendering/vulkan/gcube_renderer.h"
 
 static int ct = 0;
 static int perFrameCmd = 2;
@@ -57,6 +58,9 @@ void GSceneRenderer::render_the_scene()
 
 	auto vp = m_viewport;
 	vp->begin_draw_cmd(frameCmd);
+
+	m_cubemapRenderer->render(frameCmd,currIndex,vp);
+
 
 	vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
 	//X TODO : Layout Cache
@@ -185,6 +189,7 @@ bool GSceneRenderer::init()
 		assert(false);
 	}
 
+	
 	std::vector<IGVulkanGraphicPipelineState*> m_states;
 	
 	//we will have just 1 vertex buffer binding, with a per-vertex rate
@@ -248,11 +253,18 @@ bool GSceneRenderer::init()
 	triangle = new Renderable(s_device,pos);
 
 	triangle->init();
+
+	m_cubemapRenderer = GSharedPtr<GCubeRenderer>(new GCubeRenderer(s_device,resourceManager, ((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get()
+	,m_viewport, s_shaderManager,m_frameCmds.size(),"assets/bgg.hdr"));
+
+
+	assert(m_cubemapRenderer->init());
 	return true;
 }
 
 void GSceneRenderer::destroy()
 {
+	m_cubemapRenderer->destroy();
 	triangle->destroy();
 	delete triangle;
 	if (m_graphicPipeline != nullptr)

@@ -7,6 +7,7 @@
 
 #include <string_view>
 #include <expected>
+#include <vector>
 
 enum RESOURCE_ERROR
 {
@@ -19,6 +20,8 @@ class GResource;
 class IResource;
 class IGTextureResource;
 class IGVulkanDescriptorCreator;
+class IImageLoader;
+enum GIMAGETYPE;
 
 typedef GSharedPtr<GResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> GResourcePtr;
 typedef GSharedPtr<IResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> IResourcePtr;
@@ -38,8 +41,13 @@ public:
 	virtual std::expected<IGTextureResource*, RESOURCE_ERROR> create_texture_resource(std::string_view name, std::string_view groupName, std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator,int format = -1) = 0;
 
 	virtual std::expected<IGShaderResource*, RESOURCE_ERROR> create_shader_resource(std::string_view name, std::string_view groupName, std::string_view filePath) = 0;
+	virtual std::expected<IGTextureResource*, RESOURCE_ERROR> create_texture_resource(std::string_view name, std::string_view groupName, std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator, IImageLoader* customLoader, int format = -1)  = 0;
+	virtual IImageLoader* get_imageloader_with_name(const char* name) = 0;
+
 	virtual void destroy_texture_resource(IGTextureResource* texture) = 0;
 	virtual void destroy_shader_resource(IGShaderResource* shader) = 0;
+
+	virtual const std::vector<IImageLoader*>* get_imageloaders_by_loading_type(GIMAGETYPE type) = 0;
 private:
 };
 #endif // IGRESOURCE_MANAGER_H

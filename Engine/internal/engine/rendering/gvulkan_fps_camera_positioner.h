@@ -16,7 +16,7 @@ public:
 
 	virtual const gmat4* get_view_proj_projection() override;
 
-	virtual const gvec3* get_position() override;
+	virtual const float* get_position() override;
 
 	virtual bool init() override;
 
