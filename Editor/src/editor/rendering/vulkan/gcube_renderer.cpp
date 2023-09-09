@@ -46,7 +46,7 @@ GCubeRenderer::GCubeRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceMan
 	{
 		m_cubemapFragShader = GSharedPtr<IGShaderResource>(shaderRes.value());
 	}
-	cubeTransform.scale = gvec3(15, 15, 15);
+	cubeTransform.scale = gvec3(50, 50, 50);
 }
 
 bool GCubeRenderer::init()
