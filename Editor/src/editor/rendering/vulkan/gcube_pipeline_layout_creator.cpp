@@ -12,7 +12,8 @@
 #include "public/math/gmat4.h"
 #include "internal/rendering/vulkan/gvulkan_pipeline_layout_wrapper.h"
 
-GCubePipelinelayoutCreator::GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGCameraManager* cameraManager, GSharedPtr<IGTextureResource> cubeTexture,uint32_t framesInFlight)
+GCubePipelinelayoutCreator::GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGCameraManager* cameraManager, IGPipelineObjectManager* objManager,
+	GSharedPtr<IGTextureResource> cubeTexture,uint32_t framesInFlight)
 {
 	m_boundedDevice = device;
 	m_framesInFlight = framesInFlight;
@@ -20,6 +21,7 @@ GCubePipelinelayoutCreator::GCubePipelinelayoutCreator(IGVulkanLogicalDevice* de
 	m_descriptorSetLayout = nullptr;
 	m_cameraManager = cameraManager;
 	m_cubeTexture = cubeTexture;
+	m_objManager = objManager;
 }
 
 void GCubePipelinelayoutCreator::inject_create_info(VkGraphicsPipelineCreateInfo* info)
@@ -125,7 +127,7 @@ std::expected<IGVulkanDescriptorPool*, LAYOUT_CREATOR_ERROR> GCubePipelinelayout
 		//X TODO CACHE AND USE SAMPLER BOUNDERS
 		iinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		iinfo.imageView = m_cubeTexture->get_vulkan_image()->get_vk_image_view();
-		iinfo.sampler = m_cubeTexture->get_default_sampler_if_any()->get_vk_sampler();
+		iinfo.sampler = m_objManager->get_named_sampler(IGPipelineObjectManager::MAX_PERFORMANT_SAMPLER.data())->get_vk_sampler();
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites;
 		descriptorWrites[0] = {};

@@ -254,7 +254,9 @@ bool GSceneRenderer::init()
 
 	triangle->init();
 
-	m_cubemapRenderer = GSharedPtr<GCubeRenderer>(new GCubeRenderer(s_device,resourceManager, ((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get()
+	m_cubemapRenderer = GSharedPtr<GCubeRenderer>(new GCubeRenderer(s_device,resourceManager,
+		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(),
+		((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get()
 	,m_viewport, s_shaderManager,m_frameCmds.size(),"assets/bgg.hdr"));
 
 

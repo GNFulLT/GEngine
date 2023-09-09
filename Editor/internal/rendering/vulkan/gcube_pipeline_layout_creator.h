@@ -4,7 +4,7 @@
 #include "engine/rendering/vulkan/igvulkan_graphic_pipeline_layout_creator.h"
 #include <vector>
 #include "public/core/templates/shared_ptr.h"
-
+#include "engine/manager/igpipeline_object_manager.h"
 class IGVulkanLogicalDevice;
 class IGVulkanDescriptorPool;
 struct VkDescriptorSetLayout_T;
@@ -16,7 +16,8 @@ class IGVulkanPipelineLayout;
 class GCubePipelinelayoutCreator : public IGVulkanGraphicPipelineLayoutCreator
 {
 public:
-	GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGCameraManager* cameraManager,GSharedPtr<IGTextureResource> cubeTextureResource,uint32_t framesInFlight);
+	GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGCameraManager* cameraManager,IGPipelineObjectManager* objManager
+		,GSharedPtr<IGTextureResource> cubeTextureResource,uint32_t framesInFlight);
 
 	// Inherited via IGVulkanGraphicPipelineLayoutCreator
 	virtual void inject_create_info(VkGraphicsPipelineCreateInfo* info) override;
@@ -31,6 +32,9 @@ private:
 	IGCameraManager* m_cameraManager;
 	GSharedPtr<IGTextureResource> m_cubeTexture;
 	IGVulkanPipelineLayout* m_pipelineLayout;
+	IGPipelineObjectManager* m_objManager;
+
+	GSharedPtr<IGVulkanNamedSampler> m_cubeSampler;
 };
 
 #endif // GCUBE_PIPELINE_LAYOUT_CREATOR_H

@@ -5,6 +5,7 @@
 #include "engine/rendering/vulkan/ivulkan_descriptor_creator.h"
 #include "public/core/templates/shared_ptr.h"
 #include "public/math/gtransform.h"
+#include "engine/manager/igpipeline_object_manager.h"
 
 class IGVulkanLogicalDevice;
 class IGResourceManager;
@@ -20,10 +21,11 @@ class IGShaderManager;
 class IGVulkanGraphicPipeline;
 class GVulkanCommandBuffer;
 class IGVulkanViewport;
+
 class GCubeRenderer
 {
 public:
-	GCubeRenderer(IGVulkanLogicalDevice*  boundedDevice,IGResourceManager* mng, IGCameraManager* cameraManager, IGVulkanViewport* viewport, IGShaderManager* shaderMng,uint32_t framesInFlight,const char* cubeTexturePath);
+	GCubeRenderer(IGVulkanLogicalDevice*  boundedDevice,IGResourceManager* mng, IGCameraManager* cameraManager,IGPipelineObjectManager* obj ,IGVulkanViewport* viewport, IGShaderManager* shaderMng,uint32_t framesInFlight,const char* cubeTexturePath);
 
 	bool init();
 	
@@ -47,7 +49,7 @@ private:
 	IGVulkanViewport* m_viewport;
 
 	IGVulkanGraphicPipeline* m_pipeline;
-
+	IGPipelineObjectManager* m_obj;
 	gtransform cubeTransform;
 };
 
