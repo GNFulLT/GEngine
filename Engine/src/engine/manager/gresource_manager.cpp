@@ -8,14 +8,13 @@
 #include "engine/resource/igtexture_resource.h"
 #include "internal/engine/resource/gshader_resource.h"
 #include "internal/engine/io/cube_image_loader.h"
-
+#include "engine/gengine.h"
+#include "engine/imanager_table.h"
 GResourceManager::GResourceManager()
 {
 	//X TODO : GDNEWDA
 	m_defaultImageLoader = new STBImageLoader();
-	m_defaultSamplerCreator = new GDefaultSamplerCreator();
 	m_imageLoaders.push_back(m_defaultImageLoader);
-	m_samplerCreators.push_back(m_defaultSamplerCreator);
 	auto cubemaploader = new CubemapImageLoader();
 	assert(add_image_loader(cubemaploader));
 }
@@ -109,7 +108,9 @@ void GResourceManager::destroy_shader_resource(IGShaderResource* shader)
 bool GResourceManager::init()
 {
 	m_logger = GLoggerManager::get_instance()->create_owning_glogger("GResourceManager");
-
+	auto table = GEngine::get_instance()->get_manager_table();
+	m_defaultSamplerCreator = new GDefaultSamplerCreator(((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get());
+	m_samplerCreators.push_back(m_defaultSamplerCreator);
 	return true;
 }
 

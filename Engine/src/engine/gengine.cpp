@@ -320,15 +320,6 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 
-	s_logger->log_d("GEngine", "Beginning to initialize resource manager");
-
-	inited = s_resourceManager->init();
-	if (!inited)
-	{
-		s_logger->log_c("GEngine", "Unknown error occured while initializing resource manager. Engine shutdown");
-		return;
-	}
-
 	//X IT WORKS FOR ONLY GLFW WINDOW
 	VkResult res = glfwCreateWindowSurface((VkInstance)m_vulkanApp->get_vk_instance(), (GLFWwindow*)m_window->get_native_handler(), nullptr,&m_mainSurface);
 	VkSurfaceFormatKHR surfaceFormat = {};
@@ -358,6 +349,15 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 	
+	s_logger->log_d("GEngine", "Beginning to initialize resource manager");
+
+	inited = s_resourceManager->init();
+	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing resource manager. Engine shutdown");
+		return;
+	}
+
 	inited = s_cameraManager->init();
 	
 	if (!inited)

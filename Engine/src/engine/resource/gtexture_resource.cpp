@@ -137,17 +137,19 @@ RESOURCE_INIT_CODE GTextureResource::load_impl()
 
 
 	// Now try to create sampler
-
-	auto samplerRes = m_samplerCreator->create_sampler(m_boundedDevice);
-
-	if(!samplerRes.has_value())
+	if (m_samplerCreator != nullptr)
 	{
+		auto samplerRes = m_samplerCreator->create_sampler(m_boundedDevice);
 
-		return RESOURCE_INIT_CODE_UNKNOWN_EX;
+		if (!samplerRes.has_value())
+		{
+
+			return RESOURCE_INIT_CODE_UNKNOWN_EX;
+		}
+
+		m_inUsageSampler = samplerRes.value();
 	}
 
-	m_inUsageSampler = samplerRes.value();
-	
 	if (m_descriptorCreator != nullptr)
 	{
 		auto descriptorRes = m_descriptorCreator->create_descriptor_set_for_texture(m_gpuBuffer, m_inUsageSampler->get_vk_sampler());
