@@ -7,6 +7,7 @@
 #include "engine/manager/igshader_manager.h"
 #include "engine/manager/igresource_manager.h"
 #include "engine/manager/igcamera_manager.h"
+#include "engine/manager/igpipeline_object_manager.h"
 
 void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 {
@@ -171,4 +172,9 @@ void ManagerTable::delete_managers()
 	{
 		delete (GSharedPtr<IGCameraManager>*)camera;
 	}
+	if (auto pipeline = get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT); pipeline != nullptr)
+	{
+		delete (GSharedPtr<IGPipelineObjectManager>*)pipeline;
+	}
+	
 }

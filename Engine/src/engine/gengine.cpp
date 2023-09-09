@@ -23,6 +23,7 @@
 #include "internal/engine/rendering/vulkan/gvulkan_chained_viewport.h"
 #include "internal/engine/manager/gcamera_manager.h"
 #include "internal/engine/manager/gtimer_manager.h"
+#include "internal/engine/manager/gpipeline_object_manager.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -39,6 +40,7 @@ static GJobManager* s_jobManager;
 static ManagerTable* s_managerTable;
 static IGCameraManager* s_cameraManager;
 static GTimerManager* s_timer;
+static IGPipelineObjectManager* s_pipelineManager;
 GEngine::GEngine()
 {
 	m_window = create_default_window();
@@ -139,6 +141,8 @@ void GEngine::exit()
 	s_logger->log_d("GEngine", "Beginning to destroy main viewport");
 	
 	s_cameraManager->destroy();
+
+	s_pipelineManager->destroy();
 
 	m_vulkanSwapchain->destroy();
 
@@ -343,6 +347,17 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 
+	auto pipelineManager = new GPipelineObjectManager(graphicDevice->get()->as_logical_device().get(), surfaceFormat.format, FRAME_IN_FLIGHT);
+	s_managerTable->set_manager(ENGINE_MANAGER_PIPELINE_OBJECT, new GSharedPtr<IGPipelineObjectManager>(pipelineManager));
+	s_pipelineManager = pipelineManager;
+
+	inited = s_pipelineManager->init();
+	if (!inited)
+	{
+		s_logger->log_c("GEngine", "Unknown error occured while initializing Pipeline Manager. Engine shutdown");
+		return;
+	}
+	
 	inited = s_cameraManager->init();
 	
 	if (!inited)
@@ -397,7 +412,7 @@ IGVulkanViewport* GEngine::create_offscreen_viewport(IGVulkanDescriptorCreator* 
 
 IGVulkanViewport* GEngine::create_offscreen_viewport_depth(IGVulkanDescriptorCreator* descriptor)
 {
-	return new GVulkanOffScreenDepthViewport(s_device->as_logical_device().get(), descriptor);
+	return new GVulkanOffScreenDepthViewport(((GSharedPtr<IGPipelineObjectManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get(),s_device->as_logical_device().get(), descriptor);
 }
 
 IGVulkanChainedViewport* GEngine::create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor, uint32_t imageCount)

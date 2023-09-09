@@ -62,6 +62,8 @@ private:
 	VkViewport m_viewport;
 	VkRect2D m_scissor;
 
+
+
 };
 
 #endif //VULKAN_VIEWPORT_H

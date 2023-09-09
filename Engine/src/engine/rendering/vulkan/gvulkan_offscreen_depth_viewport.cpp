@@ -10,9 +10,11 @@
 #include "internal/engine/manager/glogger_manager.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include <array>
+#include "engine/manager/igpipeline_object_manager.h"
 
-GVulkanOffScreenDepthViewport::GVulkanOffScreenDepthViewport(IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator)
+GVulkanOffScreenDepthViewport::GVulkanOffScreenDepthViewport(IGPipelineObjectManager* mng,IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator)
 {
+	m_pipelineObjectManager = mng;
 	m_boundedDevice = dev;
 	m_descriptorCreator = descriptorCreator;
 	m_image = nullptr;
@@ -31,7 +33,7 @@ GVulkanOffScreenDepthViewport::GVulkanOffScreenDepthViewport(IGVulkanLogicalDevi
 
 void* GVulkanOffScreenDepthViewport::get_vk_current_image_renderpass()
 {
-	return m_renderpass.get_vk_renderpass();
+	return m_renderTarget.get_vk_renderpass();
 }
 
 uint32_t GVulkanOffScreenDepthViewport::get_width() const
@@ -46,8 +48,11 @@ uint32_t GVulkanOffScreenDepthViewport::get_height() const
 
 bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 {
-	m_format = (VkFormat)vkFormat;
+	m_depthRenderpass = m_pipelineObjectManager->get_named_renderpass(IGPipelineObjectManager::RENDER_DEPTH_PASS.data());
+
 	m_depthFormat = VK_FORMAT_D16_UNORM;
+	vkFormat = m_depthRenderpass->get_supported_render_format();
+
 	m_viewport.width = width;
 	m_viewport.height = height;
 	m_scissor.extent.width = width;
@@ -167,76 +172,19 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 	depthClear.depthStencil.depth = 1.f;
 	clearValues.push_back(depthClear);
 
-	std::array<VkAttachmentDescription, 2> attchmentDescriptions = {};
-	//X Render image attachment
-	attchmentDescriptions[0].format = m_format;
-	attchmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	attchmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attchmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	attchmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attchmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attchmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attchmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	//X Depth image attachment
-	attchmentDescriptions[1].format = m_depthFormat;
-	attchmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
-	attchmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attchmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attchmentDescriptions[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attchmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attchmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attchmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	
-	//X Attachment references
-	VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-	VkAttachmentReference depthReference = { 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
-	//X Subpass descriptions for the attachments gave them the references
-	VkSubpassDescription subpassDescription = {};
-	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpassDescription.colorAttachmentCount = 1;
-	subpassDescription.pColorAttachments = &colorReference;
-	subpassDescription.pDepthStencilAttachment = &depthReference;
+	std::vector<VkImageView> renderViews;
+	std::vector<VkImageView> depthViews;
+
+	renderViews.push_back(m_image->get_vk_image_view());
+	depthViews.push_back(m_depthImage->get_vk_image_view());
 
 
-	//X Build the dependencies for layout transition
-	std::array<VkSubpassDependency, 2> dependencies;
+	bool failed = m_renderTarget.init(m_boundedDevice->get_vk_device(), renderViews, depthViews, clearValues,
+		uint32_t(m_viewport.width), uint32_t(m_viewport.height), (VkFormat)m_format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, m_depthRenderpass.get());
 
-	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependencies[0].dstSubpass = 0;
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-	dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	dependencies[0].dependencyFlags = 0;
-
-	dependencies[1].srcSubpass = 0;
-	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	dependencies[1].dependencyFlags = 0;
-
-
-	VkRenderPassCreateInfo renderPassInfo = {};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = static_cast<uint32_t>(attchmentDescriptions.size());
-	renderPassInfo.pAttachments = attchmentDescriptions.data();
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpassDescription;
-	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-	renderPassInfo.pDependencies = dependencies.data();
-
-	m_renderpass.create(m_boundedDevice->get_vk_device(), m_image->get_vk_image_view(), extent.width, extent.height, clearValues, (VkFormat)vkFormat,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		VK_SUBPASS_CONTENTS_INLINE, nullptr, 0,&renderPassInfo, m_depthImage->get_vk_image_view());
-
-	if (m_renderpass.is_failed())
-	{
-		return false;
-	}
+	assert(failed);
 
 
 	VkSamplerCreateInfo samplerInfo{};
@@ -295,10 +243,9 @@ void GVulkanOffScreenDepthViewport::destroy(bool forResize)
 		delete m_image;
 		m_image = nullptr;
 	}
-	if (!m_renderpass.is_failed())
-	{
-		m_renderpass.destroy(m_boundedDevice->get_vk_device(), forResize);
-	}
+	
+	m_renderTarget.destroy(m_boundedDevice->get_vk_device());
+	
 	if (m_sampler != nullptr)
 	{
 		vkDestroySampler(m_boundedDevice->get_vk_device(), m_sampler, nullptr);
@@ -311,22 +258,23 @@ void GVulkanOffScreenDepthViewport::destroy(bool forResize)
 	}
 }
 
+
 void GVulkanOffScreenDepthViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
 {
 	cmd->begin();
-	m_renderpass.begin(cmd->get_handle());
+	m_renderTarget.begin(cmd->get_handle());
 }
 
 void GVulkanOffScreenDepthViewport::end_draw_cmd(GVulkanCommandBuffer* cmd)
 {
 
-	m_renderpass.end(cmd->get_handle());
+	m_renderTarget.end(cmd->get_handle());
 	cmd->end();
 }
 
 IGVulkanRenderPass* GVulkanOffScreenDepthViewport::get_render_pass()
 {
-	return &m_renderpass;
+	return &m_renderTarget;
 }
 
 bool GVulkanOffScreenDepthViewport::can_be_used_as_texture()

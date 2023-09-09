@@ -178,6 +178,7 @@ bool GVulkanSwapchain::need_handle()
 
 bool GVulkanSwapchain::handle()
 {
+	auto oldSwapchain = m_swapchain;
 	m_viewPort->destroy(true);
 
 	for (int i = 0; i < m_imageViews.size(); i++)
@@ -185,6 +186,7 @@ bool GVulkanSwapchain::handle()
 		vkDestroyImageView((VkDevice)m_device->get_vk_device(), m_imageViews[i], nullptr);
 	}
 	init();
+	vkDestroySwapchainKHR((VkDevice)m_device->get_vk_device(), oldSwapchain, nullptr);
 	return true;
 }
 

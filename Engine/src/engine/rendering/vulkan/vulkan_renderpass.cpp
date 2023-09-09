@@ -336,6 +336,7 @@ void GVulkanRenderpass::create(VkDevice dev, VkImageView imageView, uint32_t wid
 	}
 }
 
+
 void GVulkanRenderpass::destroy(VkDevice dev,bool forResize)
 {	
 	if (_info[0].renderPass != nullptr && !forResize)

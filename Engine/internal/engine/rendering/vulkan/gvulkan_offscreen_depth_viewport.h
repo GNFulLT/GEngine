@@ -6,6 +6,9 @@
 
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
 #include "internal/engine/rendering/vulkan/vulkan_renderpass.h"
+#include "engine/manager/igpipeline_object_manager.h"
+#include "internal/engine/rendering/vulkan/gvulkan_render_target.h"
+
 class IGVulkanLogicalDevice;
 class IVulkanImage;
 class IGVulkanDescriptorCreator;
@@ -14,7 +17,7 @@ class IGVulkanDescriptorSet;
 class GVulkanOffScreenDepthViewport : public IGVulkanViewport
 {
 public:
-	GVulkanOffScreenDepthViewport(IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator);
+	GVulkanOffScreenDepthViewport(IGPipelineObjectManager* mng,IGVulkanLogicalDevice* dev, IGVulkanDescriptorCreator* descriptorCreator);
 
 
 	// Inherited via IGVulkanViewport
@@ -30,8 +33,10 @@ public:
 	virtual IGVulkanDescriptorSet* get_descriptor() override;
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
-	GVulkanRenderpass m_renderpass;
+	GVulkanRenderTarget m_renderTarget;
 	VkSampler_T* m_sampler;
+
+	IGPipelineObjectManager* m_pipelineObjectManager;
 
 	//X Render Image
 	IVulkanImage* m_image;
@@ -47,6 +52,8 @@ private:
 
 	VkFormat m_format;
 	VkFormat m_depthFormat;
+	
+	GSharedPtr<IGVulkanNamedRenderPass> m_depthRenderpass;
 
 	// Inherited via IGVulkanViewport
 	virtual const VkViewport* get_viewport_area() const noexcept override;
