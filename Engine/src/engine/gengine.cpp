@@ -407,6 +407,7 @@ IGVulkanApp* GEngine::get_app()
 
 IGVulkanViewport* GEngine::create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor)
 {
+	assert(false);
 	return new GVulkanOffScreenViewport(s_device->as_logical_device().get(), descriptor);
 }
 
@@ -417,6 +418,7 @@ IGVulkanViewport* GEngine::create_offscreen_viewport_depth(IGVulkanDescriptorCre
 
 IGVulkanChainedViewport* GEngine::create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor, uint32_t imageCount)
 {
+	assert(false);
 	return new GVulkanChainedViewport(s_device->as_logical_device().get(), descriptor,imageCount);
 }
 

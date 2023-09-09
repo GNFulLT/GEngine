@@ -42,11 +42,9 @@ public:
 
 	IGVulkanApp* get_app();
 
-	IGVulkanViewport* create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor);
 
 	IGVulkanViewport* create_offscreen_viewport_depth(IGVulkanDescriptorCreator* descriptor);
 
-	IGVulkanChainedViewport* create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor,uint32_t imageCount);
 
 	void destroy_offscreen_viewport(IGVulkanViewport* port);
 	static GEngine* get_instance();
@@ -76,6 +74,10 @@ private:
 	std::vector<GVulkanFrameData*> m_frames;
 	uint32_t m_currentFrame;
 
+//X Need to be changed
+private:
+	IGVulkanChainedViewport* create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor, uint32_t imageCount);
+	IGVulkanViewport* create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor);
 
 	std::queue<std::function<void()>> m_recreationQueues;
 #ifdef _DEBUG
