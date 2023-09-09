@@ -3,6 +3,7 @@
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_renderpass.h"
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_sampler.h"
+#include "internal/engine/rendering/vulkan/named/pipelayouts/gvulkan_named_pipeline_layout_camera.h"
 
 GPipelineObjectManager::GPipelineObjectManager(IGVulkanLogicalDevice* logicalDevice,VkFormat swapchainFormat, uint32_t framesInFlight)
 {
@@ -41,13 +42,14 @@ GSharedPtr<IGVulkanNamedSampler> GPipelineObjectManager::get_named_sampler(const
 
 bool GPipelineObjectManager::init_named_objects()
 {
-	return init_named_renderpass() && init_named_sampler();
+	return init_named_renderpass() && init_named_sampler() && init_named_pipeline_layouts();
 }
 
 void GPipelineObjectManager::destroy_named_objects()
 {
 	destroy_named_renderpass();
 	destroy_named_sampler();
+	destroy_named_pipeline_layouts();
 }
 
 bool GPipelineObjectManager::init_named_renderpass()
@@ -248,5 +250,28 @@ void GPipelineObjectManager::destroy_named_sampler()
 			//X TODO : LOG HERE
 		}
 		((GVulkanNamedSampler*)rp->get())->destroy();
+	}
+}
+
+bool GPipelineObjectManager::init_named_pipeline_layouts()
+{
+	GVulkanNamedPipelineLayoutCamera* onlyCam = new GVulkanNamedPipelineLayoutCamera(m_logicalDevice, "only_cam_layout");
+	auto inited = onlyCam->init();
+	if (!inited)
+		return false;
+
+	m_namedPipelineLayoutMap.emplace("only_cam_layout", GSharedPtr<IGVulkanNamedPipelineLayout>(onlyCam));
+}
+
+void GPipelineObjectManager::destroy_named_pipeline_layouts()
+{
+	for (auto pair : m_namedPipelineLayoutMap)
+	{
+		auto rp = &pair.second;
+		if (rp->get_shared_ref_count() != 2)
+		{
+			//X TODO : LOG HERE
+		}
+		rp->get()->destroy();
 	}
 }

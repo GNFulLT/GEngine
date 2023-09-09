@@ -5,6 +5,7 @@
 #include "public/core/templates/shared_ptr.h"
 #include "engine/rendering/vulkan/named/igvulkan_named_renderpass.h"
 #include "engine/rendering/vulkan/named/igvulkan_named_sampler.h"
+#include "engine/rendering/vulkan/named/igvulkan_named_pipeline_layout.h"
 
 class IGPipelineObjectManager
 {

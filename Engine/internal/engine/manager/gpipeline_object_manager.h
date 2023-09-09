@@ -31,11 +31,15 @@ private:
 	bool init_named_sampler();
 	void destroy_named_sampler();
 
+	bool init_named_pipeline_layouts();
+	void destroy_named_pipeline_layouts();
+
 	VkFormat m_swapchainFormat;
 	uint32_t m_framesInFlight;
 	IGVulkanLogicalDevice* m_logicalDevice;
 	ankerl::unordered_dense::segmented_map<std::string, GSharedPtr<IGVulkanNamedRenderPass>> m_namedRenderpassMap;
 	ankerl::unordered_dense::segmented_map<std::string, GSharedPtr<IGVulkanNamedSampler>> m_namedSamplerMap;
+	ankerl::unordered_dense::segmented_map<std::string, GSharedPtr<IGVulkanNamedPipelineLayout>> m_namedPipelineLayoutMap;
 
 };
 
