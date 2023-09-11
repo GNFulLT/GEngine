@@ -10,6 +10,7 @@ class IGShaderResource;
 class IVulkanShaderStage;
 class IGVulkanGraphicPipeline;
 class GCubeRenderer;
+class GridRenderer;
 
 #include "internal/rendering/renderable.h"
 
@@ -43,7 +44,7 @@ private:
 	IVulkanShaderStage* m_vertexShaderStage = nullptr;
 
 	GSharedPtr<GCubeRenderer> m_cubemapRenderer;
-
+	GSharedPtr< GridRenderer> m_gridRenderer;
 	Renderable* triangle;
 };
 

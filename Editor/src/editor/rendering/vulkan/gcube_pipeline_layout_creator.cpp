@@ -31,6 +31,7 @@ void GCubePipelinelayoutCreator::inject_create_info(VkGraphicsPipelineCreateInfo
 
 std::expected<IGVulkanPipelineLayout*, LAYOUT_CREATOR_ERROR> GCubePipelinelayoutCreator::create_layout_for(IGVulkanGraphicPipeline* pipeline)
 {
+	
 	//X First push constant
 	VkPushConstantRange push_constant;
 

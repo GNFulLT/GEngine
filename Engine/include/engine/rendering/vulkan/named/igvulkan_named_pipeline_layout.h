@@ -10,6 +10,7 @@ class IGVulkanNamedPipelineLayout
 public:
 	virtual ~IGVulkanNamedPipelineLayout() = default;
 	virtual VkPipelineLayout_T* get_vk_pipeline_layout() const noexcept= 0;
+	virtual VkDescriptorSetLayout_T* get_vk_pipeline_set_layout() const noexcept = 0;
 
 	virtual void destroy() = 0;
 private:

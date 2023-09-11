@@ -45,7 +45,7 @@ public:
 	{
 		return &m_defaultQueue;
 	}
-
+	virtual IGVulkanGraphicPipelineState* create_custom_color_blend_state(const VkPipelineColorBlendAttachmentState* attachment, const VkPipelineColorBlendStateCreateInfo* inf) override;
 	virtual IGVulkanQueue* get_present_queue() noexcept override;
 
 	virtual IGVulkanQueue* get_render_queue() noexcept override;
@@ -55,7 +55,7 @@ public:
 	virtual bool begin_command_buffer_record(GVulkanCommandBuffer* buff) override;
 
 	virtual void end_command_buffer_record(GVulkanCommandBuffer* buff) override;
-
+	virtual IGVulkanGraphicPipelineState* create_custom_depth_stencil_state(const VkPipelineDepthStencilStateCreateInfo* info) override;
 	virtual std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_buffer(uint64_t size, uint32_t bufferUsageFlag, VmaMemoryUsage memoryUsageFlag ) override;
 
 	virtual std::expected< IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> create_image(const VkImageCreateInfo* imageCreateInfo, VmaMemoryUsage memoryUsageFlag) override;

@@ -52,7 +52,7 @@ std::expected<IGVulkanShaderInfo*, SHADER_LAYOUT_BINDING_ERROR> GEditorShaderMan
 	return m_defaultShaderMng->get()->get_layout_bindings_from(shaderHandle);
 }
 
-std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GEditorShaderManager::create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes)
+std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GEditorShaderManager::create_shader_stage_from_shader_res(IGShaderResource* shaderRes)
 {
 	return m_defaultShaderMng->get()->create_shader_stage_from_shader_res(shaderRes);
 }

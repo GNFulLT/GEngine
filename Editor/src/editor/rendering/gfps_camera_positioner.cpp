@@ -18,7 +18,7 @@ GEditorFPSCameraPositioner::GEditorFPSCameraPositioner(ImGuiWindowManager* windo
 {
 	p_windowManager = windowManager;
 	p_mouseManager = nullptr;
-	m_projection = glm::perspective(70.f, 16.f / 9.f, 0.1f, 1000.f);
+	m_projection = glm::perspective(70.f, 16.f / 9.f, 0.001f, 1000.f);
 	cameraPosition_ = glm::vec3(1, 0, -5.f);
 	up_ = glm::vec3(0,1,0);
 	cameraOrientation_ = glm::lookAt(cameraPosition_,glm::vec3(0,0,-1), up_);

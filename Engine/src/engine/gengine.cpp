@@ -70,7 +70,7 @@ GEngine::GEngine()
 
 	m_currentFrame = 0;
 }
-
+	
 void GEngine::run()
 {
 	GSharedPtr<IGVulkanDevice>* graphicDevice = (GSharedPtr<IGVulkanDevice>*)m_managerTable->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);

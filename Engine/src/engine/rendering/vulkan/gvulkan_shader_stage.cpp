@@ -3,7 +3,7 @@
 #include "engine/resource/igshader_resource.h"
 #include "internal/engine/shader/spirv_shader_utils.h"
 
-GVulkanShaderStage::GVulkanShaderStage(GSharedPtr<IGShaderResource> shaderRes)
+GVulkanShaderStage::GVulkanShaderStage(IGShaderResource* shaderRes)
 {
 	m_shaderResource = shaderRes;
 	m_createInfo = {};
@@ -23,10 +23,10 @@ const VkPipelineShaderStageCreateInfo* GVulkanShaderStage::get_creation_info()
 
 IGShaderResource* GVulkanShaderStage::get_shader_resource()
 {
-	return m_shaderResource.get();
+	return m_shaderResource;
 }
 
 bool GVulkanShaderStage::is_valid()
 {
-	return m_shaderResource.is_valid() && m_shaderResource->get_resource_state() == RESOURCE_LOADING_STATE_LOADED;
+	return m_shaderResource->get_resource_state() == RESOURCE_LOADING_STATE_LOADED;
 }

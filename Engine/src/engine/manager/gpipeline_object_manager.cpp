@@ -255,12 +255,13 @@ void GPipelineObjectManager::destroy_named_sampler()
 
 bool GPipelineObjectManager::init_named_pipeline_layouts()
 {
-	GVulkanNamedPipelineLayoutCamera* onlyCam = new GVulkanNamedPipelineLayoutCamera(m_logicalDevice, "only_cam_layout");
+	GVulkanNamedPipelineLayoutCamera* onlyCam = new GVulkanNamedPipelineLayoutCamera(m_logicalDevice, this->CAMERA_PIPE_LAYOUT.data());
 	auto inited = onlyCam->init();
 	if (!inited)
 		return false;
 
-	m_namedPipelineLayoutMap.emplace("only_cam_layout", GSharedPtr<IGVulkanNamedPipelineLayout>(onlyCam));
+	auto ptr = GSharedPtr<IGVulkanNamedPipelineLayout>(onlyCam);
+	m_namedPipelineLayoutMap.emplace(std::string(this->CAMERA_PIPE_LAYOUT.data()),ptr);
 }
 
 void GPipelineObjectManager::destroy_named_pipeline_layouts()
@@ -274,4 +275,13 @@ void GPipelineObjectManager::destroy_named_pipeline_layouts()
 		}
 		rp->get()->destroy();
 	}
+}
+
+IGVulkanNamedPipelineLayout* GPipelineObjectManager::get_named_pipeline_layout(const char* name)
+{
+	if (auto rp = m_namedPipelineLayoutMap.find(std::string(name)); rp != m_namedPipelineLayoutMap.end())
+	{
+		return rp->second.get();
+	}
+	return nullptr;
 }

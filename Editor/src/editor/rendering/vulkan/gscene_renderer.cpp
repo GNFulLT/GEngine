@@ -26,6 +26,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include "engine/rendering/igvulkan_frame_data.h"
 #include "internal/rendering/vulkan/gcube_renderer.h"
+#include "internal/rendering/vulkan/ggrid_renderer.h"
 
 static int ct = 0;
 static int perFrameCmd = 2;
@@ -91,6 +92,9 @@ void GSceneRenderer::render_the_scene()
 	vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &modelMatrix);
 
 	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);
+
+
+	m_gridRenderer->render(frameCmd, currIndex);
 
 	vp->end_draw_cmd(frameCmd);
 
@@ -169,7 +173,7 @@ bool GSceneRenderer::init()
 	}
 
 	auto s_device = dev->get()->as_logical_device().get();
-	auto stageRes = s_shaderManager->create_shader_stage_from_shader_res(m_basicVertexShader);
+	auto stageRes = s_shaderManager->create_shader_stage_from_shader_res(m_basicVertexShader.get());
 	if (stageRes.has_value())
 	{
 		m_vertexShaderStage = stageRes.value();
@@ -179,7 +183,7 @@ bool GSceneRenderer::init()
 		assert(false);
 	}
 
-	auto stageRes2 = s_shaderManager->create_shader_stage_from_shader_res(m_basicFragShader);
+	auto stageRes2 = s_shaderManager->create_shader_stage_from_shader_res(m_basicFragShader.get());
 	if (stageRes2.has_value())
 	{
 		m_fragShaderStage = stageRes2.value();
@@ -259,13 +263,19 @@ bool GSceneRenderer::init()
 		((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get()
 	,m_viewport, s_shaderManager,m_frameCmds.size(),"assets/bgg.hdr"));
 
+	m_gridRenderer = GSharedPtr<GridRenderer>(new GridRenderer(s_device, resourceManager,
+		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(),
+		((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get()
+		, m_viewport, s_shaderManager, m_frameCmds.size()));
 
 	assert(m_cubemapRenderer->init());
+	assert(m_gridRenderer->init());
 	return true;
 }
 
 void GSceneRenderer::destroy()
 {
+	m_gridRenderer->destroy();
 	m_cubemapRenderer->destroy();
 	triangle->destroy();
 	delete triangle;

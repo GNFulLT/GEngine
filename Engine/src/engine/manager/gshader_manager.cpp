@@ -82,7 +82,7 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shade
 	return spirvShader;
 }
 	
-std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GShaderManager::create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes)
+std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> GShaderManager::create_shader_stage_from_shader_res(IGShaderResource* shaderRes)
 {
 	return new GVulkanShaderStage(shaderRes);
 }

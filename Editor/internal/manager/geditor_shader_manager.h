@@ -18,7 +18,7 @@ public:
 	void editor_init();
 
 	// Inherited via IGShaderManager
-	virtual std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> create_shader_stage_from_shader_res(GSharedPtr<IGShaderResource> shaderRes) override;
+	virtual std::expected<IVulkanShaderStage*, SHADER_STAGE_CREATE_ERROR> create_shader_stage_from_shader_res(IGShaderResource* shaderRes) override;
 	// Inherited via IGShaderManager
 	virtual std::expected<IGVulkanShaderInfo*, SHADER_LAYOUT_BINDING_ERROR> get_layout_bindings_from(ISpirvShader* shaderHandle) override;
 

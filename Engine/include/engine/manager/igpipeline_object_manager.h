@@ -12,6 +12,8 @@ class IGPipelineObjectManager
 public:
 	inline static constexpr std::string_view RENDER_DEPTH_PASS = "render_depth_pass";
 	inline static constexpr std::string_view MAX_PERFORMANT_SAMPLER = "max_performant_sampler";
+	inline static constexpr std::string_view CAMERA_PIPE_LAYOUT = "camera_pipe_layout";
+
 	virtual ~IGPipelineObjectManager() = default;
 
 	virtual bool init() = 0;
@@ -21,6 +23,7 @@ public:
 
 	virtual GSharedPtr<IGVulkanNamedRenderPass> get_named_renderpass(const char* name) = 0;
 	virtual GSharedPtr<IGVulkanNamedSampler> get_named_sampler(const char* name) = 0;
+	virtual IGVulkanNamedPipelineLayout* get_named_pipeline_layout(const char* name) = 0;
 private:
 };
 

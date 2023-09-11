@@ -1,5 +1,13 @@
 #include "internal/engine/rendering/vulkan/gvulkan_color_blend_state.h"
+#include <cassert>
+GVulkanColorBlendState::GVulkanColorBlendState(const VkPipelineColorBlendAttachmentState* attachment, const VkPipelineColorBlendStateCreateInfo* inf)
+{
+	assert(inf->attachmentCount == 1);
 
+	m_attachmentState = *attachment;
+	m_createInfo = *inf;
+	m_createInfo.pAttachments = &m_attachmentState;
+}
 GVulkanColorBlendState::GVulkanColorBlendState()
 {
 	m_attachmentState = {};

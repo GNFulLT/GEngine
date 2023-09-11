@@ -36,7 +36,7 @@ enum VULKAN_IMAGE_CREATION_ERROR
 {
 	VULKAN_IMAGE_CREATION_ERROR_UNKNOWN
 };
-
+struct VkPipelineColorBlendAttachmentState;
 enum VmaMemoryUsage;
 class ITransferHandle;
 enum TRANSFER_QUEUE_GET_ERR;
@@ -46,6 +46,8 @@ class IGVulkanDescriptorPool;
 class IGVulkanUniformBuffer;
 class IGVulkanGraphicPipelineState;
 class IGVulkanViewport;
+struct VkPipelineColorBlendStateCreateInfo;
+struct VkPipelineDepthStencilStateCreateInfo;
 
 class ENGINE_API IGVulkanLogicalDevice
 {
@@ -118,7 +120,10 @@ public:
 	virtual IGVulkanGraphicPipelineState* create_default_viewport_state(uint32_t width, uint32_t height) = 0;
 
 	virtual IGVulkanGraphicPipelineState* create_default_color_blend_state() = 0;
+	
+	virtual IGVulkanGraphicPipelineState* create_custom_depth_stencil_state(const VkPipelineDepthStencilStateCreateInfo* info) = 0;
 
+	virtual IGVulkanGraphicPipelineState* create_custom_color_blend_state(const VkPipelineColorBlendAttachmentState* attachment, const VkPipelineColorBlendStateCreateInfo* inf) = 0;
 	//X Stencil test is off for the default state
 	virtual IGVulkanGraphicPipelineState* create_default_depth_stencil_state() = 0;
 

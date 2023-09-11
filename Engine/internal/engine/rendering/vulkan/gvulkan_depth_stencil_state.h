@@ -8,6 +8,7 @@
 class GVulkanDepthStencilState : public IGVulkanGraphicPipelineState
 {
 public:
+	GVulkanDepthStencilState(const VkPipelineDepthStencilStateCreateInfo* state);
 	GVulkanDepthStencilState();
 
 	// Inherited via IGVulkanGraphicPipelineState

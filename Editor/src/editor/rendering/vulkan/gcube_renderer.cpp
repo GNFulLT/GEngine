@@ -47,7 +47,7 @@ GCubeRenderer::GCubeRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceMan
 	{
 		m_cubemapFragShader = GSharedPtr<IGShaderResource>(shaderRes.value());
 	}
-	cubeTransform.scale = gvec3(50, 50, 50);
+	cubeTransform.scale = gvec3(150, 150, 150);
 }
 
 bool GCubeRenderer::init()
@@ -78,8 +78,8 @@ bool GCubeRenderer::init()
 	m_pipelineCreator = new GCubePipelinelayoutCreator(m_boundedDevice,p_cameraManager,m_obj,m_cubemapTextureResource,m_framesInFlight);
 	//X TODO : CHANAGE TO THE RENDERPASS NOT VIEWPORT
 	
-	m_cubemapFragStage = m_shaderManager->create_shader_stage_from_shader_res(m_cubemapFragShader).value();
-	m_cubemapVertexStage = m_shaderManager->create_shader_stage_from_shader_res(m_cubemapVertexShader).value();
+	m_cubemapFragStage = m_shaderManager->create_shader_stage_from_shader_res(m_cubemapFragShader.get()).value();
+	m_cubemapVertexStage = m_shaderManager->create_shader_stage_from_shader_res(m_cubemapVertexShader.get()).value();
 
 	std::vector<IVulkanShaderStage*> stages(2);
 	stages[0] = m_cubemapVertexStage;

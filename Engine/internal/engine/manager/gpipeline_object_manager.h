@@ -20,6 +20,7 @@ public:
 
 	virtual GSharedPtr<IGVulkanNamedRenderPass> get_named_renderpass(const char* name) override;
 	virtual GSharedPtr<IGVulkanNamedSampler> get_named_sampler(const char* name) override;
+	virtual IGVulkanNamedPipelineLayout* get_named_pipeline_layout(const char* name) override;
 
 private:
 	bool init_named_objects();

@@ -7,6 +7,7 @@
 GVulkanNamedPipelineLayoutCamera::GVulkanNamedPipelineLayoutCamera(IGVulkanLogicalDevice* dev,const char* name)
 {
 	m_layout = nullptr;
+	m_boundedDevice = dev;
 	m_name = name;
 }
 bool GVulkanNamedPipelineLayoutCamera::init()
@@ -22,11 +23,8 @@ bool GVulkanNamedPipelineLayoutCamera::init()
 	VkDescriptorSetLayoutCreateInfo setinfo = {};
 	setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	setinfo.pNext = nullptr;
-	//we are going to have 1 binding
 	setinfo.bindingCount = bindings.size();
-	//no flags
 	setinfo.flags = 0;
-	//point to the camera buffer binding
 	setinfo.pBindings = bindings.data();
 
 	auto res = vkCreateDescriptorSetLayout(m_boundedDevice->get_vk_device(), &setinfo, nullptr, &m_descriptorSetLayout);
@@ -50,7 +48,7 @@ bool GVulkanNamedPipelineLayoutCamera::init()
 	inf.pPushConstantRanges = &push_constant;
 
 
-	auto res = vkCreatePipelineLayout(m_boundedDevice->get_vk_device(), &inf, nullptr, &m_layout);
+	res = vkCreatePipelineLayout(m_boundedDevice->get_vk_device(), &inf, nullptr, &m_layout);
 
 	if (res != VK_SUCCESS)
 	{
@@ -78,3 +76,9 @@ VkPipelineLayout_T* GVulkanNamedPipelineLayoutCamera::get_vk_pipeline_layout() c
 {
 	return m_layout;
 }
+
+VkDescriptorSetLayout_T* GVulkanNamedPipelineLayoutCamera::get_vk_pipeline_set_layout() const noexcept
+{
+	return m_descriptorSetLayout;
+}
+

@@ -10,7 +10,7 @@ class GVulkanColorBlendState : public IGVulkanGraphicPipelineState
 {
 public:
 	GVulkanColorBlendState();
-
+	GVulkanColorBlendState(const VkPipelineColorBlendAttachmentState* attachment,const VkPipelineColorBlendStateCreateInfo* inf);
 	virtual GRAPHIC_PIPELINE_STATE get_pipeline_state() override;
 	virtual void fill_pipeline_create_info(VkGraphicsPipelineCreateInfo* createInfo) override;
 private:

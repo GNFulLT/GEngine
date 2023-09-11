@@ -14,6 +14,7 @@ public:
 	bool init();
 	virtual void destroy() override;
 	virtual VkPipelineLayout_T* get_vk_pipeline_layout() const noexcept override;
+	virtual VkDescriptorSetLayout_T* get_vk_pipeline_set_layout() const noexcept override;
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
 	VkPipelineLayout_T* m_layout;

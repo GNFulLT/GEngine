@@ -295,7 +295,10 @@ IGVulkanPhysicalDevice* GVulkanLogicalDevice::get_bounded_physical_device()
 	auto physical=  m_physicalDev.as_shared();
 	return physical.get();
 }
-
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_custom_color_blend_state(const VkPipelineColorBlendAttachmentState* attachment, const VkPipelineColorBlendStateCreateInfo* inf)
+{
+	return new GVulkanColorBlendState(attachment, inf);
+}
 IGVulkanQueue* GVulkanLogicalDevice::get_present_queue() noexcept
 {
 	return &m_defaultQueue;
@@ -486,7 +489,10 @@ IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_vertex_input_state(co
 	return new GVulkanVertexState(vertexBindingDescription == nullptr ? std::vector<VkVertexInputBindingDescription>() : *vertexBindingDescription, attributeDescription == nullptr ? std::vector<VkVertexInputAttributeDescription>() : *attributeDescription);
 
 }
-
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_custom_depth_stencil_state(const VkPipelineDepthStencilStateCreateInfo* info)
+{
+	return new GVulkanDepthStencilState(info);
+}
 IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_default_input_assembly_state()
 {
 	return new GVulkanInputAssemblyState();

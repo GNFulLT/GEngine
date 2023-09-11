@@ -1,5 +1,9 @@
 #include "internal/engine/rendering/vulkan/gvulkan_depth_stencil_state.h"
 
+GVulkanDepthStencilState::GVulkanDepthStencilState(const VkPipelineDepthStencilStateCreateInfo* state)
+{
+	info = *state;
+}
 GVulkanDepthStencilState::GVulkanDepthStencilState()
 {
 	info = {};
