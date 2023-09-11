@@ -105,6 +105,11 @@ void GridRenderer::destroy()
 	delete m_gridFrag;
 }
 
+bool GridRenderer::wants_render() const noexcept
+{
+	return m_wantsRender;
+}
+
 void GridRenderer::render(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
 {
 	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->get_pipeline());
@@ -119,5 +124,10 @@ void GridRenderer::render(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
 	vkCmdPushConstants(cmd->get_handle(), m_pipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &mat);
 	vkCmdPushConstants(cmd->get_handle(), m_pipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(gmat4), sizeof(GridSpec), &m_spec);
 	vkCmdDraw(cmd->get_handle(), 6, 1, 0, 0);
+}
+
+GridSpec* GridRenderer::get_spec() noexcept
+{
+	return &m_spec;
 }
 

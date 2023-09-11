@@ -527,6 +527,9 @@ void ImGuiWindowManager::dock_the_window_if_needs(GImGuiWindow* win)
 		case GIMGUIWINDOWDIR_BOTTOM:
 			dirId = dock_id_bottom;
 			break;
+		case GIMGUIWINDOWDIR_LEFT_BOTTOM:
+			dirId = dock_id_left_bottom;
+			break;
 		default:
 			break;
 		}

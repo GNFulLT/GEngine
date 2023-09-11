@@ -7,11 +7,12 @@
 #include <string>
 class IGVulkanViewport;
 class GImGuiWindowStorage;
+class GridRenderer;
 
 class GImGuiGridSettingsWindow : public IGImGuiWindowImpl
 {
 public:
-	GImGuiGridSettingsWindow();
+	GImGuiGridSettingsWindow(GridRenderer* renderer);
 	// Inherited via IGImGuiWindowImpl
 	virtual bool init() override;
 	virtual void set_storage(GImGuiWindowStorage* storage) override;
@@ -23,7 +24,7 @@ public:
 	virtual const char* get_window_name() override;
 private:
 	std::string m_windowName;
-	
+	GridRenderer* m_renderer;
 };
 
 #endif // GIMGUI_GRID_SETTINGS_WINDOW_H

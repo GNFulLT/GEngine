@@ -27,9 +27,12 @@
 #include "engine/rendering/igvulkan_frame_data.h"
 #include "internal/rendering/vulkan/gcube_renderer.h"
 #include "internal/rendering/vulkan/ggrid_renderer.h"
+#include "internal/imgui_layer.h"
+#include "internal/imgui_window_manager.h"
+#include "internal/window/gimgui_grid_settings_window.h"
+static int perFrameCmd = 2;
 
 static int ct = 0;
-static int perFrameCmd = 2;
 GSceneRenderer::GSceneRenderer(IGVulkanViewport* viewport,IGVulkanDevice* device)
 {
 	m_viewport = viewport;
@@ -93,8 +96,10 @@ void GSceneRenderer::render_the_scene()
 
 	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);
 
-
-	m_gridRenderer->render(frameCmd, currIndex);
+	if (m_gridRenderer->wants_render())
+	{
+		m_gridRenderer->render(frameCmd, currIndex);
+	}
 
 	vp->end_draw_cmd(frameCmd);
 
@@ -270,6 +275,12 @@ bool GSceneRenderer::init()
 
 	assert(m_cubemapRenderer->init());
 	assert(m_gridRenderer->init());
+
+	auto win = new GImGuiGridSettingsWindow(m_gridRenderer.get());
+	if (!EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->create_imgui_window(win, GIMGUIWINDOWDIR_LEFT_BOTTOM))
+	{
+		delete win;
+	}
 	return true;
 }
 

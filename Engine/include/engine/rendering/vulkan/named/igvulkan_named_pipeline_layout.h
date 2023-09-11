@@ -4,6 +4,7 @@
 #include "engine/rendering/vulkan/ivulkan_renderpass.h"
 
 struct VkPipelineLayout_T;
+struct VkDescriptorSetLayout_T;
 
 class IGVulkanNamedPipelineLayout
 {

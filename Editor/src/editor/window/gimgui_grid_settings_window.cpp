@@ -1,8 +1,11 @@
 #include "internal/window/gimgui_grid_settings_window.h"
+#include "internal/rendering/vulkan/ggrid_renderer.h"
+#include <imgui/imgui.h>
 
-GImGuiGridSettingsWindow::GImGuiGridSettingsWindow()
+GImGuiGridSettingsWindow::GImGuiGridSettingsWindow(GridRenderer* renderer)
 {
 	m_windowName = "Grid Settings";
+	m_renderer = renderer;
 }
 
 bool GImGuiGridSettingsWindow::init()
@@ -21,6 +24,8 @@ bool GImGuiGridSettingsWindow::need_render()
 
 void GImGuiGridSettingsWindow::render()
 {
+	ImGui::Checkbox("Enabled",&m_renderer->m_wantsRender);
+	ImGui::SliderFloat("Grid Cell Size",&m_renderer->m_spec.gridCellSize,0.01f,1.0f);
 }
 
 void GImGuiGridSettingsWindow::on_resize()

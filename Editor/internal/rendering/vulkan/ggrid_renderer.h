@@ -21,8 +21,11 @@ class GGridPipelineLayoutCreator;
 #include <cstdint>
 #include "internal/rendering/grid_spec.h"
 
+class GImGuiGridSettingsWindow;
+
 class GridRenderer
 {
+	friend class GImGuiGridSettingsWindow;
 public:
 	GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng, IGCameraManager* cameraManager,
 		IGPipelineObjectManager* obj, IGVulkanViewport* viewport, IGShaderManager* shaderMng, uint32_t framesInFlight);
@@ -31,7 +34,11 @@ public:
 
 	void destroy();
 	
+	bool wants_render() const noexcept;
+	
 	void render(GVulkanCommandBuffer* cmd,uint32_t frameIndex);
+private:
+	GridSpec* get_spec() noexcept;
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
 	IGCameraManager* p_cameraManager;
@@ -51,6 +58,8 @@ private:
 	GGridPipelineLayoutCreator* m_pipelineLayoutCreator;
 
 	gtransform transform;
+
+	bool m_wantsRender = true;
 
 	GridSpec m_spec;
 };
