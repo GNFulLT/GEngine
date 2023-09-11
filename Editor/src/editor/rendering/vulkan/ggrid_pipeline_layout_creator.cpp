@@ -71,8 +71,8 @@ std::expected<IGVulkanDescriptorPool*, LAYOUT_CREATOR_ERROR> GGridPipelineLayout
 
 	auto camLayout = m_pipelineObjectManager->get_named_pipeline_layout(m_pipelineObjectManager->CAMERA_PIPE_LAYOUT.data());
 
-	//X We wants same pipeline set layout
-	m_descriptorSetLayout = camLayout->get_vk_pipeline_set_layout();
+	//X We wants same pipeline set layout	
+	m_descriptorSetLayout = camLayout->get_pipeline_set_layout()->get_layout();
 
 	std::vector<VkDescriptorSetLayout> layouts(m_framesInFlight, m_descriptorSetLayout);
 

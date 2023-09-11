@@ -6,6 +6,7 @@
 #include "engine/rendering/vulkan/named/igvulkan_named_renderpass.h"
 #include "engine/rendering/vulkan/named/igvulkan_named_sampler.h"
 #include "engine/rendering/vulkan/named/igvulkan_named_pipeline_layout.h"
+#include "engine/rendering/vulkan/named/igvulkan_named_set_layout.h"
 
 class IGPipelineObjectManager
 {
@@ -13,6 +14,7 @@ public:
 	inline static constexpr std::string_view RENDER_DEPTH_PASS = "render_depth_pass";
 	inline static constexpr std::string_view MAX_PERFORMANT_SAMPLER = "max_performant_sampler";
 	inline static constexpr std::string_view CAMERA_PIPE_LAYOUT = "camera_pipe_layout";
+	inline static constexpr std::string_view UVERT_LAYOUT = "uvert_set_layout";
 
 	virtual ~IGPipelineObjectManager() = default;
 

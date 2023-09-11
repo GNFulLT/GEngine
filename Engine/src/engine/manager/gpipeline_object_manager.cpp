@@ -4,6 +4,7 @@
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_renderpass.h"
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_sampler.h"
 #include "internal/engine/rendering/vulkan/named/pipelayouts/gvulkan_named_pipeline_layout_camera.h"
+#include "internal/engine/rendering/vulkan/named/gvulkan_named_set_layout.h"
 
 GPipelineObjectManager::GPipelineObjectManager(IGVulkanLogicalDevice* logicalDevice,VkFormat swapchainFormat, uint32_t framesInFlight)
 {
@@ -42,14 +43,15 @@ GSharedPtr<IGVulkanNamedSampler> GPipelineObjectManager::get_named_sampler(const
 
 bool GPipelineObjectManager::init_named_objects()
 {
-	return init_named_renderpass() && init_named_sampler() && init_named_pipeline_layouts();
+	return init_named_renderpass() && init_named_sampler() && init_named_set_layouts() && init_named_pipeline_layouts();
 }
 
 void GPipelineObjectManager::destroy_named_objects()
 {
-	destroy_named_renderpass();
-	destroy_named_sampler();
 	destroy_named_pipeline_layouts();
+	destroy_named_set_layouts();
+	destroy_named_sampler();
+	destroy_named_renderpass();
 }
 
 bool GPipelineObjectManager::init_named_renderpass()
@@ -255,7 +257,7 @@ void GPipelineObjectManager::destroy_named_sampler()
 
 bool GPipelineObjectManager::init_named_pipeline_layouts()
 {
-	GVulkanNamedPipelineLayoutCamera* onlyCam = new GVulkanNamedPipelineLayoutCamera(m_logicalDevice, this->CAMERA_PIPE_LAYOUT.data());
+	GVulkanNamedPipelineLayoutCamera* onlyCam = new GVulkanNamedPipelineLayoutCamera(m_logicalDevice,get_named_set_layout(this->UVERT_LAYOUT.data()), this->CAMERA_PIPE_LAYOUT.data());
 	auto inited = onlyCam->init();
 	if (!inited)
 		return false;
@@ -277,9 +279,61 @@ void GPipelineObjectManager::destroy_named_pipeline_layouts()
 	}
 }
 
+bool GPipelineObjectManager::init_named_set_layouts()
+{
+	{
+		std::array<VkDescriptorSetLayoutBinding, 1> bindings;
+		bindings[0].binding = 0;
+		bindings[0].descriptorCount = 1;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		bindings[0].pImmutableSamplers = nullptr;
+
+
+		VkDescriptorSetLayoutCreateInfo setinfo = {};
+		setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		setinfo.pNext = nullptr;
+		setinfo.bindingCount = bindings.size();
+		setinfo.flags = 0;
+		setinfo.pBindings = bindings.data();
+
+		VkDescriptorSetLayout layout;
+		auto res = vkCreateDescriptorSetLayout(m_logicalDevice->get_vk_device(), &setinfo, nullptr, &layout);
+		if (res != VK_SUCCESS)
+		{
+			return false;
+		}
+		GSharedPtr<IGVulkanNamedSetLayout> ptr = GSharedPtr<IGVulkanNamedSetLayout>(new GVulkanNamedSetLayout(m_logicalDevice,layout,this->UVERT_LAYOUT.data()));
+		m_namedSetLayoutMap.emplace(this->UVERT_LAYOUT,ptr);
+	}
+	return true;
+}
+
+void GPipelineObjectManager::destroy_named_set_layouts()
+{
+	for (auto pair : m_namedSetLayoutMap)
+	{
+		auto rp = &pair.second;
+		if (rp->get_shared_ref_count() != 2)
+		{
+			//X TODO : LOG HERE
+		}
+		rp->get()->destroy();
+	}
+}
+
 IGVulkanNamedPipelineLayout* GPipelineObjectManager::get_named_pipeline_layout(const char* name)
 {
 	if (auto rp = m_namedPipelineLayoutMap.find(std::string(name)); rp != m_namedPipelineLayoutMap.end())
+	{
+		return rp->second.get();
+	}
+	return nullptr;
+}
+
+IGVulkanNamedSetLayout* GPipelineObjectManager::get_named_set_layout(const char* name)
+{
+	if (auto rp = m_namedSetLayoutMap.find(std::string(name)); rp != m_namedSetLayoutMap.end())
 	{
 		return rp->second.get();
 	}

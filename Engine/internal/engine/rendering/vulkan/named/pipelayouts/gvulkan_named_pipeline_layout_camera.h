@@ -10,15 +10,15 @@ class IGVulkanLogicalDevice;
 class GVulkanNamedPipelineLayoutCamera : public IGVulkanNamedPipelineLayout
 {
 public:
-	GVulkanNamedPipelineLayoutCamera(IGVulkanLogicalDevice* dev,const char* name);
+	GVulkanNamedPipelineLayoutCamera(IGVulkanLogicalDevice* dev, IGVulkanNamedSetLayout* namedLayout,const char* name);
 	bool init();
 	virtual void destroy() override;
 	virtual VkPipelineLayout_T* get_vk_pipeline_layout() const noexcept override;
-	virtual VkDescriptorSetLayout_T* get_vk_pipeline_set_layout() const noexcept override;
+	virtual IGVulkanNamedSetLayout* get_pipeline_set_layout() const noexcept override;
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
 	VkPipelineLayout_T* m_layout;
-	VkDescriptorSetLayout_T* m_descriptorSetLayout;
+	IGVulkanNamedSetLayout* m_descriptorSetLayout;
 	std::string m_name;
 
 

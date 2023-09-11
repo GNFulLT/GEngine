@@ -4,31 +4,15 @@
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include <array>
 
-GVulkanNamedPipelineLayoutCamera::GVulkanNamedPipelineLayoutCamera(IGVulkanLogicalDevice* dev,const char* name)
+GVulkanNamedPipelineLayoutCamera::GVulkanNamedPipelineLayoutCamera(IGVulkanLogicalDevice* dev, IGVulkanNamedSetLayout* namedLayout,const char* name)
 {
 	m_layout = nullptr;
 	m_boundedDevice = dev;
 	m_name = name;
+	m_descriptorSetLayout = namedLayout;
 }
 bool GVulkanNamedPipelineLayoutCamera::init()
 {
-	std::array<VkDescriptorSetLayoutBinding, 1> bindings;
-	bindings[0].binding = 0;
-	bindings[0].descriptorCount = 1;
-	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	bindings[0].pImmutableSamplers = nullptr;
-
-
-	VkDescriptorSetLayoutCreateInfo setinfo = {};
-	setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	setinfo.pNext = nullptr;
-	setinfo.bindingCount = bindings.size();
-	setinfo.flags = 0;
-	setinfo.pBindings = bindings.data();
-
-	auto res = vkCreateDescriptorSetLayout(m_boundedDevice->get_vk_device(), &setinfo, nullptr, &m_descriptorSetLayout);
-
 	//X First push constant
 	VkPushConstantRange push_constant;
 
@@ -39,16 +23,18 @@ bool GVulkanNamedPipelineLayoutCamera::init()
 	//this push constant range is accessible only in the vertex shader
 	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+	VkDescriptorSetLayout layout = m_descriptorSetLayout->get_layout();
+
 	VkPipelineLayoutCreateInfo inf = {};
 	inf.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	inf.flags = 0;
 	inf.setLayoutCount = 1;
-	inf.pSetLayouts = &m_descriptorSetLayout;
+	inf.pSetLayouts = &layout;
 	inf.pushConstantRangeCount = 1;
 	inf.pPushConstantRanges = &push_constant;
 
 
-	res = vkCreatePipelineLayout(m_boundedDevice->get_vk_device(), &inf, nullptr, &m_layout);
+	auto res = vkCreatePipelineLayout(m_boundedDevice->get_vk_device(), &inf, nullptr, &m_layout);
 
 	if (res != VK_SUCCESS)
 	{
@@ -60,11 +46,6 @@ bool GVulkanNamedPipelineLayoutCamera::init()
 
 void GVulkanNamedPipelineLayoutCamera::destroy()
 {
-	if (m_descriptorSetLayout != nullptr)
-	{
-		vkDestroyDescriptorSetLayout(m_boundedDevice->get_vk_device(),m_descriptorSetLayout,nullptr);
-		m_descriptorSetLayout = nullptr;
-	}
 	if (m_layout != nullptr)
 	{
 		vkDestroyPipelineLayout(m_boundedDevice->get_vk_device(), m_layout, nullptr);
@@ -77,8 +58,9 @@ VkPipelineLayout_T* GVulkanNamedPipelineLayoutCamera::get_vk_pipeline_layout() c
 	return m_layout;
 }
 
-VkDescriptorSetLayout_T* GVulkanNamedPipelineLayoutCamera::get_vk_pipeline_set_layout() const noexcept
+IGVulkanNamedSetLayout* GVulkanNamedPipelineLayoutCamera::get_pipeline_set_layout() const noexcept
 {
 	return m_descriptorSetLayout;
 }
+
 

@@ -22,6 +22,8 @@ public:
 	virtual GSharedPtr<IGVulkanNamedSampler> get_named_sampler(const char* name) override;
 	virtual IGVulkanNamedPipelineLayout* get_named_pipeline_layout(const char* name) override;
 
+	virtual IGVulkanNamedSetLayout* get_named_set_layout(const char* name);
+
 private:
 	bool init_named_objects();
 	void destroy_named_objects();
@@ -35,13 +37,19 @@ private:
 	bool init_named_pipeline_layouts();
 	void destroy_named_pipeline_layouts();
 
+	bool init_named_set_layouts();
+	void destroy_named_set_layouts();
+
 	VkFormat m_swapchainFormat;
 	uint32_t m_framesInFlight;
 	IGVulkanLogicalDevice* m_logicalDevice;
 	ankerl::unordered_dense::segmented_map<std::string, GSharedPtr<IGVulkanNamedRenderPass>> m_namedRenderpassMap;
 	ankerl::unordered_dense::segmented_map<std::string, GSharedPtr<IGVulkanNamedSampler>> m_namedSamplerMap;
 	ankerl::unordered_dense::segmented_map<std::string, GSharedPtr<IGVulkanNamedPipelineLayout>> m_namedPipelineLayoutMap;
+	ankerl::unordered_dense::segmented_map<std::string, GSharedPtr<IGVulkanNamedSetLayout>> m_namedSetLayoutMap;
 
+
+	
 };
 
 #endif // GPIPELINE_OBJECT_MANAGER_H
