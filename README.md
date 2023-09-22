@@ -7,9 +7,12 @@ High Level Abstraction of Rendering Engnie
 Rendering engine uses primarily clustered deferred rendering system.
 GBuffers : ( There is only sunlight for now. I am working on the point lights and pbr functions)
 
-1-) R32G32B32A32_SFLOAT -> Storing for Positions  
-2-) R8G8B8A8_UNORM -> ALBEDO / Unsigned OCTA Normal X  
-3-) R8G8B8A8_UNORM -> EMISSION / Unsigned OCTA Normal Y  
+1-) R32G32B32A32_SFLOAT -> Storing for Positions   
+
+2-) R8G8B8A8_UNORM -> ALBEDO / Unsigned OCTA Normal X    
+
+3-) R8G8B8A8_UNORM -> EMISSION / Unsigned OCTA Normal Y    
+
 4-) R8G8B8A8_UNORM -> PBR Material / Ambient Occlusion, Roughness, Metallic  
 
 
