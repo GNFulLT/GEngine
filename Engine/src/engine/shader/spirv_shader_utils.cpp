@@ -169,12 +169,12 @@ std::pair<SPIRV_SHADER_STAGE, SPIRV_SOURCE_TYPE> shader_stage_from_file_name(con
 	if (endsWith(fileName, ".hlsl_comp"))
 		return { SPIRV_SHADER_STAGE_COMPUTE,SPIRV_SOURCE_TYPE_HLSL };
 	if(endsWith(fileName, ".glsl_comp"))
-		return { SPIRV_SHADER_STAGE_COMPUTE,SPIRV_SOURCE_TYPE_HLSL };
+		return { SPIRV_SHADER_STAGE_COMPUTE,SPIRV_SOURCE_TYPE_GLSL };
 
 	if (endsWith(fileName, ".hlsl_tesc"))
 		return { SPIRV_SHADER_STAGE_TESSCONTROL,SPIRV_SOURCE_TYPE_HLSL };
 	if(endsWith(fileName, ".glsl_tesc"))
-		return { SPIRV_SHADER_STAGE_TESSCONTROL,SPIRV_SOURCE_TYPE_HLSL };
+		return { SPIRV_SHADER_STAGE_TESSCONTROL,SPIRV_SOURCE_TYPE_GLSL };
 
 	if (endsWith(fileName, ".hlsl_tese"))
 		return { SPIRV_SHADER_STAGE_TESSEVALUATION,SPIRV_SOURCE_TYPE_HLSL };

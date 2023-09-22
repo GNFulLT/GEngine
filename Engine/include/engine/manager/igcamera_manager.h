@@ -7,6 +7,17 @@
 class ICameraPositioner;
 class IGVulkanUniformBuffer;
 
+#include <glm/glm.hpp>
+
+struct DrawCullData
+{
+	glm::vec4 frustumPlanes[6];
+	glm::vec4 frustumCorners[8];
+	float lodBase, lodStep;
+	uint32_t drawCount;
+};
+
+
 class ENGINE_API IGCameraManager
 {
 public:
@@ -18,15 +29,22 @@ public:
 
 	virtual void update(float deltaTime) = 0;
 
-	virtual void render(uint32_t frame) = 0;
-
 	virtual void set_positioner(ICameraPositioner* positioner) = 0;
 
-	virtual IGVulkanUniformBuffer* get_camera_buffer_for_frame(uint32_t frame) = 0;
-
-	virtual uint32_t get_camera_buffer_count() = 0;
-
 	virtual const float* get_camera_position() = 0;
+
+	virtual const float* get_camera_view_matrix() = 0;
+
+	virtual const float* get_camera_proj_matrix() = 0;
+
+	virtual const float* get_camera_view_proj_matrix() = 0;
+
+
+	virtual const DrawCullData* get_cull_data() const noexcept = 0;
+
+	virtual DrawCullData* get_cull_data() noexcept = 0;
+
+	virtual void update_frustrum_proj_matrix(const glm::mat4& frustrum) noexcept = 0;
 private:
 };
 #endif // IGCAMERA_MANAGER_H

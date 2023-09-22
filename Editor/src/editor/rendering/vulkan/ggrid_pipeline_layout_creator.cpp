@@ -10,11 +10,11 @@
 #include "public/math/gmat4.h"
 #include "internal/rendering/vulkan/gvulkan_pipeline_layout_wrapper.h"
 
-GGridPipelineLayoutCreator::GGridPipelineLayoutCreator(IGVulkanLogicalDevice* device, IGCameraManager* cameraManager, IGPipelineObjectManager* objManager
+GGridPipelineLayoutCreator::GGridPipelineLayoutCreator(IGVulkanLogicalDevice* device, IGSceneManager* sceneManager, IGPipelineObjectManager* objManager
 	, uint32_t framesInFlight)
 {
 	m_boundedDevice = device;
-	m_cameraManager = cameraManager;
+	m_sceneManager = sceneManager;
 	m_framesInFlight = framesInFlight;
 	m_pipelineObjectManager = objManager;
 }
@@ -92,11 +92,11 @@ std::expected<IGVulkanDescriptorPool*, LAYOUT_CREATOR_ERROR> GGridPipelineLayout
 	{
 		VkDescriptorBufferInfo binfo;
 		//it will be the camera buffer
-		binfo.buffer = m_cameraManager->get_camera_buffer_for_frame(i)->get_vk_buffer();
+		binfo.buffer = m_sceneManager->get_global_buffer_for_frame(i)->get_vk_buffer();
 		//at 0 offset
 		binfo.offset = 0;
 		//of the size of a camera data struct
-		binfo.range = m_cameraManager->get_camera_buffer_for_frame(i)->get_size();
+		binfo.range = m_sceneManager->get_global_buffer_for_frame(i)->get_size();
 	
 		std::array<VkWriteDescriptorSet, 1> descriptorWrites;
 		descriptorWrites[0] = {};

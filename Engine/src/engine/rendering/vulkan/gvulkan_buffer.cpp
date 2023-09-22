@@ -73,3 +73,17 @@ uint32_t GVulkanBuffer::get_size()
 {
 	return m_size;
 }
+
+
+void* GVulkanBuffer::map_memory()
+{
+	void* data = nullptr;
+	vmaMapMemory(m_allocatorRef, m_allocationBlock, &data);
+	return data;
+}
+
+void GVulkanBuffer::unmap_memory()
+{
+	vmaUnmapMemory(m_allocatorRef, m_allocationBlock);
+}
+

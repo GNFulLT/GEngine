@@ -6,14 +6,15 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 
-
+#include "internal/rendering/vulkan/gimgui_descriptor_creator.h"
 #include "engine/rendering/vulkan/ivulkan_device.h"
 #include "engine/rendering/vulkan/ivulkan_app.h"
 #include "engine/rendering/vulkan/ivulkan_queue.h"
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include "internal/window/gimgui_viewport_window.h"
-
+#include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
+#include "editor/editor_application_impl.h"
 #include "public/platform/window.h"
 #include "internal/rendering/vulkan/gscene_renderer.h"
 #include "internal/imgui_window_manager.h"
@@ -21,8 +22,15 @@
 #include "internal/window/gimgui_content_browser_window.h"
 #include "internal/window/gimgui_log_window.h"
 #include "internal/menu/gtheme_menu.h"
+#include "internal/window/gimgui_properties_window.h"
+#include "internal/window/gimgui_material_window.h"
+#include "internal/window/gimgui_scene_window.h"
+#include "internal/window/gimgui_albedo_port.h"
+#include "internal/window/gimgui_position_port.h"
+#include "internal/window/gimgui_normal_port.h"
+#include "internal/window/gimgui_composition_window.h"
 
-
+#include "engine/gengine.h"
 
 ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* app, IGVulkanDevice* dev)
 {
@@ -81,29 +89,6 @@ bool ImGuiLayer::init()
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-
-	//ImGui::StyleColorsDark();
-	//auto& style = ImGui::GetStyle();
-	////!: Styles
-	//style.ScrollbarSize = 8.f;
-	//style.WindowRounding = 3.f;
-	////!: Colors
-	//auto colors = style.Colors;
-	//colors[ImGuiCol_::ImGuiCol_WindowBg] = ImVec4(38.f / 255.f, 43.f / 255.f, 58.f / 255.f, 1.f);
-	//colors[ImGuiCol_::ImGuiCol_TitleBg] = ImVec4(51.f / 255.f, 57.f / 255.f, 79.f / 255.f, 1.f);
-	//colors[ImGuiCol_::ImGuiCol_TitleBgActive] = ImVec4(51.f / 255.f, 57.f / 255.f, 79.f / 255.f, 1.f);
-	//colors[ImGuiCol_::ImGuiCol_MenuBarBg] = ImVec4(32.f / 255.f, 36.f / 255.f, 48.f / 255.f, 1.f);
-	//colors[ImGuiCol_::ImGuiCol_CheckMark] = ImVec4(1.f, 1.f, 1.f, 1.f);
-	//colors[ImGuiCol_::ImGuiCol_Border] = ImVec4(1.f, 1.f, 1.f, 1.f);
-
-	///*colors[ImGuiCol_::ImGuiCol_FrameBg] = ImVec4(1.f, 1.f, 1.f, 0.f);
-	//colors[ImGuiCol_::ImGuiCol_FrameBgHovered] = ImVec4(1.f, 1.f, 1.f, 0.f);
-	//colors[ImGuiCol_::ImGuiCol_FrameBgActive] = ImVec4(1.f, 1.f, 1.f, 0.f);*/
-
-
-	//style.WindowBorderSize = 2;
-	//style.WindowRounding = 0;
-	//style.WindowMenuButtonPosition = ImGuiDir_::ImGuiDir_None;	
 	auto r = ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)m_window->get_native_handler(), true);
 
 	IGVulkanQueue* queue = m_dev->as_logical_device()->get_render_queue();
@@ -149,13 +134,21 @@ bool ImGuiLayer::init()
 
 	m_windowManager->create_imgui_menu(new GThemeMenu());
 
+	m_scene = new GImGuiSceneWindow();
+	bool created = m_windowManager->create_imgui_window(m_scene, GIMGUIWINDOWDIR_LEFT);
+	if (!created)
+	{
+		delete m_scene;
+	}
 
-	bool created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
+	created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
 	if (!created)
 	{
 		delete m_renderViewportWindow;
 		m_renderViewportWindow = nullptr;
 	}
+
+	
 	created = m_windowManager->create_imgui_window(m_contentBrowserWindow, GIMGUIWINDOWDIR_BOTTOM);
 	if (!created)
 	{
@@ -167,6 +160,48 @@ bool ImGuiLayer::init()
 	{
 		delete m_logWindow;
 		m_logWindow = nullptr;
+	}
+
+	GImGuiPropertiesWindow* prp = new GImGuiPropertiesWindow();
+	created = m_windowManager->create_imgui_window(prp, GIMGUIWINDOWDIR_RIGHT);
+	if (!created)
+	{
+		delete prp;
+	}
+
+	GImGuiMaterialsWindow* material = new GImGuiMaterialsWindow();
+	created = m_windowManager->create_imgui_window(material, GIMGUIWINDOWDIR_RIGHT_BOTTOM);
+	if (!created)
+	{
+		delete material;
+	}
+
+	GImGuiPositionPortWindow* pos = new GImGuiPositionPortWindow();
+	created = m_windowManager->create_imgui_window(pos, GIMGUIWINDOWDIR_MIDDLE);
+	if (!created)
+	{
+		delete pos;
+	}
+
+	GImGuiNormalPortWindow* normal = new GImGuiNormalPortWindow();
+	created = m_windowManager->create_imgui_window(normal, GIMGUIWINDOWDIR_MIDDLE);
+	if (!created)
+	{
+		delete normal;
+	}
+
+	GImGuiAlbedoPortWindow* albedo = new GImGuiAlbedoPortWindow();
+	created = m_windowManager->create_imgui_window(albedo, GIMGUIWINDOWDIR_MIDDLE);
+	if (!created)
+	{
+		delete albedo;
+	}
+	
+	GImGuiCompositionPortWindow* comp = new GImGuiCompositionPortWindow();
+	created = m_windowManager->create_imgui_window(comp, GIMGUIWINDOWDIR_MIDDLE);
+	if (!created)
+	{
+		delete comp;
 	}
 
 	return true;
@@ -215,15 +250,32 @@ void ImGuiLayer::render(GVulkanCommandBuffer* cmd)
 
 void ImGuiLayer::set_viewport(IGVulkanViewport* viewport)
 {
+	auto deferredVp = EditorApplicationImpl::get_instance()->m_engine->get_deferred_vp();
+	EditorApplicationImpl::get_instance()->m_engine->init_deferred(640, 320);
+
+	EditorApplicationImpl::get_instance()->positionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("position_attachment"),
+		deferredVp->get_sampler_for_named_attachment("position_attachment")).value();
+	EditorApplicationImpl::get_instance()->normalPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("normal_attachment"),
+		deferredVp->get_sampler_for_named_attachment("normal_attachment")).value();
+	EditorApplicationImpl::get_instance()->albedoPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("albedo_attachment"),
+		deferredVp->get_sampler_for_named_attachment("albedo_attachment")).value();
+	EditorApplicationImpl::get_instance()->compositionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("composition_attachment"),
+		deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
 	m_renderViewportWindow->set_the_viewport(viewport);
 	m_sceneRenderer = new GSceneRenderer(viewport, m_dev);
 	m_sceneRenderer->init();
+	
 	m_sceneRenderer->set_the_viewport(viewport);
 }
 
 ImGuiWindowManager* ImGuiLayer::get_window_manager()
 {
 	return m_windowManager;
+}
+
+GImGuiSceneWindow* ImGuiLayer::get_scene_window()
+{
+	return m_scene;
 }
 
 GImGuiLogWindow* ImGuiLayer::get_log_window()

@@ -56,7 +56,7 @@ private:
 	VkPhysicalDevice m_physicalDev;
 	uint32_t m_defaultQueueFamilyIndex;
 	uint32_t m_onlyTransferFamilyIndex;
-
+	uint32_t m_computeQueueFamilyIndex;
 	bool m_onlyTransferSupport;
 	//X Cache
 	std::vector<VkPhysicalDevice> m_availableDevices;
@@ -64,6 +64,9 @@ private:
 	VkPhysicalDeviceProperties m_physicalDevProperties;
 
 	bool destroyed;
+
+	// Inherited via IGVulkanPhysicalDevice
+	virtual uint32_t get_compute_queue() const noexcept override;
 };
 
 #endif // VULKAN_PDEVICE_H

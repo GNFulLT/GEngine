@@ -14,7 +14,7 @@ class GSceneRenderer;
 class GImGuiTextEditorWindow;
 class GImGuiContentBrowserWindow;
 class GImGuiLogWindow;
-
+class GImGuiSceneWindow;
 
 
 class ImGuiLayer
@@ -33,6 +33,8 @@ public:
 	void set_viewport(IGVulkanViewport* viewport);
 
 	ImGuiWindowManager* get_window_manager();
+	
+	GImGuiSceneWindow* get_scene_window();
 
 	GImGuiLogWindow* get_log_window();
 private:
@@ -47,7 +49,7 @@ private:
 	GImGuiViewportWindow* m_renderViewportWindow;
 	GImGuiContentBrowserWindow* m_contentBrowserWindow;
 	GSceneRenderer* m_sceneRenderer;
-
+	GImGuiSceneWindow* m_scene;
 };
 
 #endif // IMGUI_LAYER_H

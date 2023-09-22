@@ -91,6 +91,7 @@ bool EditorApplicationImpl::before_render()
 
 void EditorApplicationImpl::render()
 {
+    m_currentFrame = m_engine->get_current_frame();
     IGVulkanViewport* mainViewport = m_engine->get_viewport();
     IManagerTable* table = m_engine->get_manager_table();
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
@@ -117,6 +118,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
     s_instance = this;
     
     m_engine = engine;
+    m_totalFrame =  m_engine->get_frame_count();
     IManagerTable* table = m_engine->get_manager_table();
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
     auto resourceManager = ((GSharedPtr<IGResourceManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
@@ -178,7 +180,6 @@ bool EditorApplicationImpl::init(GEngine* engine)
     m_logger->log_d("Creating Render Viewport");
     
     m_renderViewport = engine->create_offscreen_viewport_depth(m_imguiDescriptorCreator);
-
     m_imguiLayer->set_viewport(m_renderViewport);
 
     
@@ -213,6 +214,16 @@ GImGuiDescriptorCreator* EditorApplicationImpl::get_descriptor_creator()
 ImGuiLayer* EditorApplicationImpl::get_editor_layer()
 {
     return m_imguiLayer;
+}
+
+uint32_t EditorApplicationImpl::get_current_frame()
+{
+    return m_currentFrame;
+}
+
+uint32_t EditorApplicationImpl::get_total_frame()
+{
+    return m_totalFrame;
 }
 
 EDITOR_API GApplicationImpl* create_the_editor()

@@ -18,8 +18,9 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-GCubeRenderer::GCubeRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng,IGCameraManager* cameraManager, IGPipelineObjectManager* obj,IGVulkanViewport* viewport,IGShaderManager* shaderMng,uint32_t frameInFlight, const char* cubeTexturePath)
+GCubeRenderer::GCubeRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng,IGCameraManager* cameraManager, IGSceneManager* sceneManager, IGPipelineObjectManager* obj,IGVulkanViewport* viewport,IGShaderManager* shaderMng,uint32_t frameInFlight, const char* cubeTexturePath)
 {
+	p_sceneManager = sceneManager;
 	m_obj = obj;
 	m_pipeline = nullptr;
 	m_cubemapFragStage = nullptr;
@@ -75,7 +76,7 @@ bool GCubeRenderer::init()
 	}
 
 	
-	m_pipelineCreator = new GCubePipelinelayoutCreator(m_boundedDevice,p_cameraManager,m_obj,m_cubemapTextureResource,m_framesInFlight);
+	m_pipelineCreator = new GCubePipelinelayoutCreator(m_boundedDevice,p_sceneManager,m_obj,m_cubemapTextureResource,m_framesInFlight);
 	//X TODO : CHANAGE TO THE RENDERPASS NOT VIEWPORT
 	
 	m_cubemapFragStage = m_shaderManager->create_shader_stage_from_shader_res(m_cubemapFragShader.get()).value();
@@ -105,6 +106,8 @@ bool GCubeRenderer::init()
 		destroy();
 		return false;
 	}
+	
+	
 }
 
 void GCubeRenderer::destroy()
@@ -145,7 +148,7 @@ void GCubeRenderer::render(GVulkanCommandBuffer* buff, uint32_t frameIndex,IGVul
 
 	m_pipeline->bind_sets(buff, frameIndex);
 	const float* pos = p_cameraManager->get_camera_position();
-	cubeTransform.position = gvec3(pos);
+	cubeTransform.position = gvec3(0,0,0);
 	auto mat = cubeTransform.to_mat4();
 
 	vkCmdSetViewport(buff->get_handle(), 0, 1, vp->get_viewport_area());

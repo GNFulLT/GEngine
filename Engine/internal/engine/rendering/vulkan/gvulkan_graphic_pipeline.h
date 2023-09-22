@@ -27,6 +27,8 @@ public:
 
 	// Inherited via IGVulkanGraphicPipeline
 	virtual const std::vector<IVulkanShaderStage*>* get_shader_stages() override;
+
+	virtual void bind_sets(GVulkanCommandBuffer* cmd, uint32_t frameIndex) override;
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
 	IGVulkanPipelineLayout* m_pipelineLayout;

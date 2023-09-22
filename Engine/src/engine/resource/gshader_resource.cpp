@@ -109,7 +109,7 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 	}
 
 	auto bindings = m_shaderInfo->get_bindings();
-	if (bindings->size() > 0)
+	/*if (bindings->size() > 0)
 	{
 		VkDescriptorSetLayoutCreateInfo crtInfo = {
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -125,7 +125,7 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 			delete spirvShader;
 			return RESOURCE_INIT_CODE_UNKNOWN_EX;
 		}
-	}
+	}*/
 
 	
 
@@ -134,7 +134,6 @@ RESOURCE_INIT_CODE GShaderResource::load_impl()
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.pCode = spirvShader->get_spirv_words();
 	createInfo.codeSize = spirvShader->get_size();
-
 	auto res = vkCreateShaderModule(m_boundedDevice->get_vk_device(), &createInfo, nullptr, &m_vkShaderModule);
 
 	m_stage = spirvShader->get_spirv_stage();

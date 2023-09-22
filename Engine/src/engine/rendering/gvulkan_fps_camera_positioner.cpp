@@ -59,15 +59,10 @@ void GFpsCameraPositioner::update(float deltaTime)
 	m_campos += m_camSpeed * deltaTime;
 
 	//X Build the view matr
-	
 
-}
-
-const gmat4* GFpsCameraPositioner::get_view_proj_projection()
-{	
 	m_viewMatrix = m_camOrientation.to_mat4() * translate(m_campos);
 	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
-	return &m_viewProjMatrix;
+
 }
 
 const float* GFpsCameraPositioner::get_position()
@@ -81,9 +76,18 @@ bool GFpsCameraPositioner::init()
 	return true;
 }
 
-const void* GFpsCameraPositioner::get_matrix() const noexcept
+const float* GFpsCameraPositioner::get_view_proj_matrix() const noexcept
 {
+	return &m_viewProjMatrix.xx;
+}
 
-	return &m_viewProjMatrix;
+const float* GFpsCameraPositioner::get_view_matrix() const noexcept
+{
+	return &m_viewMatrix.xx;
+}
+
+const float* GFpsCameraPositioner::get_proj_matrix() const noexcept
+{
+	return &m_projMatrix.xx;
 }
 

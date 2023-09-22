@@ -111,6 +111,12 @@ public:
 	static GVulkanLogicalDevice* get_instance();
 
 	virtual IGVulkanDescriptorPool* create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap, uint32_t frameInFlight) override;
+
+
+	virtual std::expected<IGVulkanIndirectBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_indirect_buffer(uint32_t size) override;
+
+	virtual std::expected<IGVulkanStorageBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_storage_buffer(uint32_t size) override;
+
 private:
 	bool create_vma_allocator();
 
@@ -125,10 +131,12 @@ private:
 	bool m_debugEnabled;
 	GWeakPtr<IGVulkanPhysicalDevice> m_physicalDev;
 	GSharedPtr<GVulkanCommandBufferManager> m_defaultCommandManager;
+	GSharedPtr<GVulkanCommandBufferManager> m_computeCommandManager;
 	GSharedPtr<IOwningGLogger> m_logger;
 
 	GVulkanQueue m_defaultQueue;
 	GVulkanQueue m_transferQueue;
+	GVulkanQueue m_computeQueue;
 
 	IGVulkanDevice* m_owner;
 
@@ -139,6 +147,30 @@ private:
 	VmaAllocator allocator;
 
 
+
+
+
+
+	// Inherited via IGVulkanLogicalDevice
+	virtual IGVulkanQueue* get_compute_queue() noexcept override;
+
+
+	// Inherited via IGVulkanLogicalDevice
+	virtual GVulkanCommandBuffer* create_compute_command_buffer() override;
+
+
+	// Inherited via IGVulkanLogicalDevice
+	virtual std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_shared_buffer(uint32_t size, uint32_t bufferUsageFlags, VmaMemoryUsage memoryUsageFlag, const std::vector<IGVulkanQueue*>* queues) override;
+
+
+	// Inherited via IGVulkanLogicalDevice
+	virtual IGVulkanGraphicPipelineState* create_custom_rasterization_state(const VkPipelineRasterizationStateCreateInfo* state) override;
+
+
+
+
+	// Inherited via IGVulkanLogicalDevice
+	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_renderpass(IGVulkanRenderPass* vp, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight, IGVulkanGraphicPipelineLayoutCreator* injector) override;
 
 };
 #endif // GVULKAN_LDEVICE_H

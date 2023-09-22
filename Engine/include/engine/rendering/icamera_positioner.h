@@ -12,12 +12,15 @@ public:
 	virtual ~ICameraPositioner() = default;
 
 	virtual void update(float deltaTime) = 0;
-
-	virtual const gmat4* get_view_proj_projection() = 0;
 	
 	virtual const float* get_position() = 0;
 
-	virtual const void* get_matrix() const noexcept = 0;
+	virtual const float* get_view_proj_matrix() const noexcept = 0;
+
+	virtual const float* get_view_matrix() const noexcept = 0;
+
+	virtual const float* get_proj_matrix() const noexcept = 0;
+
 
 	virtual bool init() { return true; };
 private:

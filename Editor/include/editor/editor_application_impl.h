@@ -5,6 +5,7 @@
 #include "editor/GEngine_EXPORT.h"
 #include "public/core/templates/shared_ptr.h"
 #include <memory>
+#include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
 
 class GEngine;
 class ImGuiLayer;
@@ -51,6 +52,18 @@ public:
 	GImGuiDescriptorCreator* get_descriptor_creator();
 
 	ImGuiLayer* get_editor_layer();
+
+	uint32_t get_current_frame();
+
+	uint32_t get_total_frame();
+
+
+
+	IGVulkanDescriptorSet* normalPortSet = nullptr;
+	IGVulkanDescriptorSet* positionPortSet = nullptr;
+	IGVulkanDescriptorSet* albedoPortSet = nullptr;
+	IGVulkanDescriptorSet* compositionPortSet = nullptr;
+
 private:
 	IGVulkanViewport* m_renderViewport;
 	ImGuiLayer* m_imguiLayer;
@@ -59,8 +72,11 @@ private:
 	GSharedPtr<IOwningGLogger> m_logWindwLogger;
 	inline static EditorApplicationImpl* s_instance;
 
+	uint32_t m_currentFrame;
+	uint32_t m_totalFrame;
 
 	std::unique_ptr<GEditorFPSCameraPositioner> m_fpsCameraPositioner;
+
 
 };
 

@@ -22,14 +22,38 @@ GEditorFPSCameraPositioner::GEditorFPSCameraPositioner(ImGuiWindowManager* windo
 	cameraPosition_ = glm::vec3(1, 0, -5.f);
 	up_ = glm::vec3(0,1,0);
 	cameraOrientation_ = glm::lookAt(cameraPosition_,glm::vec3(0,0,-1), up_);
+	m_viewProj = glm::mat4(1.f);
+	m_view = glm::mat4(1.f);
 
+	const glm::mat4 t = glm::translate(glm::mat4(1.0f), -cameraPosition_);
+	const glm::mat4 r = glm::mat4_cast(cameraOrientation_);
+	m_view = r * t;
+	m_viewProj = m_projection * m_view;
+}
+
+const float* GEditorFPSCameraPositioner::get_view_proj_matrix() const noexcept
+{
+	return glm::value_ptr(m_viewProj);
+}
+
+const float* GEditorFPSCameraPositioner::get_view_matrix() const noexcept
+{
+	return glm::value_ptr(m_view);
+}
+
+const float* GEditorFPSCameraPositioner::get_proj_matrix() const noexcept
+{
+	return glm::value_ptr(m_projection);
 }
 
 void GEditorFPSCameraPositioner::update(float deltaTime)
 {
 	auto window = p_windowManager->get_window_if_exist(ImGuiWindowManager::VIEWPORT_NAME);
 	if (window == nullptr || !window->is_focused())
+	{
+		m_mousePos = p_mouseManager->get_mouse_pos();
 		return;
+	}
 
 
 	if(p_mouseManager->get_mouse_button_state(MOUSE_BUTTON_LEFT))
@@ -83,7 +107,7 @@ void GEditorFPSCameraPositioner::update(float deltaTime)
 	}
 
 	bool isFast = false;
-	if (p_keyboardManager->is_key_pressed(KEY_SHIFT))
+	if (p_keyboardManager->is_key_pressed(KEY_Z))
 		isFast = true;
 	if (isFast)
 		accel *= m_fastCoef;
@@ -100,13 +124,11 @@ void GEditorFPSCameraPositioner::update(float deltaTime)
 	cameraPosition_ += moveSpeed_ * deltaTime;
 
 	//X Build the view matr
-	
+	const glm::mat4 t = glm::translate(glm::mat4(1.0f), -cameraPosition_);
+	const glm::mat4 r = glm::mat4_cast(cameraOrientation_);
+	m_view = r * t;
+	m_viewProj = m_projection * m_view;
 
-}
-
-const gmat4* GEditorFPSCameraPositioner::get_view_proj_projection()
-{	
-	return nullptr;
 }
 
 const float* GEditorFPSCameraPositioner::get_position()
@@ -130,12 +152,3 @@ void GEditorFPSCameraPositioner::setup_up_vector()
 	const glm::vec3 dir = -glm::vec3(view[0][2], view[1][2], view[2][2]);
 	cameraOrientation_ = glm::lookAt(cameraPosition_, cameraPosition_ + dir, up_);
 }
-
-const void* GEditorFPSCameraPositioner::get_matrix() const noexcept
-{
-	const glm::mat4 t = glm::translate(glm::mat4(1.0f), -cameraPosition_);
-	const glm::mat4 r = glm::mat4_cast(cameraOrientation_);
-	m_viewProj = m_projection * (r * t);
-	return &m_viewProj;
-}
-

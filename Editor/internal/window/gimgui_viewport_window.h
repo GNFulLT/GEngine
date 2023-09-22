@@ -4,9 +4,12 @@
 #include "editor/igimgui_window_impl.h"
 
 #include <string>
+#include <glm/glm.hpp>
 class IGVulkanViewport;
 class GImGuiWindowStorage;
-	
+class GImGuiSceneWindow;
+class IGCameraManager;
+
 class GImGuiViewportWindow : public IGImGuiWindowImpl
 {
 public:
@@ -27,7 +30,10 @@ private:
 	std::string m_name;
 	GImGuiWindowStorage* m_storage;
 	IGVulkanViewport* m_viewport;
-
+	GImGuiSceneWindow* m_sceneWindow;
+	IGCameraManager* m_cameraManager;
+	uint32_t m_selectedNode = -1;
+	glm::mat4 m_selectedTranslation;
 	bool m_initedTheViewportFirstTime;
 };
 

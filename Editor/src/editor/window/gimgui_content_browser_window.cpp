@@ -17,6 +17,8 @@
 #include "internal/window/content_helper/descriptors/gimgui_texteditor_descriptor.h"
 #include "internal/window/content_helper/descriptors/gimgui_shader_descriptor.h"
 #include "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h"
+#include "internal/window/content_helper/descriptors/gimgui_model_asset_descriptor.h"
+#include "internal/window/content_helper/descriptors/gimgui_gmesh_descriptor.h"
 
 GImGuiContentBrowserWindow::GImGuiContentBrowserWindow()
 {
@@ -95,6 +97,8 @@ bool GImGuiContentBrowserWindow::init()
 	m_contentHelper.register_descriptor(new GImGuiTextEditorDescriptor());
 	m_contentHelper.register_descriptor(new GImGuiShaderDescriptor());
 	m_contentHelper.register_descriptor(new GImGuiSpirvDescriptor());
+	m_contentHelper.register_descriptor(new GImGuiModelAssetDescriptor());
+	m_contentHelper.register_descriptor(new GImGuiGMeshDescriptor());
 	return true;
 }
 

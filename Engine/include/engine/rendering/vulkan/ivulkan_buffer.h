@@ -26,6 +26,10 @@ public:
 
 	virtual uint32_t get_size() = 0;
 
+	virtual void* map_memory() = 0;
+
+
+	virtual void unmap_memory() = 0;
 private:
 };
 

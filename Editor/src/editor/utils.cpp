@@ -112,6 +112,22 @@ FILE_TYPE get_file_type_from_name(const char* str)
     {
         return FILE_TYPE_GLSL;
     }
+    else if (endsWith(str, ".glb"))
+    {
+        return FILE_TYPE_GLB;
+    }
+    else if (endsWith(str, ".gmesh"))
+    {
+        return FILE_TYPE_GMESH;
+    }
+    else if (endsWith(str, ".obj"))
+    {
+        return FILE_TYPE_OBJ;
+    }
+       else if (endsWith(str, ".gltf"))
+    {
+        return FILE_TYPE_GLTF;
+    }
     else {
         return FILE_TYPE_UNKNOWN;
     }

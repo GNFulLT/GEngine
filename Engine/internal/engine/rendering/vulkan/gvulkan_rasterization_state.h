@@ -10,7 +10,7 @@ class GVulkanRasterizationState : public IGVulkanGraphicPipelineState
 {
 public:
 	GVulkanRasterizationState();
-
+	GVulkanRasterizationState(const VkPipelineRasterizationStateCreateInfo* inf);
 	// Inherited via IGVulkanGraphicPipelineState
 	virtual GRAPHIC_PIPELINE_STATE get_pipeline_state() override;
 	virtual void fill_pipeline_create_info(VkGraphicsPipelineCreateInfo* createInfo) override;

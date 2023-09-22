@@ -39,3 +39,13 @@ uint32_t GVulkanVertexBuffer::get_size()
 {
 	return m_buffer->get_size();
 }
+
+void* GVulkanVertexBuffer::map_memory()
+{
+	return m_buffer->map_memory();
+}
+
+void GVulkanVertexBuffer::unmap_memory()
+{
+	m_buffer->unmap_memory();
+}

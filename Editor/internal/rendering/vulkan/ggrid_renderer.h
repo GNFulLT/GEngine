@@ -20,6 +20,7 @@ class GGridPipelineLayoutCreator;
 #include "engine/manager/igpipeline_object_manager.h"
 #include <cstdint>
 #include "internal/rendering/grid_spec.h"
+#include "engine/manager/igscene_manager.h"
 
 class GImGuiGridSettingsWindow;
 
@@ -27,7 +28,7 @@ class GridRenderer
 {
 	friend class GImGuiGridSettingsWindow;
 public:
-	GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng, IGCameraManager* cameraManager,
+	GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng,IGCameraManager* cam, IGSceneManager* sceneManager,
 		IGPipelineObjectManager* obj, IGVulkanViewport* viewport, IGShaderManager* shaderMng, uint32_t framesInFlight);
 
 	bool init();
@@ -41,12 +42,12 @@ private:
 	GridSpec* get_spec() noexcept;
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
-	IGCameraManager* p_cameraManager;
+	IGSceneManager* p_sceneManager;
 	IGVulkanViewport* p_renderingViewport;
 	IGShaderManager* p_shaderManager;
 	IGPipelineObjectManager* p_pipelineManager;
 	uint32_t m_framesInFlight;
-
+	IGCameraManager* p_cameraManager;
 
 	IGShaderResource* m_gridFrag;
 	IGShaderResource* m_gridVert;

@@ -24,6 +24,13 @@
 #include "internal/engine/manager/gcamera_manager.h"
 #include "internal/engine/manager/gtimer_manager.h"
 #include "internal/engine/manager/gpipeline_object_manager.h"
+#include "internal/engine/rendering/renderer/gmulti_mesh_renderer.h"
+#include "engine/rendering/scene/scene.h"
+#include "engine/rendering/mesh_data.h"
+#include "engine/rendering/material/gmaterial.h"
+#include "internal/engine/manager/gscene_manager.h"
+#include "internal/engine/rendering/renderer/gscene_renderer.h"
+#include "internal/engine/rendering/vulkan/named/gvulkan_named_deferred_viewport.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -41,6 +48,9 @@ static ManagerTable* s_managerTable;
 static IGCameraManager* s_cameraManager;
 static GTimerManager* s_timer;
 static IGPipelineObjectManager* s_pipelineManager;
+static GSceneRenderer* s_sceneRenderer = nullptr;
+static IGSceneManager* s_sceneManager = nullptr;
+
 GEngine::GEngine()
 {
 	m_window = create_default_window();
@@ -63,12 +73,14 @@ GEngine::GEngine()
 	s_managerTable->set_manager(ENGINE_MANAGER_JOB, new GSharedPtr<IJobManager>(s_jobManager));
 	s_managerTable->set_manager(ENGINE_MANAGER_SHADER, new GSharedPtr<IGShaderManager>(new GShaderManager()));
 	s_managerTable->set_manager(ENGINE_MANAGER_CAMERA, new GSharedPtr<IGCameraManager>(new GCameraManager(FRAME_IN_FLIGHT)));
+	s_managerTable->set_manager(ENGINE_MANAGER_SCENE, new GSharedPtr<IGSceneManager>(new GSceneManager()));
 
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
 	GLoggerManager::set_instance(s_logger);
 
 	m_currentFrame = 0;
+
 }
 	
 void GEngine::run()
@@ -86,7 +98,10 @@ void GEngine::run()
 		auto deltaTime = s_timer->calculate_delta_time();
 		int fps = 0;
 		bool calculatedNewFps = s_timer->calc_fps(fps);
-
+		if (calculatedNewFps)
+		{
+			s_logger->log_d("GEngine", fmt::format("FPS : [{}]",std::to_string(fps)).c_str());
+		}
 		//X OnTick BeforeTick maybe
 		//X Before tick pump messages and check global vals
 		m_window->pump_messages();
@@ -117,6 +132,22 @@ void GEngine::run()
 	exit();
 }
 
+uint32_t GEngine::add_texture(IGTextureResource* res)
+{
+	return s_sceneRenderer->add_texture(res);
+}
+
+uint32_t GEngine::add_material(const MaterialDescription& desc)
+{
+	return s_sceneRenderer->add_material(desc);
+}
+
+void GEngine::set_material_for_node(uint32_t nodeID, uint32_t materialIndex)
+{
+	s_sceneRenderer->set_material_for_node(nodeID,materialIndex);
+
+}
+
 void GEngine::wait_all_frame_data()
 {
 	for (int i = 0; i < m_frames.size(); i++)
@@ -141,6 +172,8 @@ void GEngine::exit()
 	s_logger->log_d("GEngine", "Beginning to destroy main viewport");
 	
 	s_cameraManager->destroy();
+
+	s_sceneManager->destroy();
 
 	s_pipelineManager->destroy();
 
@@ -185,10 +218,12 @@ void GEngine::tick(double deltaTime)
 	//X BeforeUpdate
 	//X Update
 	//X After Update
-
+	assert(s_sceneRenderer != nullptr);
 	if (m_impl->before_update())
 	{
 		s_cameraManager->update(deltaTime);
+
+		s_sceneRenderer->update_scene_nodes();
 
 		m_impl->update();
 
@@ -202,7 +237,7 @@ void GEngine::tick(double deltaTime)
 
 		if (before_render() && m_impl->before_render())
 		{
-			s_cameraManager->render(m_currentFrame);
+			s_sceneManager->reconstruct_global_buffer_for_frame(m_currentFrame);
 			m_impl->render();
 			after_render();
 			m_impl->after_render();
@@ -245,6 +280,31 @@ IGVulkanFrameData* GEngine::get_frame_data_by_index(uint32_t index)
 {
 	return m_frames[m_currentFrame];
 }
+void GEngine::fill_cmd_deferred(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	if (s_sceneRenderer != nullptr)
+		s_sceneRenderer->fill_command_deferred(cmd, frameIndex);
+}
+void GEngine::fill_cmd(GVulkanCommandBuffer* cmd, uint32_t frameIndex, IGVulkanViewport* vp)
+{
+	if(s_sceneRenderer != nullptr)
+		s_sceneRenderer->fill_command_buffer(cmd, frameIndex,vp);
+}
+void GEngine::fill_cmd_dispatch(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	if (s_sceneRenderer != nullptr)
+		s_sceneRenderer->fill_command_buffer_dispatch(cmd, frameIndex);
+}
+WireFrameSpec* GEngine::get_wireframe_spec()
+{
+	if (s_sceneRenderer == nullptr) return nullptr;
+	return s_sceneRenderer->get_wireframe_spec();
+}
+void GEngine::init_custom_renderer(IGVulkanViewport* vp)
+{
+	if(s_sceneRenderer != nullptr)
+		s_sceneRenderer->init(vp);
+}
 //IGVulkanMainViewport* GEngine::create_viewport(int width, int height)
 //{
 //	return new GVulkanMainViewport();
@@ -278,8 +338,10 @@ void GEngine::init(GApplicationImpl* impl)
 	GSharedPtr<IGVulkanDevice>* graphicDevice = (GSharedPtr<IGVulkanDevice>*)m_managerTable->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
 	GSharedPtr<IGShaderManager>* shaderManager = (GSharedPtr<IGShaderManager>*)s_managerTable->get_engine_manager_managed(ENGINE_MANAGER_SHADER);
 	GSharedPtr<IGCameraManager>* cameraManager = (GSharedPtr<IGCameraManager>*)s_managerTable->get_engine_manager_managed(ENGINE_MANAGER_CAMERA);
-	s_cameraManager = cameraManager->get();
+	GSharedPtr<IGSceneManager>* sceneManager = (GSharedPtr<IGSceneManager>*)s_managerTable->get_engine_manager_managed(ENGINE_MANAGER_SCENE);
 
+	s_cameraManager = cameraManager->get();
+	s_sceneManager = sceneManager->get();
 	s_logger->log_d("GEngine","Beginning to initialize window");
 
 	uint32_t initedI = m_window->init();
@@ -358,6 +420,7 @@ void GEngine::init(GApplicationImpl* impl)
 		return;
 	}
 
+
 	inited = s_cameraManager->init();
 	
 	if (!inited)
@@ -373,6 +436,18 @@ void GEngine::init(GApplicationImpl* impl)
 		m_frames[i] = new GVulkanFrameData(logicalDev,i, logicalDev->get_render_queue());
 	}
 
+	s_sceneManager->init(FRAME_IN_FLIGHT);
+	
+	//auto gmesh = decode_file("mesh.gmesh").value();
+	//auto scene = Scene::load_the_scene("scene.gscene").value();
+	//std::vector<MaterialDescription> materials;
+	//std::vector<std::string> textureNames;
+	//auto materialsRes = MaterialDescription::load_materials("allmaterials.gmaterial",materials, textureNames);
+	Scene* scene;
+	std::vector<MaterialDescription> materials;
+	MeshData* meshData = new MeshData();
+	scene = Scene::create_scene_with_default_material(materials);
+	s_sceneRenderer = new GSceneRenderer(logicalDev, s_cameraManager,s_sceneManager ,s_resourceManager , shaderManager->get(), FRAME_IN_FLIGHT, scene,materials,meshData);
 #ifdef _DEBUG
 	m_inited = true;
 #endif
@@ -385,6 +460,47 @@ void GEngine::init(GApplicationImpl* impl)
 		s_logger->log_c("GEngine", "Unknown error occured while initializing application implementation. Engine shutdown");
 		return;
 	}
+}
+
+bool GEngine::init_deferred(uint32_t width, uint32_t height)
+{
+	return s_sceneRenderer->init_deferred(width,height);
+}
+
+bool GEngine::resize_deferred(uint32_t width, uint32_t height)
+{
+	return s_sceneRenderer->resize_deferred(width,height);
+}
+
+IGVulkanNamedViewport* GEngine::get_deferred_vp()
+{
+	return s_sceneRenderer->get_deferred_vp();
+}
+
+int GEngine::add_mesh(MeshData* mesh)
+{
+	if (s_sceneRenderer != nullptr)
+		return s_sceneRenderer->add_mesh(mesh);
+}
+
+uint32_t GEngine::add_node_with_mesh(uint32_t mesh)
+{
+	if (s_sceneRenderer != nullptr)
+		return s_sceneRenderer->add_node_with_mesh(mesh);
+
+	return 0;
+}
+
+Scene* GEngine::get_global_scene()
+{
+	assert(s_sceneRenderer != nullptr);
+	return s_sceneRenderer->get_global_scene();
+}
+
+MeshData* GEngine::get_global_mesh_data()
+{
+	assert(s_sceneRenderer != nullptr);
+	return s_sceneRenderer->get_global_mesh_data();
 }
 
 Window* GEngine::get_main_window()
@@ -403,6 +519,12 @@ IManagerTable* GEngine::get_manager_table()
 IGVulkanApp* GEngine::get_app()
 {
 	return m_vulkanApp.get();
+}
+
+std::vector<MaterialDescription>* GEngine::get_global_materials()
+{
+	if (s_sceneRenderer == nullptr) return 0;
+	return s_sceneRenderer->get_global_materials();
 }
 
 IGVulkanViewport* GEngine::create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor)

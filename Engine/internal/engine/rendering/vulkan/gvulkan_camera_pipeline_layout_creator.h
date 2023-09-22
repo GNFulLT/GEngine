@@ -6,11 +6,12 @@
 
 class IGVulkanLogicalDevice;
 struct VkDescriptorSetLayout_T;
+class IGSceneManager;
 
 class GVulkanCameraLayoutCreator : public IGVulkanGraphicPipelineLayoutCreator
 {
 public:
-	GVulkanCameraLayoutCreator(IGVulkanLogicalDevice* boundedDevice,std::vector<IGVulkanUniformBuffer*> cameraBuffs,uint32_t frameInFlight);
+	GVulkanCameraLayoutCreator(IGVulkanLogicalDevice* boundedDevice, IGSceneManager* sceneMng,uint32_t frameInFlight);
 	// Inherited via IGVulkanGraphicPipelineLayoutCreator
 	virtual void inject_create_info(VkGraphicsPipelineCreateInfo* info) override;
 	virtual std::expected<IGVulkanPipelineLayout*, LAYOUT_CREATOR_ERROR> create_layout_for(IGVulkanGraphicPipeline* pipeline) override;
@@ -20,8 +21,7 @@ public:
 
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
-	std::vector<IGVulkanUniformBuffer*> m_camBuff;
-
+	IGSceneManager* m_sceneMng;
 	uint32_t m_frameInFlight;
 
 	std::vector<VkDescriptorSet_T*> m_descriptorSets;

@@ -11,12 +11,12 @@
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include "engine/manager/igcamera_manager.h"
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
-GridRenderer::GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng, IGCameraManager* cameraManager, IGPipelineObjectManager* obj,
+GridRenderer::GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng, IGCameraManager* cameraManager, IGSceneManager* sceneMng,IGPipelineObjectManager* obj,
 	IGVulkanViewport* viewport, IGShaderManager* shaderMng, uint32_t framesInFlight)
 {
 	m_boundedDevice = boundedDevice;
 	m_framesInFlight = framesInFlight;
-
+	p_sceneManager = sceneMng;
 	p_cameraManager = cameraManager;
 	p_renderingViewport = viewport;
 	p_shaderManager = shaderMng;
@@ -80,7 +80,7 @@ bool GridRenderer::init()
 	states.push_back(m_boundedDevice->create_default_depth_stencil_state());
 
 	//X Create the pipeline here
-	m_pipelineLayoutCreator = new GGridPipelineLayoutCreator(m_boundedDevice, p_cameraManager, p_pipelineManager, m_framesInFlight);
+	m_pipelineLayoutCreator = new GGridPipelineLayoutCreator(m_boundedDevice, p_sceneManager, p_pipelineManager, m_framesInFlight);
 	m_pipeline = m_boundedDevice->create_and_init_graphic_pipeline_injector_for_vp(p_renderingViewport, stages, states, m_pipelineLayoutCreator);
 
 	for (int i = 0; i < states.size(); i++)

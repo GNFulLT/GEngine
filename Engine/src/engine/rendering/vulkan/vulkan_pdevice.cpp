@@ -65,6 +65,7 @@ GVulkanPhysicalDevice::~GVulkanPhysicalDevice()
 
 bool GVulkanPhysicalDevice::init()
 {
+	m_computeQueueFamilyIndex = -1;
 	bool restrictedToDiscreteGpu = true;
 
 
@@ -172,11 +173,21 @@ bool GVulkanPhysicalDevice::init()
 			m_defaultQueueFamilyIndex = i;
 		}
 		// Only for transfer
-		else if ((m_allQueues[i].queueFlags & VK_QUEUE_TRANSFER_BIT))
+		else if ((m_allQueues[i].queueFlags & VK_QUEUE_TRANSFER_BIT) && !(m_allQueues[i].queueFlags & VK_QUEUE_COMPUTE_BIT))
 		{
 			m_onlyTransferSupport = true;
 			m_onlyTransferFamilyIndex = i;
 		}
+		else if (m_allQueues[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
+		{
+			m_computeQueueFamilyIndex = i;
+		}
+		
+	}
+	if (m_computeQueueFamilyIndex == -1)
+	{
+		GLoggerManager::get_instance()->log_e(TAG, "Computer should support compute queue.");
+		return false;
 	}
 
 	if (m_defaultQueueFamilyIndex == -1)
@@ -260,6 +271,11 @@ uint32_t GVulkanPhysicalDevice::get_only_transfer() const noexcept
 const VkPhysicalDeviceProperties* GVulkanPhysicalDevice::get_vk_properties() const noexcept
 {
 	return &m_physicalDevProperties;
+}
+
+uint32_t GVulkanPhysicalDevice::get_compute_queue() const noexcept
+{
+	return m_computeQueueFamilyIndex;
 }
 
 

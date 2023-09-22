@@ -34,13 +34,10 @@ bool IImageLoader::has_support_for(GIMAGETYPE type)
 
 GImage_Descriptor* STBImageLoader::load(std::string_view path,int dedicatedFormat)
 {
-	if (dedicatedFormat != -1 && (dedicatedFormat != VK_FORMAT_B8G8R8A8_SRGB && dedicatedFormat != VK_FORMAT_B8G8R8_SRGB && dedicatedFormat != VK_FORMAT_R8G8B8A8_SRGB && dedicatedFormat != VK_FORMAT_R8G8B8_SRGB && dedicatedFormat != VK_FORMAT_R8G8B8A8_SNORM && dedicatedFormat != VK_FORMAT_R8G8B8_SNORM))
-	{
-		return nullptr;
-	}
 	int texWidth, texHeight, texChannels;
 	auto* pixels = stbi_load(path.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
+	if (pixels == nullptr)
+		return nullptr;
 
 	GImage_Descriptor* img = new GImage_Descriptor();
 	img->channelCount = texChannels;
@@ -52,6 +49,7 @@ GImage_Descriptor* STBImageLoader::load(std::string_view path,int dedicatedForma
 	{
 		img->format = (VkFormat)dedicatedFormat;
 	}
+	img->size = texWidth * texHeight * 4;
 	img->pixels = (uint8_t*)pixels;
 	img->imageType = GIMAGETYPE_2D;
 	return img;

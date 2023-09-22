@@ -20,10 +20,6 @@ public:
 
 	ICameraPositioner* get_current_positioner();
 
-	const std::vector<IGVulkanUniformBuffer*>* get_buffers();
-
-	virtual void render(uint32_t frame) override;
-
 	virtual void set_positioner(ICameraPositioner* positioner) override;
 
 	virtual const float* get_camera_position() override;
@@ -40,12 +36,23 @@ private:
 
 	std::vector<IGVulkanUniformBuffer*> m_uniformBuffers;
 
+	// Inherited via IGCameraManager
+	virtual const float* get_camera_view_matrix() override;
+
+	virtual const float* get_camera_proj_matrix() override;
+
+	virtual const float* get_camera_view_proj_matrix() override;
+
+	DrawCullData m_cullData;
+	// Inherited via IGCameraManager
+	virtual const DrawCullData* get_cull_data() const noexcept override;
+
+	virtual void update_frustrum_proj_matrix(const glm::mat4& frustrum) noexcept override;
+
+	glm::mat4 m_frustrumProjMatrix;
 
 	// Inherited via IGCameraManager
-	virtual IGVulkanUniformBuffer* get_camera_buffer_for_frame(uint32_t frame) override;
-
-	virtual uint32_t get_camera_buffer_count() override;
-
+	virtual DrawCullData* get_cull_data() noexcept override;
 };
 
 

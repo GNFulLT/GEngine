@@ -5,19 +5,19 @@
 #include <vector>
 #include "public/core/templates/shared_ptr.h"
 #include "engine/manager/igpipeline_object_manager.h"
+#include "engine/manager/igscene_manager.h"
 
 class IGVulkanLogicalDevice;
 class IGVulkanDescriptorPool;
 struct VkDescriptorSetLayout_T;
 struct VkDescriptorSet_T;
-class IGCameraManager;
 class IGTextureResource;
 class IGVulkanPipelineLayout;
 
 class GCubePipelinelayoutCreator : public IGVulkanGraphicPipelineLayoutCreator
 {
 public:
-	GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGCameraManager* cameraManager,IGPipelineObjectManager* objManager
+	GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGSceneManager* sceneManager,IGPipelineObjectManager* objManager
 		,GSharedPtr<IGTextureResource> cubeTextureResource,uint32_t framesInFlight);
 
 	// Inherited via IGVulkanGraphicPipelineLayoutCreator
@@ -30,7 +30,7 @@ private:
 	IGVulkanDescriptorPool* m_descriptorPool;
 	VkDescriptorSetLayout_T* m_descriptorSetLayout;
 	std::vector<VkDescriptorSet_T*> m_descriptorSets;
-	IGCameraManager* m_cameraManager;
+	IGSceneManager* m_sceneManager;
 	GSharedPtr<IGTextureResource> m_cubeTexture;
 	IGVulkanPipelineLayout* m_pipelineLayout;
 	IGPipelineObjectManager* m_objManager;

@@ -28,6 +28,11 @@ public:
 
 	virtual uint32_t get_size() override;
 
+
+
+	virtual void* map_memory() override;
+
+	virtual void unmap_memory() override;
 private:
 	GVulkanLogicalDevice* m_boundedDevice;
 	VmaAllocator m_allocatorRef;
@@ -35,6 +40,8 @@ private:
 	VkBuffer m_buffer;
 	uint32_t m_size = 0;
 	bool m_inited;
+
+
 
 };
 

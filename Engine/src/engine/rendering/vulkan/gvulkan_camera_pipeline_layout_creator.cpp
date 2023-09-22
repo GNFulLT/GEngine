@@ -5,10 +5,12 @@
 #include "public/math/gmat4.h"
 #include <array>
 #include "internal/engine/rendering/vulkan/gvulkan_basic_pipeline_layout.h"
+#include "engine/manager/igscene_manager.h"
 
-GVulkanCameraLayoutCreator::GVulkanCameraLayoutCreator(IGVulkanLogicalDevice* boundedDevice, std::vector<IGVulkanUniformBuffer*> cameraBuff,uint32_t frameInFlight)
+GVulkanCameraLayoutCreator::GVulkanCameraLayoutCreator(IGVulkanLogicalDevice* boundedDevice, IGSceneManager* sceneMng,uint32_t frameInFlight)
 {
-	m_camBuff = cameraBuff;
+
+	m_sceneMng = sceneMng;
 	m_boundedDevice = boundedDevice;
 	m_frameInFlight = frameInFlight;
 	m_descriptorSetLayout = nullptr;
@@ -104,9 +106,10 @@ std::expected<IGVulkanDescriptorPool*, LAYOUT_CREATOR_ERROR> GVulkanCameraLayout
 
 	for (int i = 0; i < m_frameInFlight; i++)
 	{
+		auto gbuff = m_sceneMng->get_global_buffer_for_frame(i);
 		VkDescriptorBufferInfo binfo;
 		//it will be the camera buffer
-		binfo.buffer = m_camBuff[i]->get_vk_buffer();
+		binfo.buffer = gbuff->get_vk_buffer();
 		//at 0 offset
 		binfo.offset = 0;
 		//of the size of a camera data struct

@@ -8,6 +8,7 @@
 #include "engine/manager/igresource_manager.h"
 #include "engine/manager/igcamera_manager.h"
 #include "engine/manager/igpipeline_object_manager.h"
+#include "engine/manager/igscene_manager.h"
 
 void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 {
@@ -62,6 +63,9 @@ void* ManagerTable::swap_and_get_managed(ENGINE_MANAGER mng, void* ptr)
 	case ENGINE_MANAGER_CAMERA:
 		managedPtr = new GSharedPtr<IGCameraManager>((IGCameraManager*)ptr);
 		break;
+	case ENGINE_MANAGER_SCENE:
+		managedPtr = new GSharedPtr<IGSceneManager>((IGSceneManager*)ptr);
+		break;
 	default:
 		break;
 	}
@@ -98,6 +102,9 @@ void ManagerTable::delete_and_swap(ENGINE_MANAGER mng, void* ptr)
 	case ENGINE_MANAGER_CAMERA:
 		managedPtr = new GSharedPtr<IGCameraManager>((IGCameraManager*)ptr);
 		break;
+	case ENGINE_MANAGER_SCENE:
+		managedPtr = new GSharedPtr<IGSceneManager>((IGSceneManager*)ptr);
+		break;
 	default:
 		break;
 	}
@@ -133,6 +140,9 @@ void ManagerTable::delete_manager(ENGINE_MANAGER manager)
 		break;
 	case ENGINE_MANAGER_CAMERA:
 		delete (GSharedPtr<IGCameraManager>*)mng;
+	case ENGINE_MANAGER_SCENE:
+		delete (GSharedPtr<IGSceneManager>*)mng;
+		break;
 	default:
 		break;
 	}
@@ -176,5 +186,8 @@ void ManagerTable::delete_managers()
 	{
 		delete (GSharedPtr<IGPipelineObjectManager>*)pipeline;
 	}
-	
+	if (auto scene = get_engine_manager_managed(ENGINE_MANAGER_SCENE); scene != nullptr)
+	{
+		delete (GSharedPtr<IGSceneManager>*)scene;
+	}
 }

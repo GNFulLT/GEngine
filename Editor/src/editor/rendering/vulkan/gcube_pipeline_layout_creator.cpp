@@ -12,14 +12,14 @@
 #include "public/math/gmat4.h"
 #include "internal/rendering/vulkan/gvulkan_pipeline_layout_wrapper.h"
 
-GCubePipelinelayoutCreator::GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGCameraManager* cameraManager, IGPipelineObjectManager* objManager,
+GCubePipelinelayoutCreator::GCubePipelinelayoutCreator(IGVulkanLogicalDevice* device, IGSceneManager* sceneManager, IGPipelineObjectManager* objManager,
 	GSharedPtr<IGTextureResource> cubeTexture,uint32_t framesInFlight)
 {
 	m_boundedDevice = device;
 	m_framesInFlight = framesInFlight;
 	m_descriptorPool = nullptr;
 	m_descriptorSetLayout = nullptr;
-	m_cameraManager = cameraManager;
+	m_sceneManager = sceneManager;
 	m_cubeTexture = cubeTexture;
 	m_objManager = objManager;
 }
@@ -118,11 +118,11 @@ std::expected<IGVulkanDescriptorPool*, LAYOUT_CREATOR_ERROR> GCubePipelinelayout
 	{
 		VkDescriptorBufferInfo binfo;
 		//it will be the camera buffer
-		binfo.buffer = m_cameraManager->get_camera_buffer_for_frame(i)->get_vk_buffer();
+		binfo.buffer = m_sceneManager->get_global_buffer_for_frame(i)->get_vk_buffer();
 		//at 0 offset
 		binfo.offset = 0;
 		//of the size of a camera data struct
-		binfo.range = m_cameraManager->get_camera_buffer_for_frame(i)->get_size();
+		binfo.range = m_sceneManager->get_global_buffer_for_frame(i)->get_size();
 
 		VkDescriptorImageInfo iinfo = {};
 		//X TODO CACHE AND USE SAMPLER BOUNDERS

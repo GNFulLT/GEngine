@@ -40,6 +40,10 @@ private:
 	bool init_named_set_layouts();
 	void destroy_named_set_layouts();
 
+	bool init_named_compute_pipelines();
+	void destroy_named_compute_pipelines();
+	
+
 	VkFormat m_swapchainFormat;
 	uint32_t m_framesInFlight;
 	IGVulkanLogicalDevice* m_logicalDevice;

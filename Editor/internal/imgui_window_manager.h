@@ -80,10 +80,11 @@ private:
 
 	// Nodes
 	uint32_t dock_id_left_top;
-	uint32_t dock_id_right;
+	uint32_t dock_id_right_top;
 	uint32_t dock_id_bottom;
 	uint32_t dock_id_middle;
 	uint32_t dock_id_left_bottom;
+	uint32_t dock_id_right_bottom;
 
 	bool m_isDockDirty = true;
 

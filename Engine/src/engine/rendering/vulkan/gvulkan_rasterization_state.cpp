@@ -21,6 +21,11 @@ GVulkanRasterizationState::GVulkanRasterizationState()
 
 }
 
+GVulkanRasterizationState::GVulkanRasterizationState(const VkPipelineRasterizationStateCreateInfo* inf)
+{
+	m_createInfo = *inf;
+}
+
 GRAPHIC_PIPELINE_STATE GVulkanRasterizationState::get_pipeline_state()
 {
 	return GRAPHIC_PIPELINE_STATE_RASTERIZATION;

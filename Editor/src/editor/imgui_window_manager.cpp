@@ -148,8 +148,6 @@ void ImGuiWindowManager::render_windows()
 	
 	draw_main_menu_bar();
 
-	ImGui::ShowDemoWindow();
-
 	auto iterator = m_windowVector.begin();
 
 	while (iterator != m_windowVector.end())
@@ -175,11 +173,7 @@ void ImGuiWindowManager::render_windows()
 		iterator++;
 		
 	}
-
-	ImGui::Begin("Helloooo");
-	ImGui::End();
-
-
+	
 	m_isInRender.store(false);
 }
 
@@ -272,10 +266,10 @@ void ImGuiWindowManager::build_nodes()
 		ImGui::DockBuilderSetNodeSize(m_dock_id, ImGui::GetMainViewport()->Size);
 	
 	
-		dock_id_right = ImGui::DockBuilderSplitNode(m_dock_id, ImGuiDir_Right,
+		dock_id_right_top = ImGui::DockBuilderSplitNode(m_dock_id, ImGuiDir_Right,
 			0.3f, nullptr, &dock_id_left_top);
 	
-	
+		dock_id_right_top = ImGui::DockBuilderSplitNode(dock_id_right_top, ImGuiDir_Up, 0.6, nullptr, &dock_id_right_bottom);
 		dock_id_left_top = ImGui::DockBuilderSplitNode(dock_id_left_top, ImGuiDir_Left,
 			0.3f, nullptr, &dock_id_middle);
 		
@@ -286,9 +280,6 @@ void ImGuiWindowManager::build_nodes()
 			0.2f, nullptr, &dock_id_middle);
 
 		
-		ImGui::DockBuilderDockWindow("Dear ImGui Demo", dock_id_right);
-		ImGui::DockBuilderDockWindow("Helloooo", dock_id_left_top);
-
 		for (const auto& win : m_windowVector)
 		{
 			dock_the_window_if_needs(win);
@@ -427,14 +418,40 @@ void ImGuiWindowManager::draw_main_menu_bar()
 
 
 		ImGui::Spacing();
+
 		ImGui::SetCursorPosY(24.f);
 		int iconBegin = ImGui::GetCursorPosX();
 
+		if (ImGui::BeginMenu("Project"))
+		{
+
+		}
+		ImGui::Spacing();
+
+		ImGui::SetCursorPosY(24.f);
+
+		if (ImGui::BeginMenu("View"))
+		{
+
+		}
+		ImGui::Spacing();
+
+		ImGui::SetCursorPosY(24.f);
+
+		if (ImGui::BeginMenu("Plugins"))
+		{
+
+		}
+		ImGui::Spacing();
+		ImGui::SetCursorPosY(24.f);
 		for (int i = 0; i < m_menuVector.size(); i++)
 		{
+
 			if (m_menuVector[i]->need_render())
 			{
 				m_menuVector[i]->render();
+				ImGui::Spacing();
+				ImGui::SetCursorPosY(24.f);
 			}
 		}
 
@@ -519,7 +536,10 @@ void ImGuiWindowManager::dock_the_window_if_needs(GImGuiWindow* win)
 			dirId = dock_id_left_top;
 			break;
 		case GIMGUIWINDOWDIR_RIGHT:
-			dirId = dock_id_right;
+			dirId = dock_id_right_top;
+			break;
+		case GIMGUIWINDOWDIR_RIGHT_BOTTOM:
+			dirId = dock_id_right_bottom;
 			break;
 		case GIMGUIWINDOWDIR_MIDDLE:
 			dirId = dock_id_middle;

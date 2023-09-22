@@ -18,11 +18,15 @@ public:
 
 	virtual void update(float deltaTime) override;
 
-	virtual const gmat4* get_view_proj_projection() override;
-
 	virtual const float* get_position() override;
 
 	virtual bool init() override;
+
+	virtual const float* get_view_proj_matrix() const noexcept override;
+
+	virtual const float* get_view_matrix() const noexcept override;
+
+	virtual const float* get_proj_matrix() const noexcept override;
 private:
 
 	void setup_up_vector();
@@ -33,9 +37,10 @@ private:
 	glm::vec3 moveSpeed_ = glm::vec3(0.0f);
 	glm::vec3 up_ = glm::vec3(0.0f, 0.0f, 1.0f);
 	glm::mat4 m_projection;
+	glm::mat4 m_view;
 
 	float m_damping = 0.1f;
-	float m_fastCoef = 2.f;
+	float m_fastCoef = 3.f;
 	float m_acceleration = 150.f;
 	float m_maxSpeed = 10.0f;
 	float mouseSpeed_ = 0.01f;
@@ -48,9 +53,6 @@ private:
 	IKeyboardManager* p_keyboardManager;
 	IMouseManager* p_mouseManager;
 	ImGuiWindowManager* p_windowManager;
-
-	// Inherited via ICameraPositioner
-	virtual const void* get_matrix() const noexcept override;
 };
 
 #endif // GVULKAN_FPS_CAMERA_CONTROLLER_H

@@ -39,3 +39,13 @@ uint32_t GVulkanUniformBuffer::get_size()
 {
 	return m_buff->get_size();
 }
+
+void* GVulkanUniformBuffer::map_memory()
+{
+	return m_buff->map_memory();
+}
+
+void GVulkanUniformBuffer::unmap_memory()
+{
+	m_buff->unmap_memory();
+}

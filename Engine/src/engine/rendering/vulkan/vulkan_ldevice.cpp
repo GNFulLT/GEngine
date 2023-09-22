@@ -33,6 +33,10 @@
 #include "internal/engine/rendering/vulkan/gvulkan_depth_stencil_state.h"
 #include "internal/engine/rendering/vulkan/gvulkan_camera_pipeline_layout_creator.h"
 #include "internal/engine/manager/gcamera_manager.h"
+#include "internal/engine/rendering/vulkan/gvulkan_storage_buffer.h"
+#include "internal/engine/rendering/vulkan/gvulkan_indirect_buffer.h"
+#include "engine/imanager_table.h"
+#include "internal/engine/manager/gscene_manager.h"
 
 GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
@@ -74,6 +78,8 @@ bool GVulkanLogicalDevice::init()
 		m_logger->log_d(fmt::format("Support only transfer found family index is : {}. Default Queue were : {}", physicalDevice->get_only_transfer(),queueIndex).c_str());
 		queueCreateInf.add_create_info(physicalDevice->get_only_transfer(), mainPriority);
 	}
+	queueCreateInf.add_create_info(physicalDevice->get_compute_queue(), mainPriority);
+
 	//X All Layers
 	std::vector<VkLayerProperties> allLayerProps;
 	uint32_t propCount = 0;
@@ -202,9 +208,34 @@ bool GVulkanLogicalDevice::init()
 	m_logger->log_d("Creating device");
 
 
+
+	VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR barycentric = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR,
+		.pNext = nullptr,
+		.fragmentShaderBarycentric = VK_TRUE
+	};
+
+	auto deviceFeatures = physicalDevice->get_vk_features();
+	deviceFeatures.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
+	deviceFeatures.shaderInt64 = VK_TRUE;
+	deviceFeatures.fillModeNonSolid = VK_TRUE;
+	const VkPhysicalDeviceFeatures2 deviceFeatures2 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,  .pNext = &barycentric,  .features = deviceFeatures };
+	VkPhysicalDeviceVulkan11Features deviceFeatures11 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, .pNext = (void*)&deviceFeatures2 ,.shaderDrawParameters = VK_TRUE};
+	
+	VkPhysicalDeviceVulkan12Features ftrs = {};
+	ftrs.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	ftrs.scalarBlockLayout = VK_TRUE;
+	ftrs.pNext = (void*)&deviceFeatures11;
+	ftrs.descriptorIndexing = VK_TRUE;
+	ftrs.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	ftrs.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	ftrs.runtimeDescriptorArray = VK_TRUE;
+	ftrs.drawIndirectCount = VK_TRUE;
+	ftrs.descriptorBindingPartiallyBound = VK_TRUE;
+	ftrs.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 	VkDeviceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pNext = nullptr;
+	createInfo.pNext = &ftrs;
 	createInfo.flags = 0;
 	createInfo.queueCreateInfoCount = (uint32_t)queueCreateInf.get_queue_create_inf_count();
 	createInfo.pQueueCreateInfos = queueCreateInf.data();
@@ -212,7 +243,7 @@ bool GVulkanLogicalDevice::init()
 	createInfo.ppEnabledLayerNames = enabledLayers.data();
 	createInfo.enabledExtensionCount = (uint32_t)enabledExtensions.size();
 	createInfo.ppEnabledExtensionNames = enabledExtensions.data();
-	createInfo.pEnabledFeatures = &(physicalDevice->get_vk_features());
+	createInfo.pEnabledFeatures = nullptr;
 
 	if (auto res = vkCreateDevice((VkPhysicalDevice)physicalDevice->get_vk_physical_device(), &createInfo, nullptr, &(m_logicalDevice)); res != VK_SUCCESS)
 		return false;
@@ -221,6 +252,10 @@ bool GVulkanLogicalDevice::init()
 
 	m_defaultQueue = GVulkanQueue(this,physicalDevice->get_default_queue_family_index());
 
+	m_computeQueue = GVulkanQueue(this,physicalDevice->get_compute_queue());
+
+	m_computeCommandManager = GSharedPtr<GVulkanCommandBufferManager>(new GVulkanCommandBufferManager(this, &m_computeQueue, false));
+	m_computeCommandManager->init();
 	m_logger->log_d("Checking support only transfer");
 
 	if (physicalDevice->does_support_only_transfer())
@@ -277,7 +312,7 @@ bool GVulkanLogicalDevice::is_valid() const
 void GVulkanLogicalDevice::destroy()
 {
 	m_transferOps->destroy();
-
+	m_computeCommandManager->destroy();
 	vmaDestroyAllocator(allocator);
 
 	vkDestroyDevice(m_logicalDevice, nullptr);
@@ -577,6 +612,101 @@ bool GVulkanLogicalDevice::create_vma_allocator()
 
 }
 
+IGVulkanQueue* GVulkanLogicalDevice::get_compute_queue() noexcept
+{
+	return &m_computeQueue;
+}
+
+GVulkanCommandBuffer* GVulkanLogicalDevice::create_compute_command_buffer()
+{
+	return m_computeCommandManager->create_buffer(true);
+}
+
+std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_shared_buffer(uint32_t size, uint32_t bufferUsageFlags, VmaMemoryUsage memoryUsageFlag, const std::vector<IGVulkanQueue*>* queues)
+{
+	GVulkanBuffer* buff = new GVulkanBuffer(this, allocator, size);
+
+	VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	bufferInfo.size = size;
+	bufferInfo.usage = bufferUsageFlags;
+	bufferInfo.queueFamilyIndexCount = queues->size();
+
+	std::vector<uint32_t> vkqueues;
+	for (auto vq : *queues)
+	{
+		vkqueues.push_back(vq->get_queue_index());
+	}
+	bufferInfo.pQueueFamilyIndices = vkqueues.data();
+	bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+
+	VmaAllocationCreateInfo allocInfo = {};
+	if (memoryUsageFlag == 0)
+		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	else
+		allocInfo.usage = memoryUsageFlag;
+
+	VkBuffer buffer;
+	VmaAllocation allocation;
+
+	if (VK_SUCCESS == vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr))
+	{
+		buff->m_inited = true;
+		buff->m_allocationBlock = allocation;
+		buff->m_buffer = buffer;
+		return buff;
+	}
+	else
+	{
+		delete buff;
+		return std::unexpected(VULKAN_BUFFER_CREATION_ERROR_UNKNOWN);
+	}
+}
+
+IGVulkanGraphicPipelineState* GVulkanLogicalDevice::create_custom_rasterization_state(const VkPipelineRasterizationStateCreateInfo* state)
+{
+	return new GVulkanRasterizationState(state);
+}
+
+IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_graphic_pipeline_injector_for_renderpass(IGVulkanRenderPass* vp, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight, IGVulkanGraphicPipelineLayoutCreator* injector)
+{
+	GVulkanGraphicPipelineCustomLayout* cpipe = new GVulkanGraphicPipelineCustomLayout(this, vp, shaderStages, states, injector, 0);
+	bool inited = cpipe->init();
+	if (!inited)
+	{
+		cpipe->destroy();
+		delete cpipe;
+		return nullptr;
+	}
+
+	return cpipe;
+}
+
+
+std::expected<IGVulkanIndirectBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_indirect_buffer(uint32_t size)
+{
+	//X For debugging purposes cpu only
+	auto res = create_buffer(size, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	if (!res.has_value())
+	{
+		return std::unexpected(res.error());
+	}
+	GVulkanIndirectBuffer* buff = new GVulkanIndirectBuffer(res.value());
+	return buff;
+}
+
+std::expected<IGVulkanStorageBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_storage_buffer(uint32_t size)
+{
+	//X TODO : For debugging purposes cpu only
+	auto res = create_buffer(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	if (!res.has_value())
+	{
+		return std::unexpected(res.error());
+	}
+	GVulkanStorageBuffer* buff = new GVulkanStorageBuffer(res.value());
+	return buff;
+}
+
+
 IGVulkanDescriptorPool* GVulkanLogicalDevice::create_and_init_vector_pool(const std::unordered_map<VkDescriptorType, int>& typeMap, uint32_t frameInFlight)
 {
 	GVulkanVectorizedDescriptorPool* pool = new GVulkanVectorizedDescriptorPool(this, frameInFlight, typeMap);
@@ -615,7 +745,8 @@ std::expected<IGVulkanVertexBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogica
 }
 IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_default_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight)
 {
-	auto injector = new GVulkanCameraLayoutCreator(this, *GCameraManager::s_static->get_buffers(), framesInFlight);
+	auto scene = ((GSharedPtr<IGSceneManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
+	auto injector = new GVulkanCameraLayoutCreator(this, scene, framesInFlight);
 	GVulkanGraphicPipelineCustomLayout* cpipe = new GVulkanGraphicPipelineCustomLayout(this, vp->get_render_pass(), shaderStages, states, injector, 0);
 	bool inited = cpipe->init();
 	if (!inited)

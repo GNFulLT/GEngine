@@ -51,6 +51,8 @@ public:
 	virtual const std::vector<VkQueueFamilyProperties>& get_all_queues() const noexcept = 0;
 
 	virtual const VkPhysicalDeviceProperties* get_vk_properties() const noexcept = 0;
+
+	virtual uint32_t get_compute_queue() const noexcept = 0;
 private:
 };
 

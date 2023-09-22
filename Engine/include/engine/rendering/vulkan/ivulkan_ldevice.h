@@ -5,6 +5,7 @@
 #include <expected>
 #include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 class IGVulkanPhysicalDevice;
 class IGVulkanQueue;
@@ -16,7 +17,8 @@ class IGVulkanPipelineLayout;
 class IGVulkanGraphicPipeline;
 class IGVulkanVertexBuffer;
 class IGVulkanGraphicPipelineLayoutCreator;
-
+class IGVulkanStorageBuffer;
+class IGVulkanIndirectBuffer;
 struct VkImageCreateInfo;
 enum VkDescriptorType;
 enum VkPrimitiveTopology;
@@ -24,8 +26,8 @@ struct VkDescriptorSetLayout_T;
 struct VkVertexInputBindingDescription;
 struct VkVertexInputAttributeDescription;
 class IVulkanShaderStage;
-
 enum VkFormat;
+class IGVulkanRenderPass;
 
 enum VULKAN_BUFFER_CREATION_ERROR
 {
@@ -48,6 +50,7 @@ class IGVulkanGraphicPipelineState;
 class IGVulkanViewport;
 struct VkPipelineColorBlendStateCreateInfo;
 struct VkPipelineDepthStencilStateCreateInfo;
+struct VkPipelineRasterizationStateCreateInfo;
 
 class ENGINE_API IGVulkanLogicalDevice
 {
@@ -65,6 +68,8 @@ public:
 	virtual IGVulkanPhysicalDevice* get_bounded_physical_device() = 0;
 
 	virtual IGVulkanQueue* get_present_queue() noexcept = 0;
+	
+	virtual IGVulkanQueue* get_compute_queue() noexcept = 0;
 
 	virtual IGVulkanQueue* get_render_queue() noexcept = 0;
 
@@ -74,8 +79,10 @@ public:
 
 	virtual void end_command_buffer_record(GVulkanCommandBuffer* buff) = 0;
 
+	virtual GVulkanCommandBuffer* create_compute_command_buffer() = 0;
 
 	virtual std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_buffer(uint64_t size, uint32_t bufferUsageFlags, VmaMemoryUsage memoryUsageFlag) = 0;
+
 
 	virtual std::expected< IGVulkanVertexBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_vertex_buffer(uint64_t size) = 0;
 
@@ -83,6 +90,7 @@ public:
 
 	virtual IGVulkanDevice* get_owner() noexcept = 0;
 
+	virtual  std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_shared_buffer(uint32_t size,uint32_t bufferUsageFlags,VmaMemoryUsage memoryUsageFlag,const std::vector<IGVulkanQueue*>* queues) = 0;
 
 	virtual std::expected<ITransferHandle*, TRANSFER_QUEUE_GET_ERR> get_wait_and_begin_transfer_cmd() = 0;
 
@@ -104,6 +112,9 @@ public:
 
 	virtual std::expected<IGVulkanUniformBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_uniform_buffer(uint32_t size) = 0;
 
+	virtual std::expected<IGVulkanIndirectBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_indirect_buffer(uint32_t size) = 0;
+
+	virtual std::expected<IGVulkanStorageBuffer*, VULKAN_BUFFER_CREATION_ERROR> create_storage_buffer(uint32_t size) = 0;
 
 	virtual IGVulkanGraphicPipelineState* create_vertex_input_state(const std::vector< VkVertexInputBindingDescription>* vertexBindingDescription,
 		const std::vector< VkVertexInputAttributeDescription>* attributeDescription) = 0;
@@ -124,6 +135,9 @@ public:
 	virtual IGVulkanGraphicPipelineState* create_custom_depth_stencil_state(const VkPipelineDepthStencilStateCreateInfo* info) = 0;
 
 	virtual IGVulkanGraphicPipelineState* create_custom_color_blend_state(const VkPipelineColorBlendAttachmentState* attachment, const VkPipelineColorBlendStateCreateInfo* inf) = 0;
+
+	virtual IGVulkanGraphicPipelineState* create_custom_rasterization_state(const VkPipelineRasterizationStateCreateInfo* state) = 0;
+
 	//X Stencil test is off for the default state
 	virtual IGVulkanGraphicPipelineState* create_default_depth_stencil_state() = 0;
 
@@ -137,6 +151,9 @@ public:
 
 	virtual IGVulkanGraphicPipeline* create_and_init_default_graphic_pipeline_injector_for_vp(IGVulkanViewport* vp, const std::vector<IVulkanShaderStage*>& shaderStages,
 		const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight) = 0;
+
+	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_renderpass(IGVulkanRenderPass* vp, const std::vector<IVulkanShaderStage*>& shaderStages,
+		const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight, IGVulkanGraphicPipelineLayoutCreator* injector) = 0;
 private:
 };
 

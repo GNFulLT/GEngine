@@ -24,7 +24,15 @@ add_library(GEditor SHARED  "src/editor/editor_application_impl.cpp" "src/editor
 "src/editor/shader/gspirv_byte_shader.cpp" "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_spirv_descriptor.cpp"
 "internal/shader/gspirv_shader_debugger.h" "src/editor/shader/gspirv_shader_debugger.cpp" "internal/rendering/vertex_types.h" "src/editor/rendering/renderable.cpp" 
 "internal/rendering/vulkan/gdefault_pipeline_injector.h" "src/editor/rendering/vulkan/gdefault_pipeline_injector.cpp" "internal/rendering/vulkan/gvulkan_pipeline_layout_wrapper.h" 
-"src/editor/rendering/vulkan/gvulkan_pipeline_layout_wrapper.cpp" "src/editor/rendering/gfps_camera_positioner.cpp" "internal/rendering/vulkan/gcube_renderer.h" "src/editor/rendering/vulkan/gcube_renderer.cpp" "internal/rendering/vulkan/gcube_pipeline_layout_creator.h" "src/editor/rendering/vulkan/gcube_pipeline_layout_creator.cpp" "internal/rendering/vulkan/ggrid_renderer.h" "src/editor/rendering/vulkan/ggrid_renderer.cpp" "internal/rendering/vulkan/ggrid_pipeline_layout_creator.h" "src/editor/rendering/vulkan/ggrid_pipeline_layout_creator.cpp" "internal/rendering/vulkan/gvulkan_pipeline_layout_ref.h" "src/editor/rendering/vulkan/gvulkan_pipeline_layout_ref.cpp" "internal/rendering/grid_spec.h" "internal/window/gimgui_grid_settings_window.h" "src/editor/window/gimgui_grid_settings_window.cpp" "include/editor/igimgui_window_source_impl.h")
+"src/editor/rendering/vulkan/gvulkan_pipeline_layout_wrapper.cpp" "src/editor/rendering/gfps_camera_positioner.cpp" "internal/rendering/vulkan/gcube_renderer.h" "src/editor/rendering/gcube_renderer.cpp" 
+"internal/rendering/vulkan/gcube_pipeline_layout_creator.h" "src/editor/rendering/vulkan/gcube_pipeline_layout_creator.cpp" "internal/rendering/vulkan/ggrid_renderer.h"
+"src/editor/rendering/vulkan/ggrid_renderer.cpp" "internal/rendering/vulkan/ggrid_pipeline_layout_creator.h" "src/editor/rendering/vulkan/ggrid_pipeline_layout_creator.cpp" 
+"internal/rendering/vulkan/gvulkan_pipeline_layout_ref.h" "src/editor/rendering/vulkan/gvulkan_pipeline_layout_ref.cpp" "internal/rendering/grid_spec.h" "internal/window/gimgui_grid_settings_window.h"
+"src/editor/window/gimgui_grid_settings_window.cpp" "include/editor/igimgui_window_source_impl.h" "internal/rendering/mesh/gmesh_assimp_encoder.h" "src/editor/rendering/mesh/gmesh_assimp_encoder.cpp" 
+"internal/window/content_helper/descriptors/gimgui_model_asset_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_model_asset_descriptor.cpp"
+"internal/window/content_helper/descriptors/gimgui_gmesh_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_gmesh_descriptor.cpp" "internal/rendering/scene/scene_converter.h"
+"src/editor/rendering/scene/scene_converter.cpp" "internal/rendering/material/material_assimp_converter.h" "src/editor/rendering/material/material_assimp_converter.cpp" 
+ "internal/window/gimgui_properties_window.h" "src/editor/window/gimgui_properties_window.cpp" "internal/window/gimgui_material_window.h" "src/editor/window/gimgui_material_window.cpp" "internal/imguizmo.h" "src/editor/imguizmo.cpp" "internal/window/gimgui_scene_window.h" "src/editor/window/gimgui_scene_window.cpp" "internal/window/gimgui_position_port.h" "src/editor/window/gimgui_position_port.cpp" "internal/window/gimgui_normal_port.h" "internal/window/gimgui_albedo_port.h" "src/editor/window/gimgui_albedo_port.cpp" "src/editor/window/gimgui_normal_port.cpp" "internal/window/gimgui_composition_window.h" "src/editor/window/gimgui_composition_window.cpp")
 
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Core/include")
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Engine/include")
@@ -37,14 +45,25 @@ target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Third
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glfw/include")
 target_include_directories(GEditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glslang/glslang/")
 target_include_directories(GEditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glm/")
+target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp/include")
+target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer/src")
+
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../Engine" ENGINE)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glm" GLM)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer" MESHOPTIMIZER)
+
+set(BUILD_SHARED_LIBS ON)
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp" ASSIMP)
+
 
 target_link_libraries(GEditor PRIVATE GEngine_Core)
 target_link_libraries(GEditor PRIVATE GEngine_Engine)
 target_link_libraries(GEditor PRIVATE glfw)
 target_link_libraries(GEditor PRIVATE spdlog)
+target_link_libraries(GEditor PRIVATE assimp)
+target_link_libraries(GEditor PRIVATE meshoptimizer)
 
 include(GenerateExportHeader)
 

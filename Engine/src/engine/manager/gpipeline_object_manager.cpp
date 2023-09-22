@@ -43,11 +43,12 @@ GSharedPtr<IGVulkanNamedSampler> GPipelineObjectManager::get_named_sampler(const
 
 bool GPipelineObjectManager::init_named_objects()
 {
-	return init_named_renderpass() && init_named_sampler() && init_named_set_layouts() && init_named_pipeline_layouts();
+	return init_named_renderpass() && init_named_sampler() && init_named_set_layouts() && init_named_pipeline_layouts() && init_named_compute_pipelines();
 }
 
 void GPipelineObjectManager::destroy_named_objects()
 {
+	destroy_named_compute_pipelines();
 	destroy_named_pipeline_layouts();
 	destroy_named_set_layouts();
 	destroy_named_sampler();
@@ -68,7 +69,7 @@ bool GPipelineObjectManager::init_named_renderpass()
 		attchmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		attchmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		//X Depth image attachment
-		attchmentDescriptions[1].format = VK_FORMAT_D16_UNORM;
+		attchmentDescriptions[1].format = VK_FORMAT_D32_SFLOAT;
 		attchmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
 		attchmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attchmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -320,6 +321,15 @@ void GPipelineObjectManager::destroy_named_set_layouts()
 		}
 		rp->get()->destroy();
 	}
+}
+
+bool GPipelineObjectManager::init_named_compute_pipelines()
+{
+	return true;
+}
+
+void GPipelineObjectManager::destroy_named_compute_pipelines()
+{
 }
 
 IGVulkanNamedPipelineLayout* GPipelineObjectManager::get_named_pipeline_layout(const char* name)

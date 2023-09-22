@@ -13,6 +13,7 @@
 #include "engine/gengine.h"
 #include "engine/rendering/vulkan/ivulkan_shader_info.h"
 #include "engine/rendering/vulkan/igvulkan_uniform_buffer.h"
+#include "engine/rendering/vulkan/vulkan_command_buffer.h"
 
 GVulkanGraphicPipeline::GVulkanGraphicPipeline(IGVulkanLogicalDevice* dev, IGVulkanRenderPass* boundedRenderpass,const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, int flag)
 {
@@ -236,6 +237,11 @@ void GVulkanGraphicPipeline::destroy()
 const std::vector<IVulkanShaderStage*>* GVulkanGraphicPipeline::get_shader_stages()
 {
 	return &m_shaderStages;
+}
+
+void GVulkanGraphicPipeline::bind_sets(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout->get_vk_pipeline_layout(), 0, 1, &m_descriptorSets[frameIndex], 0, 0);
 }
 
 VkPipeline_T* GVulkanGraphicPipeline::get_pipeline()

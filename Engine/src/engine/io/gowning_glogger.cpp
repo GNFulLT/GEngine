@@ -79,7 +79,7 @@ void GOwningGLogger::log_e(const char* msg)
 	}
 	else
 	{
-		m_logger->log(spdlog::level::err, msg);
+ 		m_logger->log(spdlog::level::err, msg);
 	}
 }
 

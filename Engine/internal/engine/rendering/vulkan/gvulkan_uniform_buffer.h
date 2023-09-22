@@ -21,6 +21,12 @@ public:
 private:
 	IVulkanBuffer* m_buff;
 
+
+	// Inherited via IGVulkanUniformBuffer
+	virtual void* map_memory() override;
+
+	virtual void unmap_memory() override;
+
 };
 
 #endif // GVULKAN_UNIFORM_BUFFER_H

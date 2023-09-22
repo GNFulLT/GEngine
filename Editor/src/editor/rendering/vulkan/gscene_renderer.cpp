@@ -30,6 +30,7 @@
 #include "internal/imgui_layer.h"
 #include "internal/imgui_window_manager.h"
 #include "internal/window/gimgui_grid_settings_window.h"
+
 static int perFrameCmd = 2;
 
 static int ct = 0;
@@ -61,21 +62,26 @@ void GSceneRenderer::render_the_scene()
 	frameCmd->reset();
 
 	auto vp = m_viewport;
+	frameCmd->begin();
+	EditorApplicationImpl::get_instance()->m_engine->fill_cmd_dispatch(frameCmd, currIndex);
+
 	vp->begin_draw_cmd(frameCmd);
 
 	m_cubemapRenderer->render(frameCmd,currIndex,vp);
 
 
-	vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
-	//X TODO : Layout Cache
-	m_graphicPipeline->bind_sets(frameCmd,currIndex);
+	EditorApplicationImpl::get_instance()->m_engine->fill_cmd(frameCmd, currIndex, vp);
 
-	vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
-	vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
-	
-	VkDeviceSize offset = 0;
-	VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();
-	vkCmdBindVertexBuffers(frameCmd->get_handle(), 0, 1,&buff, &offset);
+	//vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
+	////X TODO : Layout Cache
+	//m_graphicPipeline->bind_sets(frameCmd,currIndex);
+
+	//vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
+	//vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
+	//
+	//VkDeviceSize offset = 0;
+	//VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();
+	//vkCmdBindVertexBuffers(frameCmd->get_handle(), 0, 1,&buff, &offset);
 	
 	//auto& modelMatrix = triangle->get_model_matrix();
 
@@ -91,10 +97,10 @@ void GSceneRenderer::render_the_scene()
 	////calculate final mesh matrix
 	//glm::mat4 mesh_matrix = projection * view * model;
 
-	auto& modelMatrix = triangle->get_model_matrix();
+	/*auto& modelMatrix = triangle->get_model_matrix();
 	vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &modelMatrix);
 
-	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);
+	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);*/
 
 	if (m_gridRenderer->wants_render())
 	{
@@ -102,6 +108,8 @@ void GSceneRenderer::render_the_scene()
 	}
 
 	vp->end_draw_cmd(frameCmd);
+	EditorApplicationImpl::get_instance()->m_engine->fill_cmd_deferred(frameCmd, currIndex);
+	frameCmd->end();
 
 	auto cmd = frameCmd->get_handle();
 	auto smph = m_frameSemaphores[currIndex]->get_semaphore();
@@ -263,18 +271,22 @@ bool GSceneRenderer::init()
 
 	triangle->init();
 
+	auto sceneMng = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
+
 	m_cubemapRenderer = GSharedPtr<GCubeRenderer>(new GCubeRenderer(s_device,resourceManager,
-		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(),
+		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(), sceneMng,
 		((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get()
 	,m_viewport, s_shaderManager,m_frameCmds.size(),"assets/bgg.hdr"));
 
 	m_gridRenderer = GSharedPtr<GridRenderer>(new GridRenderer(s_device, resourceManager,
-		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(),
+		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(), sceneMng,
 		((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get()
 		, m_viewport, s_shaderManager, m_frameCmds.size()));
 
 	assert(m_cubemapRenderer->init());
 	assert(m_gridRenderer->init());
+
+	EditorApplicationImpl::get_instance()->m_engine->init_custom_renderer(m_viewport);
 
 	auto win = new GImGuiGridSettingsWindow(m_gridRenderer.get());
 	if (!EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->create_imgui_window(win, GIMGUIWINDOWDIR_LEFT_BOTTOM))

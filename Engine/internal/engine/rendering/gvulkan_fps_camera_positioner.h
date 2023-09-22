@@ -14,13 +14,16 @@ public:
 
 	virtual void update(float deltaTime) override;
 
-	virtual const gmat4* get_view_proj_projection() override;
-
 	virtual const float* get_position() override;
 
 	virtual bool init() override;
 
-	virtual const void* get_matrix() const noexcept override;
+	virtual const float* get_view_proj_matrix() const noexcept override;
+
+	virtual const float* get_view_matrix() const noexcept override;
+
+	virtual const float* get_proj_matrix() const noexcept override;
+
 private:
 
 	gmat4 m_viewProjMatrix;

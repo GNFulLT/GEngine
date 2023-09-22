@@ -29,6 +29,8 @@ public:
 	virtual std::expected<IGVulkanDescriptorPool*, LAYOUT_CREATOR_ERROR> create_descriptor_pool_and_sets(IGVulkanGraphicPipeline* pipeline, std::vector<VkDescriptorSet_T*>* descriptorSets) = 0;
 	
 	virtual void destroy() {};
+
+	virtual bool own_sets() { return true; }
 private:
 };
 

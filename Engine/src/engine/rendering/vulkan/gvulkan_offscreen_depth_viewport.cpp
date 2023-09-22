@@ -50,7 +50,7 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 {
 	m_depthRenderpass = m_pipelineObjectManager->get_named_renderpass(IGPipelineObjectManager::RENDER_DEPTH_PASS.data());
 
-	m_depthFormat = VK_FORMAT_D16_UNORM;
+	m_depthFormat = VK_FORMAT_D32_SFLOAT;
 	vkFormat = m_depthRenderpass->get_supported_render_format();
 
 	m_viewport.width = width;
@@ -80,15 +80,14 @@ bool GVulkanOffScreenDepthViewport::init(int width, int height, int vkFormat)
 		inf.arrayLayers = 1;
 		inf.samples = VK_SAMPLE_COUNT_1_BIT;
 		inf.tiling = VK_IMAGE_TILING_OPTIMAL;
-		inf.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		inf.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		inf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		inf.queueFamilyIndexCount = 1;
 		inf.pQueueFamilyIndices = &renderingFamilyIndex;
 		inf.extent = extent;
 		inf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		// VMA_MEMORY_USAGE_CPU_COPY intented to copy the image from gpu to use as a texture the last image
-		auto res = m_boundedDevice->create_image(&inf, VMA_MEMORY_USAGE_CPU_COPY);
+		auto res = m_boundedDevice->create_image(&inf, VMA_MEMORY_USAGE_GPU_ONLY);
 
 		if (!res.has_value())
 		{
@@ -261,7 +260,6 @@ void GVulkanOffScreenDepthViewport::destroy(bool forResize)
 
 void GVulkanOffScreenDepthViewport::begin_draw_cmd(GVulkanCommandBuffer* cmd)
 {
-	cmd->begin();
 	m_renderTarget.begin(cmd->get_handle());
 }
 
@@ -269,7 +267,6 @@ void GVulkanOffScreenDepthViewport::end_draw_cmd(GVulkanCommandBuffer* cmd)
 {
 
 	m_renderTarget.end(cmd->get_handle());
-	cmd->end();
 }
 
 IGVulkanRenderPass* GVulkanOffScreenDepthViewport::get_render_pass()
