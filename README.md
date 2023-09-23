@@ -2,7 +2,7 @@ High Level Abstraction of Rendering Engnie
 
 ![image](https://github.com/GNFulLT/GEngine/assets/73427021/684bdc9f-47ad-4f95-a166-5fec522d0887)
 
-![image](https://github.com/GNFulLT/GEngine/assets/73427021/1714de10-3202-4466-891b-5849fb017cd8)
+![image](https://github.com/GNFulLT/GEngine/assets/73427021/ed632a4c-45c6-4137-83e6-9477bfd79c39)
 
 Rendering engine uses primarily clustered deferred rendering system.
 GBuffers : ( There is only sunlight for now. I am working on the point lights and pbr functions)
