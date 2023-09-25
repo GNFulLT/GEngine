@@ -19,6 +19,8 @@ private:
 	std::string m_name;
 	VkDescriptorSetLayout_T* m_layout;
 	IGVulkanLogicalDevice* m_boundedDevice;
+
+	std::vector < std::pair<VkDescriptorType, uint32_t>> m_types;
 };
 
 #endif // GVULKAN_NAMED_SET_LAYOUT_H

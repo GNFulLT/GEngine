@@ -3,10 +3,13 @@
 
 
 #include "engine/GEngine_EXPORT.h"
+#include <vector>
+#include <utility>
+#include <cstdint>
 
 struct VkDescriptorSetLayout_T;
 
-
+enum VkDescriptorType;
 class ENGINE_API IGVulkanNamedSetLayout
 {
 public:

@@ -22,7 +22,9 @@ public:
 	virtual GSharedPtr<IGVulkanNamedSampler> get_named_sampler(const char* name) override;
 	virtual IGVulkanNamedPipelineLayout* get_named_pipeline_layout(const char* name) override;
 
-	virtual IGVulkanNamedSetLayout* get_named_set_layout(const char* name);
+	virtual IGVulkanNamedSetLayout* get_named_set_layout(const char* name) override;
+
+	virtual IGVulkanNamedSetLayout* create_or_get_named_set_layout(const char* name, VkDescriptorSetLayoutCreateInfo* createInfo);
 
 private:
 	bool init_named_objects();

@@ -21,3 +21,4 @@ void GVulkanNamedSetLayout::destroy()
 	vkDestroyDescriptorSetLayout(m_boundedDevice->get_vk_device(), m_layout, nullptr);
 	m_layout = nullptr;
 }
+

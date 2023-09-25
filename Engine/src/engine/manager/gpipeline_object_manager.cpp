@@ -349,3 +349,16 @@ IGVulkanNamedSetLayout* GPipelineObjectManager::get_named_set_layout(const char*
 	}
 	return nullptr;
 }
+
+IGVulkanNamedSetLayout* GPipelineObjectManager::create_or_get_named_set_layout(const char* name, VkDescriptorSetLayoutCreateInfo* createInfo)
+{
+	VkDescriptorSetLayout layout;
+	auto res = vkCreateDescriptorSetLayout(m_logicalDevice->get_vk_device(), createInfo, nullptr, &layout);
+	if (res != VK_SUCCESS)
+	{
+		return nullptr;
+	}
+	GSharedPtr<IGVulkanNamedSetLayout> ptr = GSharedPtr<IGVulkanNamedSetLayout>(new GVulkanNamedSetLayout(m_logicalDevice, layout, this->UVERT_LAYOUT.data()));
+	m_namedSetLayoutMap.emplace(this->UVERT_LAYOUT, ptr);
+	return ptr.get();
+}
