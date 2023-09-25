@@ -13,31 +13,23 @@ GPUMeshStreamResources::GPUMeshStreamResources(IGVulkanLogicalDevice* dev,uint32
 	m_framesInFlight = framesInFlight;
 	m_floatPerVertex = floatCountPerVertex;
 	p_boundedDevice = dev;
-
+	m_computeSetLayout = nullptr;
 	m_inUsageSizeGlobalDrawDataBuffer = 0;
-	m_inUsageSizeIndexBuffer = 0;
-	m_inUsageSizeMeshBuffer = 0;
-	m_inUsageSizeVertexSize = 0;
-
-	m_mergedIndexBufferMappedMem = nullptr;
-	m_mergedMeshBufferMappedMem = nullptr;
-	m_mergedVertexBufferMappedMem = nullptr;
-	m_globalDrawDataBufferMappedMem = nullptr;
 }
 
 bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndexCount, uint32_t beginMeshCount, uint32_t beginDrawDataAndIdCount)
 {
-	m_mergedVertexBuffer.reset(p_boundedDevice->create_buffer(uint64_t(beginVertexCount) * m_floatPerVertex * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-	m_mergedVertexBufferMappedMem = m_mergedVertexBuffer->map_memory();
+	m_mergedVertex.gpuBuffer.reset(p_boundedDevice->create_buffer(uint64_t(beginVertexCount) * m_floatPerVertex * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_mergedVertex.create_internals();
 
-	m_mergedIndexBuffer.reset(p_boundedDevice->create_buffer(beginIndexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-	m_mergedIndexBufferMappedMem = (uint32_t*)m_mergedIndexBuffer->map_memory();
+	m_mergedIndex.gpuBuffer.reset(p_boundedDevice->create_buffer(beginIndexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_mergedIndex.create_internals();
 	
-	m_mergedMeshBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-	m_mergedMeshBufferMappedMem = (GMeshData*)m_mergedMeshBuffer->map_memory();
-	
-	m_globalDrawDataBuffer.reset(p_boundedDevice->create_buffer(beginDrawDataAndIdCount * sizeof(DrawData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-	m_globalDrawDataBufferMappedMem = (DrawData*)m_globalDrawDataBuffer->map_memory();
+	m_mergedMesh.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_mergedMesh.create_internals();
+
+	m_globalDrawData.gpuBuffer.reset(p_boundedDevice->create_buffer(beginDrawDataAndIdCount * sizeof(DrawData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_globalDrawData.create_internals();
 
 	m_globalDrawIdBuffer.reset(p_boundedDevice->create_buffer(beginDrawDataAndIdCount * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
 	
@@ -166,13 +158,13 @@ void GPUMeshStreamResources::update_draw_data_sets()
 {
 	std::array<VkDescriptorBufferInfo, 3> bufferInfos;
 	//X Mesh
-	bufferInfos[0].buffer = m_mergedMeshBuffer->get_vk_buffer();
+	bufferInfos[0].buffer = m_mergedMesh.gpuBuffer->get_vk_buffer();
 	bufferInfos[0].offset = 0;
-	bufferInfos[0].range = m_mergedMeshBuffer->get_size();
+	bufferInfos[0].range = m_mergedMesh.gpuBuffer->get_size();
 	//X DrawData
-	bufferInfos[1].buffer = m_globalDrawDataBuffer->get_vk_buffer();
+	bufferInfos[1].buffer = m_globalDrawData.gpuBuffer->get_vk_buffer();
 	bufferInfos[1].offset = 0;
-	bufferInfos[1].range = m_globalDrawDataBuffer->get_size();
+	bufferInfos[1].range = m_globalDrawData.gpuBuffer->get_size();
 	//X DrawID
 	bufferInfos[2].buffer = m_globalDrawIdBuffer->get_vk_buffer();
 	bufferInfos[2].offset = 0;

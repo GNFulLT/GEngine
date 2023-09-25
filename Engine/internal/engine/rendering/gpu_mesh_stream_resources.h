@@ -20,23 +20,25 @@ private:
 	void update_draw_data_sets();
 	void update_compute_sets();
 private:
+	uint32_t m_framesInFlight;
+	template<typename T>
+	struct CPUGPUData
+	{
+		std::unique_ptr<IVulkanBuffer> gpuBuffer;
+		std::vector<T> cpuVector;
+		T* gpuBegin = nullptr;
+		T* gpuCurrentPos = nullptr;
+		uint32_t inUsage = 0;
+		
+		void create_internals();
+	};
+
 	IGPipelineObjectManager* p_pipelineObjectMng;
 
-	uint32_t m_framesInFlight;
-	std::unique_ptr<IVulkanBuffer> m_mergedVertexBuffer;
-	void* m_mergedVertexBufferMappedMem;
-	std::unique_ptr<IVulkanBuffer> m_mergedIndexBuffer;
-	uint32_t* m_mergedIndexBufferMappedMem;
-	std::unique_ptr<IVulkanBuffer> m_mergedMeshBuffer;
-	GMeshData* m_mergedMeshBufferMappedMem;
-
-	uint32_t m_inUsageSizeVertexSize;
-	uint32_t m_inUsageSizeIndexBuffer;
-	uint32_t m_inUsageSizeMeshBuffer;
-
-
-	std::unique_ptr<IVulkanBuffer> m_globalDrawDataBuffer;
-	DrawData* m_globalDrawDataBufferMappedMem;
+	CPUGPUData<float> m_mergedVertex;
+	CPUGPUData<uint32_t> m_mergedIndex;
+	CPUGPUData<GMeshData> m_mergedMesh;
+	CPUGPUData<GMeshData> m_globalDrawData;
 
 	std::unique_ptr<IVulkanBuffer> m_globalDrawIdBuffer;
 	uint32_t m_inUsageSizeGlobalDrawDataBuffer;
@@ -57,4 +59,15 @@ private:
 
 };
 
+template<typename T>
+inline void GPUMeshStreamResources::CPUGPUData<T>::create_internals()
+{
+	assert(gpuBuffer->get_size() % sizeof(T) == 0);
+	this->gpuBegin = (T*)this->gpuBuffer->map_memory();
+	this->gpuCurrentPos = gpuBegin;
+	this->cpuVector.resize(this->gpuBuffer->get_size()/sizeof(T));
+}
+
 #endif // GPU_MESH_RESOURCES_H
+
+
