@@ -3,8 +3,13 @@
 
 
 #include "engine/GEngine_EXPORT.h"
+#include "engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h"
+#include "engine/rendering/vulkan/named/viewports/igvulkan_named_composition_viewport.h"
+#include "engine/rendering/renderer/igvulkan_deferred_renderer.h"
 #include <cstdint>
 
+struct VkDescriptorSet_T;
+enum VkFormat;
 class IGVulkanUniformBuffer;
 
 class ENGINE_API IGSceneManager
@@ -20,5 +25,14 @@ public:
 
 	virtual void destroy() = 0;
 
+	virtual bool init_deferred_renderer(IGVulkanNamedDeferredViewport* deferred) = 0;
+
+	virtual bool is_renderer_active() = 0;
+
+	virtual IGVulkanDeferredRenderer* get_deferred_renderer() const noexcept = 0;
+	
+	virtual VkDescriptorSet_T* get_global_set_for_frame(uint32_t frame) const noexcept = 0;
+
+	virtual IGVulkanNamedDeferredViewport* create_default_deferred_viewport(IGVulkanNamedRenderPass* deferredPass, IGVulkanNamedRenderPass* compositionPass,VkFormat compositionFormat) = 0;
 };
 #endif // ISCENE_MANAGER_H

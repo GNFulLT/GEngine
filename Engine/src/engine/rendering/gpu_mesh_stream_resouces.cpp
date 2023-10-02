@@ -47,7 +47,7 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 	m_globalIndirectCommandBuffers.resize(m_framesInFlight);
 	for (int i = 0; i < m_framesInFlight; i++)
 	{
-		m_globalIndirectCommandBuffers[i].reset(p_boundedDevice->create_buffer(uint64_t(m_globalIndirectCommandsBeginOffset) + sizeOfIndirectCommands, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
+		m_globalIndirectCommandBuffers[i].reset(p_boundedDevice->create_buffer(uint64_t(m_globalIndirectCommandsBeginOffset) + sizeOfIndirectCommands, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
 	}
 
 	//X Create named sets
@@ -114,8 +114,8 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 	//X Allocate sets
 	{
 		std::unordered_map<VkDescriptorType, int> types;
-		types.emplace(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,5);
-		m_generalPool = p_boundedDevice->create_and_init_vector_pool(types);
+		types.emplace(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,8);
+		m_generalPool = p_boundedDevice->create_and_init_vector_pool(types,m_framesInFlight*2);
 		assert(m_generalPool != nullptr);
 		//X Compute Set
 		{
@@ -146,12 +146,106 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 			allocInfo.pSetLayouts = layouts.data();
 
 			m_drawStreamSets.resize(m_framesInFlight);
-
-			assert(VK_SUCCESS == vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, m_drawStreamSets.data()));
+			auto setAllocRes = vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, m_drawStreamSets.data());
+			assert(VK_SUCCESS == setAllocRes);
 
 		}
 
 	}
+	return true;
+}
+
+void GPUMeshStreamResources::add_mesh_data(MeshData* meshData)
+{
+	//X Add the vertices and indices
+	uint32_t beginVertexFloat = m_mergedVertex.add_to_buffer(meshData->vertexData_);
+	uint32_t beginIndex = m_mergedIndex.add_to_buffer(meshData->indexData_);
+	//X Create gmesh data for per mesh
+	std::vector<GMeshData> gmeshes(meshData->meshes_.size());
+	for (int i = 0; i < meshData->meshes_.size(); i++)
+	{
+		GMeshData* gmesh = &gmeshes[i];
+		gmesh->boundingBox = meshData->boxes_[i];
+		gmesh->extent = glm::vec4(0,0,0,0);
+		gmesh->vertexOffset += (beginVertexFloat/ this->m_floatPerVertex) + meshData->meshes_[i].vertexOffset;
+		gmesh->indexOffset += beginIndex + meshData->meshes_[i].indexOffset; 
+		gmesh->vertexCount = meshData->meshes_[i].vertexCount;
+		gmesh->lodCount = meshData->meshes_[i].lodCount;
+		memcpy(&gmeshes[i].lodOffset[0], &meshData->meshes_[i].lodOffset[0], sizeof(uint32_t) * MeshConstants::MAX_LOD_COUNT);
+	}
+	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
+}
+
+void GPUMeshStreamResources::destroy()
+{
+	//X Destroy Pool
+	if (m_generalPool != nullptr)
+	{
+		m_generalPool->destroy();
+		delete m_generalPool;
+		m_generalPool = nullptr;
+
+		m_computeSets.clear();
+		m_drawStreamSets.clear();
+	}
+	//X Destroy Layouts 
+	{
+		if (m_computeSetLayout != nullptr)
+		{
+			m_computeSetLayout->destroy();
+			m_computeSetLayout = nullptr;
+		}
+		if (m_drawStreamSetLayout!= nullptr)
+		{
+			m_drawStreamSetLayout->destroy();
+			m_drawStreamSetLayout = nullptr;
+		}
+	}
+
+	//X Destroy the buffers
+	{
+		//X Global Indirect Buffer
+		for (auto& bf : m_globalIndirectCommandBuffers)
+		{
+			bf->unload();
+			bf.reset();
+		}
+		//X  Draw IDs
+		m_globalDrawIdBuffer->unload();
+		m_globalDrawIdBuffer.reset();
+
+		//X CPUGPU Buffers
+		m_globalDrawData.destroy();
+		m_mergedMesh.destroy();
+		m_mergedVertex.destroy();
+		m_mergedIndex.destroy();
+	}
+
+}
+
+uint32_t GPUMeshStreamResources::get_count_of_draw_data()
+{
+	return m_globalDrawData.cpuVector.size();
+}
+
+IGVulkanNamedSetLayout* GPUMeshStreamResources::get_draw_set_layout()
+{
+	return m_drawStreamSetLayout;
+}
+
+IGVulkanNamedSetLayout* GPUMeshStreamResources::get_compute_set_layout()
+{
+	return m_computeSetLayout;
+}
+
+VkDescriptorSet_T* GPUMeshStreamResources::get_draw_set_by_index(uint32_t currentFrame)
+{
+	return m_drawStreamSets[currentFrame];
+}
+
+VkDescriptorSet_T* GPUMeshStreamResources::get_compute_set_by_index(uint32_t currentFrame)
+{
+	return m_computeSets[currentFrame];
 }
 
 void GPUMeshStreamResources::update_draw_data_sets()

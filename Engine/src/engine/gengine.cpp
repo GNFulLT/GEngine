@@ -48,7 +48,6 @@ static ManagerTable* s_managerTable;
 static IGCameraManager* s_cameraManager;
 static GTimerManager* s_timer;
 static IGPipelineObjectManager* s_pipelineManager;
-static GSceneRenderer* s_sceneRenderer = nullptr;
 static IGSceneManager* s_sceneManager = nullptr;
 
 GEngine::GEngine()
@@ -132,22 +131,6 @@ void GEngine::run()
 	exit();
 }
 
-uint32_t GEngine::add_texture(IGTextureResource* res)
-{
-	return s_sceneRenderer->add_texture(res);
-}
-
-uint32_t GEngine::add_material(const MaterialDescription& desc)
-{
-	return s_sceneRenderer->add_material(desc);
-}
-
-void GEngine::set_material_for_node(uint32_t nodeID, uint32_t materialIndex)
-{
-	s_sceneRenderer->set_material_for_node(nodeID,materialIndex);
-
-}
-
 void GEngine::wait_all_frame_data()
 {
 	for (int i = 0; i < m_frames.size(); i++)
@@ -218,12 +201,9 @@ void GEngine::tick(double deltaTime)
 	//X BeforeUpdate
 	//X Update
 	//X After Update
-	assert(s_sceneRenderer != nullptr);
 	if (m_impl->before_update())
 	{
 		s_cameraManager->update(deltaTime);
-
-		s_sceneRenderer->update_scene_nodes();
 
 		m_impl->update();
 
@@ -280,31 +260,7 @@ IGVulkanFrameData* GEngine::get_frame_data_by_index(uint32_t index)
 {
 	return m_frames[m_currentFrame];
 }
-void GEngine::fill_cmd_deferred(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
-{
-	if (s_sceneRenderer != nullptr)
-		s_sceneRenderer->fill_command_deferred(cmd, frameIndex);
-}
-void GEngine::fill_cmd(GVulkanCommandBuffer* cmd, uint32_t frameIndex, IGVulkanViewport* vp)
-{
-	if(s_sceneRenderer != nullptr)
-		s_sceneRenderer->fill_command_buffer(cmd, frameIndex,vp);
-}
-void GEngine::fill_cmd_dispatch(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
-{
-	if (s_sceneRenderer != nullptr)
-		s_sceneRenderer->fill_command_buffer_dispatch(cmd, frameIndex);
-}
-WireFrameSpec* GEngine::get_wireframe_spec()
-{
-	if (s_sceneRenderer == nullptr) return nullptr;
-	return s_sceneRenderer->get_wireframe_spec();
-}
-void GEngine::init_custom_renderer(IGVulkanViewport* vp)
-{
-	if(s_sceneRenderer != nullptr)
-		s_sceneRenderer->init(vp);
-}
+
 //IGVulkanMainViewport* GEngine::create_viewport(int width, int height)
 //{
 //	return new GVulkanMainViewport();
@@ -447,7 +403,7 @@ void GEngine::init(GApplicationImpl* impl)
 	std::vector<MaterialDescription> materials;
 	MeshData* meshData = new MeshData();
 	scene = Scene::create_scene_with_default_material(materials);
-	s_sceneRenderer = new GSceneRenderer(logicalDev, s_cameraManager,s_sceneManager ,s_resourceManager , shaderManager->get(), FRAME_IN_FLIGHT, scene,materials,meshData);
+
 #ifdef _DEBUG
 	m_inited = true;
 #endif
@@ -460,47 +416,6 @@ void GEngine::init(GApplicationImpl* impl)
 		s_logger->log_c("GEngine", "Unknown error occured while initializing application implementation. Engine shutdown");
 		return;
 	}
-}
-
-bool GEngine::init_deferred(uint32_t width, uint32_t height)
-{
-	return s_sceneRenderer->init_deferred(width,height);
-}
-
-bool GEngine::resize_deferred(uint32_t width, uint32_t height)
-{
-	return s_sceneRenderer->resize_deferred(width,height);
-}
-
-IGVulkanNamedViewport* GEngine::get_deferred_vp()
-{
-	return s_sceneRenderer->get_deferred_vp();
-}
-
-int GEngine::add_mesh(MeshData* mesh)
-{
-	if (s_sceneRenderer != nullptr)
-		return s_sceneRenderer->add_mesh(mesh);
-}
-
-uint32_t GEngine::add_node_with_mesh(uint32_t mesh)
-{
-	if (s_sceneRenderer != nullptr)
-		return s_sceneRenderer->add_node_with_mesh(mesh);
-
-	return 0;
-}
-
-Scene* GEngine::get_global_scene()
-{
-	assert(s_sceneRenderer != nullptr);
-	return s_sceneRenderer->get_global_scene();
-}
-
-MeshData* GEngine::get_global_mesh_data()
-{
-	assert(s_sceneRenderer != nullptr);
-	return s_sceneRenderer->get_global_mesh_data();
 }
 
 Window* GEngine::get_main_window()
@@ -519,12 +434,6 @@ IManagerTable* GEngine::get_manager_table()
 IGVulkanApp* GEngine::get_app()
 {
 	return m_vulkanApp.get();
-}
-
-std::vector<MaterialDescription>* GEngine::get_global_materials()
-{
-	if (s_sceneRenderer == nullptr) return 0;
-	return s_sceneRenderer->get_global_materials();
 }
 
 IGVulkanViewport* GEngine::create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor)

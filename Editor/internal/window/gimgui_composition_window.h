@@ -25,7 +25,7 @@ public:
 private:
 	std::string m_name;
 	bool m_resizedAtThisFrame = false;
-
+	GImGuiWindowStorage* m_storage;
 
 };
 #endif 

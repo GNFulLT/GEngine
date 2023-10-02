@@ -91,27 +91,47 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GEditorShaderManager::compile
 	glslang_initialize_process();
 
 	glslang_shader_t* shader = glslang_shader_create(&input);
-	// Preprocess 
+	// Preprocess
+	auto editor = EditorApplicationImpl::get_instance();
+	auto logger = GSharedPtr<IOwningGLogger>();
+	if (editor != nullptr)
+	{
+	     logger = editor->get_editor_log_window_logger();
+	}
+
 	if (!glslang_shader_preprocess(shader, &input))
 	{
 		//X TODO CONSOLE SINK
-		EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e(glslang_shader_get_info_log(shader)); ;
-		EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e(glslang_shader_get_info_debug_log(shader)); 
+		if (logger.is_valid())
+		{
+			logger->log_e(glslang_shader_get_info_log(shader)); ;
+			logger->log_e(glslang_shader_get_info_debug_log(shader));
+		}
+	
 		glslang_shader_get_info_debug_log(shader);
 		glslang_shader_delete(shader);
 		return std::unexpected(SHADER_COMPILE_ERROR_PREPROCESS);
 	}
 	
-	EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_d("Shader preprocessed");
+	if(logger.is_valid())
+	{
+		logger->log_d("Shader preprocessed");
+	}
 	
 	if (!glslang_shader_parse(shader, &input)) {
-		EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e(glslang_shader_get_info_log(shader)); ;
-		EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e(glslang_shader_get_info_debug_log(shader));
+		if (logger.is_valid())
+		{
+			logger->log_e(glslang_shader_get_info_log(shader)); ;
+			logger->log_e(glslang_shader_get_info_debug_log(shader));
+		}
+	
 		glslang_shader_delete(shader);
 		return std::unexpected(SHADER_COMPILE_ERROR_SHADER_PARSE);
 	}
-
-	EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_d("Shader parsed");
+	if (logger.is_valid())
+	{
+		logger->log_d("Shader parsed");
+	}
 
 	glslang_program_t* program = glslang_program_create();
 	glslang_program_add_shader(program, shader);
@@ -120,15 +140,22 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GEditorShaderManager::compile
 
 	if (!glslang_program_link(program, msgs))
 	{
-		EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e(glslang_program_get_info_log(program));
-		EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_e(glslang_program_get_info_debug_log(program));
+		if (logger.is_valid())
+		{
+
+			logger->log_e(glslang_program_get_info_log(program));
+			logger->log_e(glslang_program_get_info_debug_log(program));
+		}
 		glslang_program_delete(program);
 		glslang_shader_delete(shader);
 		return std::unexpected(SHADER_COMPILE_ERROR_PROGRAM_LINK);
 	}
 
 	glslang_program_SPIRV_generate(program, glslang_stage);
-	EditorApplicationImpl::get_instance()->get_editor_log_window_logger()->log_d("Shader compile success");
+	if (logger.is_valid())
+	{
+		logger->log_d("Shader compile success");
+	}
 	// Now create the GSPIRVSHADER
 	//X TODO : GDNWEDA
 

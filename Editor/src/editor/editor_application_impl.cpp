@@ -28,6 +28,7 @@
 #include "internal/rendering/gfps_camera_positioner.h"
 #include "engine/imanager_table.h"
 #include "engine/manager/igcamera_manager.h"
+#include "engine/manager/igscene_manager.h"
 
 IGVulkanLogicalDevice* s_device;
 
@@ -50,10 +51,10 @@ EditorApplicationImpl* EditorApplicationImpl::get_instance()
 
 void EditorApplicationImpl::destroy()
 {
-    m_renderViewport->destroy(false);
+    m_renderViewport->destroy();
     
-    m_engine->destroy_offscreen_viewport(m_renderViewport);
-    
+    delete m_renderViewport;
+
     m_imguiLayer->destroy();
 
     delete m_imguiDescriptorCreator;
@@ -95,6 +96,7 @@ void EditorApplicationImpl::render()
     IGVulkanViewport* mainViewport = m_engine->get_viewport();
     IManagerTable* table = m_engine->get_manager_table();
     auto dev = (GSharedPtr<IGVulkanDevice>*)table->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE);
+
     auto currIndex = m_engine->get_current_frame();
     //m_renderViewport->set_image_index(currIndex);
     GVulkanCommandBuffer* cmd = m_engine->get_frame_data_by_index(currIndex)->get_the_main_cmd();
@@ -122,6 +124,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
     IManagerTable* table = m_engine->get_manager_table();
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
     auto resourceManager = ((GSharedPtr<IGResourceManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
+    auto sceneManager = ((GSharedPtr<IGSceneManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 
     m_logger = (*logger)->create_owning_glogger("EditorLayer");
     m_logWindwLogger = (*logger)->create_owning_glogger("Editor",false);
@@ -178,8 +181,9 @@ bool EditorApplicationImpl::init(GEngine* engine)
     //X Create the game viewport here
 
     m_logger->log_d("Creating Render Viewport");
-    
-    m_renderViewport = engine->create_offscreen_viewport_depth(m_imguiDescriptorCreator);
+    auto deferredRenderer = sceneManager->get_deferred_renderer();
+    m_renderViewport = sceneManager->create_default_deferred_viewport(deferredRenderer->get_deferred_pass(),deferredRenderer->get_composition_pass(),VK_FORMAT_B8G8R8A8_UNORM);
+    sceneManager->init_deferred_renderer(m_renderViewport);
     m_imguiLayer->set_viewport(m_renderViewport);
 
     

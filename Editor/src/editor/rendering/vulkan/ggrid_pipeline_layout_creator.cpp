@@ -60,56 +60,7 @@ std::expected<IGVulkanPipelineLayout*, LAYOUT_CREATOR_ERROR> GGridPipelineLayout
 
 std::expected<IGVulkanDescriptorPool*, LAYOUT_CREATOR_ERROR> GGridPipelineLayoutCreator::create_descriptor_pool_and_sets(IGVulkanGraphicPipeline* pipeline, std::vector<VkDescriptorSet_T*>* descriptorSets)
 {
-	//X Create the pool
-	std::unordered_map<VkDescriptorType, int> map;
-	map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2);
-
-	m_descriptorPool = m_boundedDevice->create_and_init_vector_pool(map, m_framesInFlight);
-
-	if (m_descriptorPool == nullptr)
-		return std::unexpected(LAYOUT_CREATOR_ERROR_UNKNOWN);
-
-	auto camLayout = m_pipelineObjectManager->get_named_pipeline_layout(m_pipelineObjectManager->CAMERA_PIPE_LAYOUT.data());
-
-	//X We wants same pipeline set layout	
-	m_descriptorSetLayout = camLayout->get_pipeline_set_layout()->get_layout();
-
-	std::vector<VkDescriptorSetLayout> layouts(m_framesInFlight, m_descriptorSetLayout);
-
-	//allocate one descriptor set for each frame
-	VkDescriptorSetAllocateInfo allocInfo = {};
-	allocInfo.pNext = nullptr;
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_descriptorPool->get_vk_descriptor_pool();
-	allocInfo.descriptorSetCount = layouts.size();
-	allocInfo.pSetLayouts = layouts.data();
-
-	m_descriptorSets.resize(m_framesInFlight);
-
-	vkAllocateDescriptorSets(m_boundedDevice->get_vk_device(), &allocInfo, m_descriptorSets.data());
-
-	for (int i = 0; i < m_framesInFlight; i++)
-	{
-		VkDescriptorBufferInfo binfo;
-		//it will be the camera buffer
-		binfo.buffer = m_sceneManager->get_global_buffer_for_frame(i)->get_vk_buffer();
-		//at 0 offset
-		binfo.offset = 0;
-		//of the size of a camera data struct
-		binfo.range = m_sceneManager->get_global_buffer_for_frame(i)->get_size();
 	
-		std::array<VkWriteDescriptorSet, 1> descriptorWrites;
-		descriptorWrites[0] = {};
-		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].pNext = nullptr;
-		descriptorWrites[0].dstBinding = 0;
-		descriptorWrites[0].dstSet = m_descriptorSets[i];
-		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites[0].pBufferInfo = &binfo;
-
-		vkUpdateDescriptorSets(m_boundedDevice->get_vk_device(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-	}
 	(*descriptorSets) = m_descriptorSets;
 	return m_descriptorPool;
 }

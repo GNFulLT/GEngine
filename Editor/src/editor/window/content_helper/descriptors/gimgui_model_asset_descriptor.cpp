@@ -38,7 +38,7 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 	}
 	if (ImGui::Selectable("Add to scene"))
 	{
-		std::unordered_map<uint32_t,std::unordered_map<TEXTURE_MAP_TYPE, std::string>> texturePaths;
+		/*std::unordered_map<uint32_t,std::unordered_map<TEXTURE_MAP_TYPE, std::string>> texturePaths;
 		std::vector<MaterialDescription> materials;
 		auto filePath = path.string();
 		auto mesh = con->load_all_meshes(filePath.c_str(), materials,texturePaths);
@@ -73,6 +73,6 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 
 			}
 			
-		}
+		}*/
 	}
 }

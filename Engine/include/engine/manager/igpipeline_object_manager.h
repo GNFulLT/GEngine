@@ -9,6 +9,9 @@
 #include "engine/rendering/vulkan/named/igvulkan_named_set_layout.h"
 
 struct VkDescriptorSetLayoutCreateInfo;
+struct VkRenderPassCreateInfo;
+struct VkPipelineLayoutCreateInfo;
+class IGVulkanNamedGraphicPipeline;
 
 class IGPipelineObjectManager
 {
@@ -31,7 +34,9 @@ public:
 	virtual IGVulkanNamedSetLayout* get_named_set_layout(const char* name) = 0;
 	//X If there is already created layout with this createInfo it will return it. Name will not be changed in that case so the name given in the argument will be added to indirect pointers
 	virtual IGVulkanNamedSetLayout* create_or_get_named_set_layout(const char* name, VkDescriptorSetLayoutCreateInfo* createInfo)= 0;
-
+	virtual IGVulkanNamedRenderPass* create_or_get_named_renderpass(const char* name, VkRenderPassCreateInfo* createInfo) = 0;
+	virtual IGVulkanNamedPipelineLayout* create_or_get_named_pipeline_layout(const char* name, VkPipelineLayoutCreateInfo* createInfo) = 0;
+	virtual IGVulkanNamedGraphicPipeline* create_named_graphic_pipeline(const char* name, IGVulkanNamedRenderPass* renderPass) = 0;
 private:
 };
 

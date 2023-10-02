@@ -34,19 +34,17 @@
 static int perFrameCmd = 2;
 
 static int ct = 0;
-GSceneRenderer::GSceneRenderer(IGVulkanViewport* viewport,IGVulkanDevice* device)
+GSceneRenderer::GSceneRenderer(IGVulkanNamedDeferredViewport* viewport,IGVulkanDevice* device)
 {
 	m_viewport = viewport;
 	m_device = device;
-	m_vkViewport.height = viewport->get_height();
-	m_vkViewport.width = viewport->get_width();
+	m_vkViewport.height = viewport->get_viewport_area()->height;
+	m_vkViewport.width = viewport->get_viewport_area()->width;
 	m_vkViewport.minDepth = 0;
 	m_vkViewport.maxDepth = 1;
 	m_vkViewport.x = 0;
 	m_vkViewport.y = 0;
 
-	m_vkScissor.extent = { viewport->get_width(),viewport->get_height() };
-	m_vkScissor.offset = {0,0};
 	triangle = nullptr;
 }
 
@@ -63,14 +61,11 @@ void GSceneRenderer::render_the_scene()
 
 	auto vp = m_viewport;
 	frameCmd->begin();
-	EditorApplicationImpl::get_instance()->m_engine->fill_cmd_dispatch(frameCmd, currIndex);
 
 	vp->begin_draw_cmd(frameCmd);
 
-	m_cubemapRenderer->render(frameCmd,currIndex,vp);
 
 
-	EditorApplicationImpl::get_instance()->m_engine->fill_cmd(frameCmd, currIndex, vp);
 
 	//vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
 	////X TODO : Layout Cache
@@ -102,13 +97,18 @@ void GSceneRenderer::render_the_scene()
 
 	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);*/
 
+
+	vp->end_draw_cmd(frameCmd);
+
+	vp->begin_composition_draw_cmd(frameCmd);
+	m_cubemapRenderer->render(frameCmd, currIndex,vp);
+
+
 	if (m_gridRenderer->wants_render())
 	{
 		m_gridRenderer->render(frameCmd, currIndex);
 	}
-
 	vp->end_draw_cmd(frameCmd);
-	EditorApplicationImpl::get_instance()->m_engine->fill_cmd_deferred(frameCmd, currIndex);
 	frameCmd->end();
 
 	auto cmd = frameCmd->get_handle();
@@ -249,8 +249,6 @@ bool GSceneRenderer::init()
 	shaderStages.push_back(m_vertexShaderStage);
 	shaderStages.push_back(m_fragShaderStage);
 
-	m_graphicPipeline = s_device->create_and_init_default_graphic_pipeline_injector_for_vp(m_viewport, shaderStages, m_states,m_frameCmds.size());
-
 	for (int i = 0; i < m_states.size(); i++)
 	{
 		auto state =  m_states[i];
@@ -276,23 +274,21 @@ bool GSceneRenderer::init()
 	m_cubemapRenderer = GSharedPtr<GCubeRenderer>(new GCubeRenderer(s_device,resourceManager,
 		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(), sceneMng,
 		((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get()
-	,m_viewport, s_shaderManager,m_frameCmds.size(),"assets/bgg.hdr"));
+	,m_viewport, s_shaderManager,m_viewport->get_composition_renderpass(), m_frameCmds.size(), "assets/bgg.hdr"));
 
 	m_gridRenderer = GSharedPtr<GridRenderer>(new GridRenderer(s_device, resourceManager,
 		((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get(), sceneMng,
 		((GSharedPtr<IGPipelineObjectManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_PIPELINE_OBJECT))->get()
-		, m_viewport, s_shaderManager, m_frameCmds.size()));
+		, m_viewport, s_shaderManager, m_viewport->get_composition_renderpass(), m_frameCmds.size()));
 
 	assert(m_cubemapRenderer->init());
 	assert(m_gridRenderer->init());
 
-	EditorApplicationImpl::get_instance()->m_engine->init_custom_renderer(m_viewport);
-
-	auto win = new GImGuiGridSettingsWindow(m_gridRenderer.get());
+	/*auto win = new GImGuiGridSettingsWindow(m_gridRenderer.get());
 	if (!EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->create_imgui_window(win, GIMGUIWINDOWDIR_LEFT_BOTTOM))
 	{
 		delete win;
-	}
+	}*/
 	return true;
 }
 
@@ -302,11 +298,6 @@ void GSceneRenderer::destroy()
 	m_cubemapRenderer->destroy();
 	triangle->destroy();
 	delete triangle;
-	if (m_graphicPipeline != nullptr)
-	{
-		m_graphicPipeline->destroy();
-		delete m_graphicPipeline;
-	}
 	delete m_fragShaderStage;
 
 	delete m_vertexShaderStage;
@@ -333,7 +324,7 @@ void GSceneRenderer::destroy()
 	
 }
 
-void GSceneRenderer::set_the_viewport(IGVulkanViewport* viewport)
+void GSceneRenderer::set_the_viewport(IGVulkanNamedDeferredViewport* viewport)
 {
 	m_viewport = viewport;
 	

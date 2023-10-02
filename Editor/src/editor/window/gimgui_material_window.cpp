@@ -25,7 +25,7 @@ bool GImGuiMaterialsWindow::need_render()
 
 void GImGuiMaterialsWindow::render()
 {
-	MaterialDescription d;
+	/*MaterialDescription d;
 	auto materials = EditorApplicationImpl::get_instance()->m_engine->get_global_materials();
 	int i = 1;
 	for (auto& material : *materials)
@@ -68,7 +68,7 @@ void GImGuiMaterialsWindow::render()
 		}
 		i++;
 	}
-	
+	*/
 	
 }
 

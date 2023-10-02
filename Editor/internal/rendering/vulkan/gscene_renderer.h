@@ -15,10 +15,12 @@ class GridRenderer;
 #include "internal/rendering/renderable.h"
 
 #include "public/core/templates/shared_ptr.h"
+#include "engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h"
+
 class GSceneRenderer
 {
 public:
-	GSceneRenderer(IGVulkanViewport* viewport, IGVulkanDevice* device);
+	GSceneRenderer(IGVulkanNamedDeferredViewport* viewport, IGVulkanDevice* device);
 
 	void render_the_scene();
 	
@@ -26,10 +28,10 @@ public:
 	void destroy();
 
 
-	void set_the_viewport(IGVulkanViewport* viewport);
+	void set_the_viewport(IGVulkanNamedDeferredViewport* viewport);
 private:
 	IGVulkanDevice* m_device;
-	IGVulkanViewport* m_viewport;
+	IGVulkanNamedDeferredViewport* m_viewport;
 	std::vector< std::vector<GVulkanCommandBuffer*>> m_frameCmds;
 	std::vector< GVulkanSemaphore*> m_frameSemaphores;
 	std::vector<uint32_t> m_currentCmdIndex;
@@ -39,7 +41,6 @@ private:
 
 	GSharedPtr< IGShaderResource> m_basicFragShader;
 	GSharedPtr< IGShaderResource> m_basicVertexShader;
-	IGVulkanGraphicPipeline* m_graphicPipeline = nullptr;
 	IVulkanShaderStage* m_fragShaderStage = nullptr;
 	IVulkanShaderStage* m_vertexShaderStage = nullptr;
 

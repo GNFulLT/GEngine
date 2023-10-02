@@ -60,7 +60,7 @@ void GImGuiViewportWindow::render()
 
 	if (auto selectedNode = m_sceneWindow->get_selected_entity(); selectedNode != -1)
 	{
-		auto scene = EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
+		/*auto scene = EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
 		auto mtrx = scene->get_matrix_of(selectedNode);
 		if (mtrx != nullptr)
 		{
@@ -82,7 +82,7 @@ void GImGuiViewportWindow::render()
 			{
 				scene->mark_as_changed(m_selectedNode);
 			}
-		}
+		}*/
 	}
 	else
 	{

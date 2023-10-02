@@ -6,6 +6,7 @@
 #include "public/core/templates/shared_ptr.h"
 #include <memory>
 #include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
+#include "engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h"
 
 class GEngine;
 class ImGuiLayer;
@@ -63,9 +64,9 @@ public:
 	IGVulkanDescriptorSet* positionPortSet = nullptr;
 	IGVulkanDescriptorSet* albedoPortSet = nullptr;
 	IGVulkanDescriptorSet* compositionPortSet = nullptr;
+	IGVulkanNamedDeferredViewport* m_renderViewport;
 
 private:
-	IGVulkanViewport* m_renderViewport;
 	ImGuiLayer* m_imguiLayer;
 	GImGuiDescriptorCreator* m_imguiDescriptorCreator;
 	GSharedPtr<IOwningGLogger> m_logger;

@@ -56,6 +56,18 @@ private:
 
 
 	
+
+	// Inherited via IGPipelineObjectManager
+	virtual IGVulkanNamedRenderPass* create_or_get_named_renderpass(const char* name, VkRenderPassCreateInfo* createInfo) override;
+
+
+	// Inherited via IGPipelineObjectManager
+	virtual IGVulkanNamedPipelineLayout* create_or_get_named_pipeline_layout(const char* name, VkPipelineLayoutCreateInfo* createInfo) override;
+
+
+	// Inherited via IGPipelineObjectManager
+	virtual IGVulkanNamedGraphicPipeline* create_named_graphic_pipeline(const char* name, IGVulkanNamedRenderPass* renderPass) override;
+
 };
 
 #endif // GPIPELINE_OBJECT_MANAGER_H

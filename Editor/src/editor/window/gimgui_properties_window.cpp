@@ -39,41 +39,41 @@ bool GImGuiPropertiesWindow::need_render()
 void GImGuiPropertiesWindow::render()
 {
 	auto cullData = m_cam->get_cull_data();
-	auto wireframeSpec = EditorApplicationImpl::get_instance()->m_engine->get_wireframe_spec();
+	//auto wireframeSpec = EditorApplicationImpl::get_instance()->m_engine->get_wireframe_spec();
 	if (auto selectedNode = m_sceneWindow->get_selected_entity();selectedNode != -1)
 	{
-		auto scene=  EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
-		auto mtrx = scene->get_matrix_of(selectedNode);
-		if (mtrx != nullptr)
-		{
-			if (selectedNode != m_currentSelectedNode)
-			{
-				m_currentSelectedNode = selectedNode;
-				//X Reset caches
-			
-			}
-			glm::vec3 skew;
-			glm::vec4 perspective;
-			glm::decompose(*mtrx, m_currentNodeScale, m_currentNodeRotatition, m_currentNodePosition, skew, perspective);
-			m_currentNodeRotatition = glm::conjugate(m_currentNodeRotatition);
-			bool isChanged = false;
+		//auto scene=  EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
+		//auto mtrx = scene->get_matrix_of(selectedNode);
+		//if (mtrx != nullptr)
+		//{
+		//	if (selectedNode != m_currentSelectedNode)
+		//	{
+		//		m_currentSelectedNode = selectedNode;
+		//		//X Reset caches
+		//	
+		//	}
+		//	glm::vec3 skew;
+		//	glm::vec4 perspective;
+		//	glm::decompose(*mtrx, m_currentNodeScale, m_currentNodeRotatition, m_currentNodePosition, skew, perspective);
+		//	m_currentNodeRotatition = glm::conjugate(m_currentNodeRotatition);
+		//	bool isChanged = false;
 
-			if (ImGui::InputFloat3("position : ", glm::value_ptr(m_currentNodePosition)))
-			{
-				isChanged = true;
-			}
-			if (ImGui::InputFloat3("scale : ", glm::value_ptr(m_currentNodeScale)))
-			{
-				isChanged = true;
-			}
+		//	if (ImGui::InputFloat3("position : ", glm::value_ptr(m_currentNodePosition)))
+		//	{
+		//		isChanged = true;
+		//	}
+		//	if (ImGui::InputFloat3("scale : ", glm::value_ptr(m_currentNodeScale)))
+		//	{
+		//		isChanged = true;
+		//	}
 
 
-			if (isChanged)
-			{
-				scene->localTransform_[m_currentSelectedNode] = glm::translate(glm::mat4(1.f), m_currentNodePosition) * glm::mat4_cast(m_currentNodeRotatition) * glm::scale(glm::mat4(1.f), m_currentNodeScale);
-				scene->mark_as_changed(m_currentSelectedNode);
-			}
-		}
+		//	if (isChanged)
+		//	{
+		//		scene->localTransform_[m_currentSelectedNode] = glm::translate(glm::mat4(1.f), m_currentNodePosition) * glm::mat4_cast(m_currentNodeRotatition) * glm::scale(glm::mat4(1.f), m_currentNodeScale);
+		//		scene->mark_as_changed(m_currentSelectedNode);
+		//	}
+		//}
 	}
 	else
 	{
@@ -96,13 +96,13 @@ void GImGuiPropertiesWindow::render()
 		ImGui::Checkbox("Automized LODs", &f);
 		ImGui::Checkbox("Sloppy LODs Enabled", &f);
 		
-		ImGui::Checkbox("Wireframe Pipeline", &f);
+		/*ImGui::Checkbox("Wireframe Pipeline", &f);
 		ImGui::SliderFloat("Wireframe Thickness", &wireframeSpec->thickness, 0.01f, 1.f, "%.2f");
 		ImGui::SliderFloat("Wireframe Step", &wireframeSpec->step, 0.1f, 10.f, "%.3f");
 		ImGui::Spacing();
 		ImGui::Spacing();
 
-		ImGui::Checkbox("Occlusion culling (Not stabilized)", &ft);
+		ImGui::Checkbox("Occlusion culling (Not stabilized)", &ft);*/
 
 	}
 

@@ -3,6 +3,7 @@
 #include "public/math/gmat4.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include <array>
+#include "engine/rendering/vulkan/named/igvulkan_named_set_layout.h"
 
 GVulkanNamedPipelineLayoutCamera::GVulkanNamedPipelineLayoutCamera(IGVulkanLogicalDevice* dev, IGVulkanNamedSetLayout* namedLayout,const char* name)
 {

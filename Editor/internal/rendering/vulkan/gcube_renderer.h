@@ -6,6 +6,7 @@
 #include "public/core/templates/shared_ptr.h"
 #include "public/math/gtransform.h"
 #include "engine/manager/igpipeline_object_manager.h"
+#include "engine/rendering/vulkan/named/igvulkan_named_graphic_pipeline.h"
 
 class IGVulkanLogicalDevice;
 class IGResourceManager;
@@ -21,19 +22,22 @@ class IGShaderManager;
 class IGVulkanGraphicPipeline;
 class GVulkanCommandBuffer;
 class IGVulkanViewport;
+class IGVulkanNamedPipelineLayout;
 
 #include "engine/manager/igscene_manager.h"
-
+#include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
+#include "engine/rendering/vulkan/named/igvulkan_named_renderpass.h"
 class GCubeRenderer
 {
 public:
-	GCubeRenderer(IGVulkanLogicalDevice*  boundedDevice,IGResourceManager* mng, IGCameraManager* cameraManager, IGSceneManager* sceneManager,IGPipelineObjectManager* obj ,IGVulkanViewport* viewport, IGShaderManager* shaderMng,uint32_t framesInFlight,const char* cubeTexturePath);
+	GCubeRenderer(IGVulkanLogicalDevice*  boundedDevice,IGResourceManager* mng, IGCameraManager* cameraManager, IGSceneManager* sceneManager,
+		IGPipelineObjectManager* obj ,IGVulkanNamedViewport* viewport, IGShaderManager* shaderMng,IGVulkanNamedRenderPass* renderpass,uint32_t framesInFlight,const char* cubeTexturePath);
 
 	bool init();
 	
 	void destroy();
 	
-	void render(GVulkanCommandBuffer* buff,uint32_t frameIndex, IGVulkanViewport* vp);
+	void render(GVulkanCommandBuffer* buff,uint32_t frameIndex, IGVulkanNamedViewport* vp);
 private:
 	uint32_t m_framesInFlight;
 	GSharedPtr<IGTextureResource> m_cubemapTextureResource;
@@ -44,13 +48,19 @@ private:
 	IVulkanShaderStage* m_cubemapFragStage;
 	IGSceneManager* p_sceneManager;
 	IGVulkanLogicalDevice* m_boundedDevice;
-	GCubePipelinelayoutCreator* m_pipelineCreator;
 	IGCameraManager* p_cameraManager;
 	
-	IGShaderManager* m_shaderManager;
-	IGVulkanViewport* m_viewport;
+	IGVulkanNamedPipelineLayout* m_pipeLayout;
+	IGVulkanNamedSetLayout* m_csLayout;
 
-	IGVulkanGraphicPipeline* m_pipeline;
+	VkDescriptorSet_T* m_csSet;
+
+	IGVulkanDescriptorPool* m_csPool;
+
+	IGShaderManager* m_shaderManager;
+	IGVulkanNamedViewport* m_viewport;
+	IGVulkanNamedRenderPass* m_renderpass;
+	IGVulkanNamedGraphicPipeline* m_pipeline;
 	IGPipelineObjectManager* m_obj;
 	gtransform cubeTransform;
 };

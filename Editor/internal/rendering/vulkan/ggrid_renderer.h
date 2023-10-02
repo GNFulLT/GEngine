@@ -14,13 +14,13 @@ class IGVulkanGraphicPipeline;
 class GVulkanCommandBuffer;
 class IGVulkanViewport;
 class IGVulkanLogicalDevice;
-class GGridPipelineLayoutCreator;
 
 #include "public/math/gtransform.h"
 #include "engine/manager/igpipeline_object_manager.h"
 #include <cstdint>
 #include "internal/rendering/grid_spec.h"
 #include "engine/manager/igscene_manager.h"
+#include "engine/rendering/vulkan/named/igvulkan_named_renderpass.h"
 
 class GImGuiGridSettingsWindow;
 
@@ -29,7 +29,7 @@ class GridRenderer
 	friend class GImGuiGridSettingsWindow;
 public:
 	GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng,IGCameraManager* cam, IGSceneManager* sceneManager,
-		IGPipelineObjectManager* obj, IGVulkanViewport* viewport, IGShaderManager* shaderMng, uint32_t framesInFlight);
+		IGPipelineObjectManager* obj, IGVulkanNamedViewport* viewport, IGShaderManager* shaderMng, IGVulkanNamedRenderPass* pass,uint32_t framesInFlight);
 
 	bool init();
 
@@ -43,20 +43,20 @@ private:
 private:
 	IGVulkanLogicalDevice* m_boundedDevice;
 	IGSceneManager* p_sceneManager;
-	IGVulkanViewport* p_renderingViewport;
+	IGVulkanNamedViewport* p_renderingViewport;
 	IGShaderManager* p_shaderManager;
 	IGPipelineObjectManager* p_pipelineManager;
 	uint32_t m_framesInFlight;
 	IGCameraManager* p_cameraManager;
-
+	IGVulkanNamedRenderPass* m_renderpass;
 	IGShaderResource* m_gridFrag;
 	IGShaderResource* m_gridVert;
 
 	IVulkanShaderStage* m_gridVertStage;
 	IVulkanShaderStage* m_gridFragStage;
 
-	IGVulkanGraphicPipeline* m_pipeline;
-	GGridPipelineLayoutCreator* m_pipelineLayoutCreator;
+	IGVulkanNamedGraphicPipeline* m_pipeline;
+	IGVulkanNamedPipelineLayout* m_pipelineLayout;
 
 	gtransform transform;
 

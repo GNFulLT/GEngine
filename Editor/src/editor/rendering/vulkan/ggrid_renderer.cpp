@@ -7,13 +7,16 @@
 #include "engine/rendering/vulkan/ivulkan_graphic_pipeline_state.h"
 #include "engine/manager/igshader_manager.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
-#include "internal/rendering/vulkan/ggrid_pipeline_layout_creator.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include "engine/manager/igcamera_manager.h"
 #include "engine/rendering/vulkan/ivulkan_viewport.h"
+#include "engine/rendering/vulkan/named/igvulkan_named_graphic_pipeline.h"
+#include <array>
+
 GridRenderer::GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManager* mng, IGCameraManager* cameraManager, IGSceneManager* sceneMng,IGPipelineObjectManager* obj,
-	IGVulkanViewport* viewport, IGShaderManager* shaderMng, uint32_t framesInFlight)
+	IGVulkanNamedViewport* viewport, IGShaderManager* shaderMng, IGVulkanNamedRenderPass* pass, uint32_t framesInFlight)
 {
+	m_renderpass = pass;
 	m_boundedDevice = boundedDevice;
 	m_framesInFlight = framesInFlight;
 	p_sceneManager = sceneMng;
@@ -24,8 +27,8 @@ GridRenderer::GridRenderer(IGVulkanLogicalDevice* boundedDevice, IGResourceManag
 
 	m_framesInFlight = framesInFlight;
 	m_spec.gridCellSize = 0.1f;
-	m_gridFrag = mng->create_shader_resource("grid_frag","EditorResources","grid.glsl_frag").value();
-	m_gridVert = mng->create_shader_resource("grid_vert", "EditorResources", "grid.glsl_vert").value();
+	m_gridFrag = mng->create_shader_resource("grid_frag","EditorResources","./editor/shader/grid.glsl_frag").value();
+	m_gridVert = mng->create_shader_resource("grid_vert", "EditorResources", "./editor/shader/grid.glsl_vert").value();
 }
 
 bool GridRenderer::init()
@@ -80,8 +83,34 @@ bool GridRenderer::init()
 	states.push_back(m_boundedDevice->create_default_depth_stencil_state());
 
 	//X Create the pipeline here
-	m_pipelineLayoutCreator = new GGridPipelineLayoutCreator(m_boundedDevice, p_sceneManager, p_pipelineManager, m_framesInFlight);
-	m_pipeline = m_boundedDevice->create_and_init_graphic_pipeline_injector_for_vp(p_renderingViewport, stages, states, m_pipelineLayoutCreator);
+	m_pipeline = p_pipelineManager->create_named_graphic_pipeline("grid_pipeline",m_renderpass);
+	//X Create pipeline layout
+	{
+		//X Get global setlayout
+		auto globalDataSetLayout = p_pipelineManager->get_named_set_layout("GlobalDataSetLayout");
+		auto vkLayout = globalDataSetLayout->get_layout();
+		std::array<VkPushConstantRange, 2> pushConstants;
+		pushConstants[0].offset = 0;
+		//this push constant range takes up the size of a MeshPushConstants struct
+		pushConstants[0].size = sizeof(gmat4);
+		//this push constant range is accessible only in the vertex shader
+		pushConstants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+
+		pushConstants[1].offset = sizeof(gmat4);
+		pushConstants[1].size = sizeof(GridSpec);
+		pushConstants[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkPipelineLayoutCreateInfo inf = {};
+		inf.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		inf.flags = 0;
+		inf.setLayoutCount = 1;
+		inf.pSetLayouts = &vkLayout;
+		inf.pushConstantRangeCount = pushConstants.size();
+		inf.pPushConstantRanges = pushConstants.data();
+		m_pipelineLayout = p_pipelineManager->create_or_get_named_pipeline_layout("grid_pipeline_layout",&inf);
+	}
+	m_pipeline->init(m_pipelineLayout, stages, states);
 
 	for (int i = 0; i < states.size(); i++)
 	{
@@ -112,17 +141,18 @@ bool GridRenderer::wants_render() const noexcept
 
 void GridRenderer::render(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
 {
-	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->get_pipeline());
-
-	m_pipeline->bind_sets(cmd, frameIndex);
+	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->get_vk_pipeline());
+	auto globalSet = p_sceneManager->get_global_set_for_frame(frameIndex);
+	vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout->get_vk_pipeline_layout(), 0, 1, &globalSet,
+		0, 0);
 	const float* pos = p_cameraManager->get_camera_position();
 
 	auto mat = transform.to_mat4();
 
 	vkCmdSetViewport(cmd->get_handle(), 0, 1, p_renderingViewport->get_viewport_area());
 	vkCmdSetScissor(cmd->get_handle(), 0, 1, p_renderingViewport->get_scissor_area());
-	vkCmdPushConstants(cmd->get_handle(), m_pipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &mat);
-	vkCmdPushConstants(cmd->get_handle(), m_pipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(gmat4), sizeof(GridSpec), &m_spec);
+	vkCmdPushConstants(cmd->get_handle(), m_pipelineLayout->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &mat);
+	vkCmdPushConstants(cmd->get_handle(), m_pipelineLayout->get_vk_pipeline_layout(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(gmat4), sizeof(GridSpec), &m_spec);
 	vkCmdDraw(cmd->get_handle(), 6, 1, 0, 0);
 }
 

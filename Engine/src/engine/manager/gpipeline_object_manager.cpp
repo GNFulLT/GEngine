@@ -5,7 +5,9 @@
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_sampler.h"
 #include "internal/engine/rendering/vulkan/named/pipelayouts/gvulkan_named_pipeline_layout_camera.h"
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_set_layout.h"
-
+#include "internal/engine/rendering/vulkan/named/gvulkan_named_pipeline_layout.h"
+#include "internal/engine/rendering/vulkan/named/gvulkan_named_graphic_pipeline.h"
+		
 GPipelineObjectManager::GPipelineObjectManager(IGVulkanLogicalDevice* logicalDevice,VkFormat swapchainFormat, uint32_t framesInFlight)
 {
 	m_framesInFlight = framesInFlight;
@@ -332,6 +334,39 @@ void GPipelineObjectManager::destroy_named_compute_pipelines()
 {
 }
 
+IGVulkanNamedRenderPass* GPipelineObjectManager::create_or_get_named_renderpass(const char* name, VkRenderPassCreateInfo* createInfo)
+{
+	//X TODO cache and search
+	VkRenderPass renderPass;
+	auto res = vkCreateRenderPass(m_logicalDevice->get_vk_device(), createInfo, nullptr, &renderPass);
+	if (res != VK_SUCCESS)
+	{
+		return nullptr;
+	}
+	auto ptr = GSharedPtr<IGVulkanNamedRenderPass>(new GNamedVulkanRenderPass(m_logicalDevice, name, renderPass, m_swapchainFormat));
+	m_namedRenderpassMap.emplace(std::string(name), ptr);
+	return ptr.get();
+	
+}
+
+IGVulkanNamedPipelineLayout* GPipelineObjectManager::create_or_get_named_pipeline_layout(const char* name, VkPipelineLayoutCreateInfo* createInfo)
+{
+	VkPipelineLayout layout;
+	auto res = vkCreatePipelineLayout(m_logicalDevice->get_vk_device(), createInfo, nullptr, &layout);
+	if (res != VK_SUCCESS)
+		return nullptr;
+
+	auto ptr = GSharedPtr<IGVulkanNamedPipelineLayout>(new GVulkanNamedPipelineLayout(m_logicalDevice, name,layout));
+	m_namedPipelineLayoutMap.emplace(std::string(name), ptr);
+	return ptr.get();
+
+}
+
+IGVulkanNamedGraphicPipeline* GPipelineObjectManager::create_named_graphic_pipeline(const char* name, IGVulkanNamedRenderPass* renderPass)
+{
+	return new GVulkanNamedGraphicPipeline(m_logicalDevice,renderPass,name);
+}
+
 IGVulkanNamedPipelineLayout* GPipelineObjectManager::get_named_pipeline_layout(const char* name)
 {
 	if (auto rp = m_namedPipelineLayoutMap.find(std::string(name)); rp != m_namedPipelineLayoutMap.end())
@@ -358,7 +393,7 @@ IGVulkanNamedSetLayout* GPipelineObjectManager::create_or_get_named_set_layout(c
 	{
 		return nullptr;
 	}
-	GSharedPtr<IGVulkanNamedSetLayout> ptr = GSharedPtr<IGVulkanNamedSetLayout>(new GVulkanNamedSetLayout(m_logicalDevice, layout, this->UVERT_LAYOUT.data()));
-	m_namedSetLayoutMap.emplace(this->UVERT_LAYOUT, ptr);
+	GSharedPtr<IGVulkanNamedSetLayout> ptr = GSharedPtr<IGVulkanNamedSetLayout>(new GVulkanNamedSetLayout(m_logicalDevice, layout, name));
+	m_namedSetLayoutMap.emplace(std::string(name), ptr);
 	return ptr.get();
 }

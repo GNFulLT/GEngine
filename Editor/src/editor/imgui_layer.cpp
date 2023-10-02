@@ -42,7 +42,7 @@ ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* a
 	m_descriptorPool = nullptr;
 	//X TODO : GDNEWDA
 	m_windowManager = new ImGuiWindowManager();
-	m_renderViewportWindow = new GImGuiViewportWindow();
+	//m_renderViewportWindow = new GImGuiViewportWindow();
 	m_contentBrowserWindow = new GImGuiContentBrowserWindow();
 	m_logWindow = new GImGuiLogWindow();
 
@@ -141,12 +141,12 @@ bool ImGuiLayer::init()
 		delete m_scene;
 	}
 
-	created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
+	/*created = m_windowManager->create_imgui_window(m_renderViewportWindow, GIMGUIWINDOWDIR_MIDDLE);
 	if (!created)
 	{
 		delete m_renderViewportWindow;
 		m_renderViewportWindow = nullptr;
-	}
+	}*/
 
 	
 	created = m_windowManager->create_imgui_window(m_contentBrowserWindow, GIMGUIWINDOWDIR_BOTTOM);
@@ -248,20 +248,20 @@ void ImGuiLayer::render(GVulkanCommandBuffer* cmd)
 
 }
 
-void ImGuiLayer::set_viewport(IGVulkanViewport* viewport)
+void ImGuiLayer::set_viewport(IGVulkanNamedDeferredViewport* viewport)
 {
-	auto deferredVp = EditorApplicationImpl::get_instance()->m_engine->get_deferred_vp();
-	EditorApplicationImpl::get_instance()->m_engine->init_deferred(640, 320);
+	auto deferredVp = viewport;
+	deferredVp->init(640, 320);
 
-	EditorApplicationImpl::get_instance()->positionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("position_attachment"),
+	EditorApplicationImpl::get_instance()->positionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_position_attachment(),
 		deferredVp->get_sampler_for_named_attachment("position_attachment")).value();
-	EditorApplicationImpl::get_instance()->normalPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("normal_attachment"),
+	EditorApplicationImpl::get_instance()->normalPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_emission_attachment(),
 		deferredVp->get_sampler_for_named_attachment("normal_attachment")).value();
-	EditorApplicationImpl::get_instance()->albedoPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("albedo_attachment"),
+	EditorApplicationImpl::get_instance()->albedoPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_albedo_attachment(),
 		deferredVp->get_sampler_for_named_attachment("albedo_attachment")).value();
-	EditorApplicationImpl::get_instance()->compositionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_named_attachment("composition_attachment"),
+	EditorApplicationImpl::get_instance()->compositionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_composition_attachment(),
 		deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
-	m_renderViewportWindow->set_the_viewport(viewport);
+	//m_renderViewportWindow->set_the_viewport(viewport);
 	m_sceneRenderer = new GSceneRenderer(viewport, m_dev);
 	m_sceneRenderer->init();
 	

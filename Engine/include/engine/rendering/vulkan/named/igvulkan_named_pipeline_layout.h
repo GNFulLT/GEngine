@@ -2,7 +2,6 @@
 #define IGVULKAN_NAMED_PIPELINE_LAYOUT_H
 
 #include "engine/rendering/vulkan/ivulkan_renderpass.h"
-#include "engine/rendering/vulkan/named/igvulkan_named_set_layout.h"
 
 struct VkPipelineLayout_T;
 
@@ -11,8 +10,6 @@ class IGVulkanNamedPipelineLayout
 public:
 	virtual ~IGVulkanNamedPipelineLayout() = default;
 	virtual VkPipelineLayout_T* get_vk_pipeline_layout() const noexcept= 0;
-	virtual IGVulkanNamedSetLayout* get_pipeline_set_layout() const noexcept = 0;
-
 	virtual void destroy() = 0;
 private:
 

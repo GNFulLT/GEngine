@@ -27,15 +27,20 @@ public:
 	virtual void destroy() = 0;
 	virtual bool resize(uint32_t width,uint32_t height) = 0;
 
+	//X Extension methods
 	//X If the vp is not sampled this method will return null pointer no matter what
 	virtual IVulkanImage* get_named_attachment(const std::string& name) const noexcept { return nullptr; }
 
+	//X If there is default sampler give it.
 	virtual VkSampler_T* get_sampler_for_named_attachment(const std::string& name) const noexcept { return nullptr; }
 
+	//X If there is default renderpass. Give it
 	virtual IGVulkanRenderPass* get_dedicated_renderpass() const noexcept { return nullptr; }
 
+	//X If there is named renderpass give it.
 	virtual IGVulkanNamedRenderPass* get_named_renderpass(const char* name) const noexcept { return nullptr; }
 
+	//X Begin to specific renderpass
 	virtual bool begin_draw_cmd_to_named_pass(GVulkanCommandBuffer* cmd, const char* name) { return false; };
 
 private:

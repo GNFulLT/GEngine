@@ -48,7 +48,7 @@ const float* GEditorFPSCameraPositioner::get_proj_matrix() const noexcept
 
 void GEditorFPSCameraPositioner::update(float deltaTime)
 {
-	auto window = p_windowManager->get_window_if_exist(ImGuiWindowManager::VIEWPORT_NAME);
+	auto window = p_windowManager->get_window_if_exist("Composition");
 	if (window == nullptr || !window->is_focused())
 	{
 		m_mousePos = p_mouseManager->get_mouse_pos();

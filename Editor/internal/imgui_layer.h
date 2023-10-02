@@ -15,7 +15,7 @@ class GImGuiTextEditorWindow;
 class GImGuiContentBrowserWindow;
 class GImGuiLogWindow;
 class GImGuiSceneWindow;
-
+class IGVulkanNamedDeferredViewport;
 
 class ImGuiLayer
 {
@@ -30,7 +30,7 @@ public:
 	bool before_render();
 	void render(GVulkanCommandBuffer* cmd);
 
-	void set_viewport(IGVulkanViewport* viewport);
+	void set_viewport(IGVulkanNamedDeferredViewport* viewport);
 
 	ImGuiWindowManager* get_window_manager();
 	

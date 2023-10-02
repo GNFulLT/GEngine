@@ -12,7 +12,7 @@ GImGuiSceneWindow::GImGuiSceneWindow()
 
 bool GImGuiSceneWindow::init()
 {
-	m_scene = EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
+	//m_scene = EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
 	return true;
 }
 
@@ -22,33 +22,32 @@ void GImGuiSceneWindow::set_storage(GImGuiWindowStorage* storage)
 
 bool GImGuiSceneWindow::need_render()
 {
-	m_scene->recalculate_transforms();
 	return true;
 }
 
 void GImGuiSceneWindow::render()
 {
-	if (m_scene->hierarchy.size() == 0)
-		return;
-	int iter = m_scene->hierarchy[0].firstChild;
-	
-	while (iter > -1 && iter < m_scene->hierarchy.size())
-	{
+	//if (m_scene->hierarchy.size() == 0)
+	//	return;
+	//int iter = m_scene->hierarchy[0].firstChild;
+	//
+	//while (iter > -1 && iter < m_scene->hierarchy.size())
+	//{
 
-		bool isOpen = ImGui::TreeNodeEx(fmt::format("Node {}", iter).c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick);
-		if (ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-		{
-			m_selectedEntity = iter;
-		}
-		//X Iterate here left child tree
-		if (isOpen)
-		{
-			ImGui::TreePop();
-		}
+	//	bool isOpen = ImGui::TreeNodeEx(fmt::format("Node {}", iter).c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick);
+	//	if (ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+	//	{
+	//		m_selectedEntity = iter;
+	//	}
+	//	//X Iterate here left child tree
+	//	if (isOpen)
+	//	{
+	//		ImGui::TreePop();
+	//	}
 
-		//X Iterate parents
-		iter = m_scene->hierarchy[iter].nextSibling;
-	}
+	//	//X Iterate parents
+	//	iter = m_scene->hierarchy[iter].nextSibling;
+	//}
 }
 
 void GImGuiSceneWindow::on_resize()
