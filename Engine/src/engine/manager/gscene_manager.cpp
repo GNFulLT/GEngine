@@ -29,6 +29,21 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 	//X Update Cull Data
 	auto cullData = *m_cameraManager->get_cull_data();
 	m_deferredRenderer->update_cull_data(cullData);
+
+	//X Update Global Transformations
+	bool recalculated = m_currentScene->recalculate_transforms();
+	if (recalculated)
+	{
+		while (!m_currentScene->changedNodesAtThisFrame_.empty())
+		{
+			int nodeIndex = m_currentScene->changedNodesAtThisFrame_.front();
+			m_currentScene->changedNodesAtThisFrame_.pop();
+			auto gpuIndexIter = m_cpu_to_gpu_map.find(nodeIndex);
+			assert(gpuIndexIter != m_cpu_to_gpu_map.end());
+			auto gpuIndex = gpuIndexIter->second;
+			m_deferredRenderer->set_transform_by_index(gpuIndex, &m_currentScene->globalTransform_[nodeIndex]);
+		}
+	}
 }
 
 bool GSceneManager::init(uint32_t framesInFlight)
@@ -202,4 +217,19 @@ uint32_t GSceneManager::add_node_with_mesh_and_defaults(uint32_t meshIndex)
 	m_currentScene->materialForNode_.emplace(nodeId, 0);
 	
 	return nodeId;
+}
+
+Scene* GSceneManager::get_current_scene() const noexcept
+{
+	return m_currentScene;
+}
+
+std::span<MaterialDescription> GSceneManager::get_current_scene_materials()
+{
+	return m_deferredRenderer->get_materials();
+}
+
+void GSceneManager::set_material_by_index(const MaterialDescription* material, uint32_t index)
+{
+	m_deferredRenderer->set_material_by_index(material, index);
 }

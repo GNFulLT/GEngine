@@ -6,6 +6,8 @@
 #include <string>
 #include "engine/rendering/material/gmaterial.h"
 
+class IGSceneManager;
+
 class GImGuiMaterialsWindow : public IGImGuiWindowImpl
 {
 public:
@@ -22,7 +24,7 @@ public:
 	virtual const char* get_window_name() override;
 private:
 	std::string m_name;
-
+	IGSceneManager* m_sceneManager;
 	
 };
 

@@ -6,7 +6,7 @@
 #include <string>
 #include <glm/glm.hpp>
 
-class Scene;
+class IGSceneManager;
 
 class GImGuiSceneWindow : public IGImGuiWindowImpl
 {
@@ -36,7 +36,7 @@ private:
 private:
 	std::string m_name;
 	uint32_t m_selectedEntity;
-	Scene* m_scene;
+	IGSceneManager* m_sceneManager;
 
 
 };

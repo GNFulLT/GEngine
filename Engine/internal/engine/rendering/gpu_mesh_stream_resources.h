@@ -54,6 +54,8 @@ public:
 		void unload_gpu_buffer();
 
 		void destroy();
+
+		void set_by_index(const T* data,uint32_t index);
 	};
 
 	GPUMeshStreamResources(IGVulkanLogicalDevice* dev,uint32_t floatCountPerVertex,uint32_t framesInFlight,IGPipelineObjectManager* manager);
@@ -166,10 +168,19 @@ inline void GPUMeshStreamResources::CPUGPUData<T>::destroy()
 }
 
 template<typename T>
+inline void GPUMeshStreamResources::CPUGPUData<T>::set_by_index(const T* data, uint32_t index)
+{
+	assert(index < cpuVector.size());
+	memcpy(&cpuVector[index], data, sizeof(T));
+	memcpy(&gpuBegin[index],data,sizeof(T));	
+}
+
+template<typename T>
 inline void GPUMeshStreamResources::RCPUGPUData<T>::create_internals()
 {
 	assert(gpuBuffer->get_size() % sizeof(T) == 0);
-	this->gpuBegin = (T*)this->gpuBuffer->map_memory();
+	auto begin = gpuBuffer->map_memory();
+	this->gpuBegin = (T*)begin;
 	this->gpuCurrentPos = gpuBegin;
 }
 
@@ -200,7 +211,8 @@ inline uint32_t GPUMeshStreamResources::RCPUGPUData<T>::add_to_buffer(const std:
 		assert(false);
 	}
 	//X Copy to gpu
-	memcpy(gpuCurrentPos, buff.data(), buff.size() * sizeof(T));
+	auto size = buff.size() * sizeof(T);
+	memcpy(gpuCurrentPos, buff.data(),size);
 
 	//X Move the cursor
 	gpuCurrentPos += buff.size();

@@ -6,12 +6,17 @@
 #include "engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h"
 #include "engine/rendering/vulkan/named/viewports/igvulkan_named_composition_viewport.h"
 #include "engine/rendering/renderer/igvulkan_deferred_renderer.h"
+#include "engine/rendering/material/gmaterial.h"
+
 #include <cstdint>
+#include <vector>
+#include <span>
 
 struct VkDescriptorSet_T;
 enum VkFormat;
 class IGVulkanUniformBuffer;
 struct MeshData;
+class Scene;
 
 class ENGINE_API IGSceneManager
 {
@@ -38,5 +43,11 @@ public:
 	
 	virtual uint32_t add_mesh_to_scene(const MeshData* mesh) = 0;
 	virtual uint32_t add_node_with_mesh_and_defaults(uint32_t meshIndex) = 0;
+
+	virtual Scene* get_current_scene() const noexcept = 0;
+
+	virtual std::span<MaterialDescription> get_current_scene_materials() = 0;
+
+	virtual void set_material_by_index(const MaterialDescription* material,uint32_t index) = 0;
 };
 #endif // ISCENE_MANAGER_H

@@ -4,6 +4,8 @@
 #include "editor/editor_application_impl.h"
 #include "imgui/imgui.h"
 #include <spdlog/fmt/fmt.h>
+#include "engine/manager/igscene_manager.h"
+#include "engine/imanager_table.h"
 
 GImGuiSceneWindow::GImGuiSceneWindow()
 {
@@ -12,7 +14,7 @@ GImGuiSceneWindow::GImGuiSceneWindow()
 
 bool GImGuiSceneWindow::init()
 {
-	//m_scene = EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
+	m_sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 	return true;
 }
 
@@ -27,27 +29,30 @@ bool GImGuiSceneWindow::need_render()
 
 void GImGuiSceneWindow::render()
 {
-	//if (m_scene->hierarchy.size() == 0)
-	//	return;
-	//int iter = m_scene->hierarchy[0].firstChild;
-	//
-	//while (iter > -1 && iter < m_scene->hierarchy.size())
-	//{
+	auto m_scene = m_sceneManager->get_current_scene();
+	if (m_scene == nullptr)
+		return;
+	if (m_scene->hierarchy.size() == 0)
+		return;
+	int iter = m_scene->hierarchy[0].firstChild;
+	
+	while (iter > -1 && iter < m_scene->hierarchy.size())
+	{
 
-	//	bool isOpen = ImGui::TreeNodeEx(fmt::format("Node {}", iter).c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick);
-	//	if (ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-	//	{
-	//		m_selectedEntity = iter;
-	//	}
-	//	//X Iterate here left child tree
-	//	if (isOpen)
-	//	{
-	//		ImGui::TreePop();
-	//	}
+	bool isOpen = ImGui::TreeNodeEx(fmt::format("Node {}", iter).c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick);
+	if (ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+		{
+			m_selectedEntity = iter;
+		}
+		//X Iterate here left child tree
+		if (isOpen)
+		{
+			ImGui::TreePop();
+		}
 
-	//	//X Iterate parents
-	//	iter = m_scene->hierarchy[iter].nextSibling;
-	//}
+		//X Iterate parents
+		iter = m_scene->hierarchy[iter].nextSibling;
+	}
 }
 
 void GImGuiSceneWindow::on_resize()

@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 	
+class IGSceneManager;
 class IGCameraManager;
 class GImGuiSceneWindow;
 
@@ -27,6 +28,7 @@ private:
 	std::string m_name;
 	glm::mat4 m_frustrumMatrix;
 	
+	IGSceneManager* m_sceneManager;
 	IGCameraManager* m_cam;
 	GImGuiSceneWindow* m_sceneWindow;
 	float m_nearPlane = 0.001f;

@@ -34,7 +34,6 @@ public:
 	virtual VkDescriptorSet_T* get_global_set_for_frame(uint32_t frame) const noexcept override;
 	virtual IGVulkanNamedDeferredViewport* create_default_deferred_viewport(IGVulkanNamedRenderPass* deferredPass, IGVulkanNamedRenderPass* compositionPass, VkFormat compositionFormat) override;
 	
-	
 	virtual uint32_t add_node_to_root();
 	virtual uint32_t add_mesh_to_scene(const MeshData* mesh);
 	virtual uint32_t add_node_with_mesh_and_defaults(uint32_t meshIndex);
@@ -58,6 +57,15 @@ private:
 
 	Scene* m_currentScene;
 	Scene* m_editorScene;
+
+	// Inherited via IGSceneManager
+	virtual Scene* get_current_scene() const noexcept override;
+
+	// Inherited via IGSceneManager
+	virtual std::span<MaterialDescription> get_current_scene_materials() override;
+
+	// Inherited via IGSceneManager
+	virtual void set_material_by_index(const MaterialDescription* material, uint32_t index) override;
 };
 
 #endif // GSCENE_MANAGER_H

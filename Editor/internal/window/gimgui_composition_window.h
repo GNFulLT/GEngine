@@ -6,8 +6,11 @@
 #include <string>
 #include <glm/glm.hpp>
 
+class GImGuiSceneWindow;
 class IGVulkanDescriptorSet;
 class Scene;
+class IGCameraManager;
+class IGSceneManager;
 
 class GImGuiCompositionPortWindow : public IGImGuiWindowImpl
 {
@@ -26,6 +29,9 @@ private:
 	std::string m_name;
 	bool m_resizedAtThisFrame = false;
 	GImGuiWindowStorage* m_storage;
-
+	GImGuiSceneWindow* m_sceneWindow;
+	IGCameraManager* m_cameraManager;
+	IGSceneManager* m_sceneManager;
+	int m_selectedNode = -1;
 };
 #endif 

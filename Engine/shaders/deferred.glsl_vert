@@ -71,7 +71,7 @@ void main()
 	//X Unpack the normal data and calcul
 	v_worldNormal = inModel * octahedral_decode(vNormal);
 	//X World Position
-	v_worldPos = transformDatas.data[transformIndex] * tempPos;
+	v_worldPos = transformDatas.data[0-transformIndex] * tempPos;
 	uv = vTexCoord;
 	matIdx = drawDatas.data[drawDataId].materialIndex;
 

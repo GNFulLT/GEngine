@@ -16,6 +16,8 @@
 #include "engine/manager/igcamera_manager.h"
 #include "engine/manager/igscene_manager.h"
 
+#include <span>
+
 struct VkDescriptorPool_T;
 struct VkPipelineLayout_T;
 enum VkFormat;
@@ -48,14 +50,14 @@ public:
 	virtual VkFormat get_composition_format() const noexcept override;
 
 	virtual void set_composition_views(IVulkanImage* position, IVulkanImage* albedo, IVulkanImage* emission, IVulkanImage* pbr,VkSampler_T* sampler,IGVulkanNamedViewport* deferredVp, IGVulkanNamedViewport* compositionVp);
-
+	std::span<MaterialDescription> get_materials();
 	uint32_t add_material_to_scene(const std::vector< MaterialDescription>& desc);
 	uint32_t add_mesh_to_scene(const MeshData* meshData, uint32_t shapeID = 0);
 	uint32_t create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex);
 	uint32_t add_default_transform();
 
 	void set_transform_by_index(uint32_t index,glm::mat4* data);
-	
+	void set_material_by_index(const MaterialDescription* data,uint32_t indexs);
 
 
 	void destroy();

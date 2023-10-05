@@ -24,6 +24,7 @@ bool GImGuiPropertiesWindow::init()
 	m_lodBase = m_cam->get_cull_data()->lodBase;
 	m_lodStep = m_cam->get_cull_data()->lodStep;
 	m_sceneWindow =  EditorApplicationImpl::get_instance()->get_editor_layer()->get_scene_window();
+	m_sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 	return true;
 }
 
@@ -42,38 +43,38 @@ void GImGuiPropertiesWindow::render()
 	//auto wireframeSpec = EditorApplicationImpl::get_instance()->m_engine->get_wireframe_spec();
 	if (auto selectedNode = m_sceneWindow->get_selected_entity();selectedNode != -1)
 	{
-		//auto scene=  EditorApplicationImpl::get_instance()->m_engine->get_global_scene();
-		//auto mtrx = scene->get_matrix_of(selectedNode);
-		//if (mtrx != nullptr)
-		//{
-		//	if (selectedNode != m_currentSelectedNode)
-		//	{
-		//		m_currentSelectedNode = selectedNode;
-		//		//X Reset caches
-		//	
-		//	}
-		//	glm::vec3 skew;
-		//	glm::vec4 perspective;
-		//	glm::decompose(*mtrx, m_currentNodeScale, m_currentNodeRotatition, m_currentNodePosition, skew, perspective);
-		//	m_currentNodeRotatition = glm::conjugate(m_currentNodeRotatition);
-		//	bool isChanged = false;
+		auto scene=  m_sceneManager->get_current_scene();
+		auto mtrx = scene->get_matrix_of(selectedNode);
+		if (mtrx != nullptr)
+		{
+			if (selectedNode != m_currentSelectedNode)
+			{
+				m_currentSelectedNode = selectedNode;
+				//X Reset caches
+			
+			}
+			glm::vec3 skew;
+			glm::vec4 perspective;
+			glm::decompose(*mtrx, m_currentNodeScale, m_currentNodeRotatition, m_currentNodePosition, skew, perspective);
+			m_currentNodeRotatition = glm::conjugate(m_currentNodeRotatition);
+			bool isChanged = false;
 
-		//	if (ImGui::InputFloat3("position : ", glm::value_ptr(m_currentNodePosition)))
-		//	{
-		//		isChanged = true;
-		//	}
-		//	if (ImGui::InputFloat3("scale : ", glm::value_ptr(m_currentNodeScale)))
-		//	{
-		//		isChanged = true;
-		//	}
+			if (ImGui::InputFloat3("position : ", glm::value_ptr(m_currentNodePosition)))
+			{
+				isChanged = true;
+			}
+			if (ImGui::InputFloat3("scale : ", glm::value_ptr(m_currentNodeScale)))
+			{
+				isChanged = true;
+			}
 
 
-		//	if (isChanged)
-		//	{
-		//		scene->localTransform_[m_currentSelectedNode] = glm::translate(glm::mat4(1.f), m_currentNodePosition) * glm::mat4_cast(m_currentNodeRotatition) * glm::scale(glm::mat4(1.f), m_currentNodeScale);
-		//		scene->mark_as_changed(m_currentSelectedNode);
-		//	}
-		//}
+			if (isChanged)
+			{
+				scene->localTransform_[m_currentSelectedNode] = glm::translate(glm::mat4(1.f), m_currentNodePosition) * glm::mat4_cast(m_currentNodeRotatition) * glm::scale(glm::mat4(1.f), m_currentNodeScale);
+				scene->mark_as_changed(m_currentSelectedNode);
+			}
+		}
 	}
 	else
 	{

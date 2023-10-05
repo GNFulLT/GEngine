@@ -3,6 +3,9 @@
 #include "editor/editor_application_impl.h"
 #include "imgui/imgui.h"
 #include "spdlog/fmt/fmt.h"
+#include "engine/imanager_table.h"
+#include "engine/manager/igscene_manager.h"
+#include <algorithm>
 
 GImGuiMaterialsWindow::GImGuiMaterialsWindow()
 {
@@ -11,6 +14,7 @@ GImGuiMaterialsWindow::GImGuiMaterialsWindow()
 
 bool GImGuiMaterialsWindow::init()
 {
+	m_sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 	return true;
 }
 
@@ -25,10 +29,10 @@ bool GImGuiMaterialsWindow::need_render()
 
 void GImGuiMaterialsWindow::render()
 {
-	/*MaterialDescription d;
-	auto materials = EditorApplicationImpl::get_instance()->m_engine->get_global_materials();
-	int i = 1;
-	for (auto& material : *materials)
+	MaterialDescription d;
+	auto materials = m_sceneManager->get_current_scene_materials();
+	int i = 0;
+	for (auto& material : materials)
 	{
 		auto winName = fmt::format("Material #{} (A Debug name is not assigned)",i);
 		if (ImGui::CollapsingHeader(winName.c_str()))
@@ -65,10 +69,15 @@ void GImGuiMaterialsWindow::render()
 
 			}
 			
+			if (ImGui::Button("Update Material"))
+			{
+				auto updatedMtr = material;
+				m_sceneManager->set_material_by_index(&updatedMtr, i);
+			}
 		}
 		i++;
 	}
-	*/
+	
 	
 }
 

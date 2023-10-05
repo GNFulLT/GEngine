@@ -9,6 +9,16 @@
 #include <cassert>
 #include "engine/imanager_table.h"
 #include "engine/manager/igscene_manager.h"
+#include "internal/imgui_layer.h"
+#include "engine/manager/igcamera_manager.h"
+#include "internal/window/gimgui_scene_window.h"
+#include "internal/imguizmo.h"
+#include "engine/manager/igscene_manager.h"
+#include "engine/imanager_table.h"
+#include "public/core/templates/shared_ptr.h"
+#include <glm/ext.hpp>
+#include "engine/rendering/scene/scene.h"
+#include <glm/glm.hpp>
 
 GImGuiCompositionPortWindow::GImGuiCompositionPortWindow()
 {
@@ -17,6 +27,10 @@ GImGuiCompositionPortWindow::GImGuiCompositionPortWindow()
 
 bool GImGuiCompositionPortWindow::init()
 {
+	m_sceneWindow = EditorApplicationImpl::get_instance()->get_editor_layer()->get_scene_window();
+	m_cameraManager = ((GSharedPtr<IGCameraManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get();
+	m_sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
+
 	return true;
 }
 
@@ -38,6 +52,37 @@ void GImGuiCompositionPortWindow::render()
 	int x = std::max(0, int(viewportPanelSize.x));
 	int y = std::max(0, int(viewportPanelSize.y));
 	ImGui::Image(EditorApplicationImpl::get_instance()->compositionPortSet->get_vk_descriptor(), ImVec2{ float(x),float(y) });
+
+	if (auto selectedNode = m_sceneWindow->get_selected_entity(); selectedNode != -1)
+	{
+		auto scene = m_sceneManager->get_current_scene();
+		auto mtrx = scene->get_matrix_of(selectedNode);
+		if (mtrx != nullptr)
+		{
+			if (m_selectedNode != selectedNode)
+			{
+				m_selectedNode = selectedNode;
+			}
+			ImGuizmo::SetOrthographic(false);
+			ImGuizmo::SetDrawlist();
+			float width = ImGui::GetWindowWidth();
+			float height = ImGui::GetWindowHeight();
+			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, width,height);
+			auto camProj = glm::make_mat4(m_cameraManager->get_camera_proj_matrix());
+			camProj[1][1] *= -1.0f;
+			bool isChanged = ImGuizmo::Manipulate(m_cameraManager->get_camera_view_matrix(), glm::value_ptr(camProj), ImGuizmo::TRANSLATE,
+				ImGuizmo::LOCAL, glm::value_ptr(*mtrx));
+
+			if (isChanged)
+			{
+				scene->mark_as_changed(m_selectedNode);
+			}
+		}
+	}
+	else
+	{
+		m_selectedNode = -1;
+	}
 }
 
 void GImGuiCompositionPortWindow::on_resize()

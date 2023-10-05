@@ -825,6 +825,11 @@ void GSceneRenderer2::set_composition_views(IVulkanImage* position, IVulkanImage
 	m_compositionVp = compositionVp;
 }
 
+std::span<MaterialDescription> GSceneRenderer2::get_materials()
+{
+	return std::span<MaterialDescription>(m_globalMaterialData.cpuVector.data(), m_globalMaterialData.inUsage);
+}
+
 uint32_t GSceneRenderer2::add_material_to_scene(const std::vector<MaterialDescription>& desc)
 {
 	return m_globalMaterialData.add_to_buffer(desc);
@@ -850,5 +855,11 @@ uint32_t GSceneRenderer2::add_default_transform()
 void GSceneRenderer2::set_transform_by_index(uint32_t index, glm::mat4* data)
 {
 	assert(index < (m_globalTransformData.gpuBuffer->get_size() / sizeof(float)*16));
-	memcpy(data,&m_globalTransformData.gpuCurrentPos[index],sizeof(float)*16);
+	memcpy(&m_globalTransformData.gpuBegin[index], glm::value_ptr(*data),sizeof(float)*16);
 }
+
+void GSceneRenderer2::set_material_by_index(const MaterialDescription* data, uint32_t index)
+{
+	m_globalMaterialData.set_by_index(data, index);
+}
+
