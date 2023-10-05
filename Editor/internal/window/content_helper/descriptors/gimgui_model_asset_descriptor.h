@@ -8,6 +8,7 @@
 #include <memory>
 
 class IGShaderManager;
+class IGSceneManager;
 
 class GImGuiModelAssetDescriptor : public IGImGuiContentDescriptorImpl
 {
@@ -19,6 +20,7 @@ public:
 private:
 	std::vector<FILE_TYPE> m_supportedTypes;
 	std::unique_ptr<GMeshEncoder> m_encoder;
+	IGSceneManager* m_sceneManager;
 };
 
 #endif // GIMGUI_MODEL_DESCRIPTOR_H

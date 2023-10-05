@@ -11,6 +11,7 @@
 struct VkDescriptorSet_T;
 enum VkFormat;
 class IGVulkanUniformBuffer;
+struct MeshData;
 
 class ENGINE_API IGSceneManager
 {
@@ -34,5 +35,8 @@ public:
 	virtual VkDescriptorSet_T* get_global_set_for_frame(uint32_t frame) const noexcept = 0;
 
 	virtual IGVulkanNamedDeferredViewport* create_default_deferred_viewport(IGVulkanNamedRenderPass* deferredPass, IGVulkanNamedRenderPass* compositionPass,VkFormat compositionFormat) = 0;
+	
+	virtual uint32_t add_mesh_to_scene(const MeshData* mesh) = 0;
+	virtual uint32_t add_node_with_mesh_and_defaults(uint32_t meshIndex) = 0;
 };
 #endif // ISCENE_MANAGER_H

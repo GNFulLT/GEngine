@@ -60,9 +60,13 @@ void GSceneRenderer::render_the_scene()
 	frameCmd->reset();
 
 	auto vp = m_viewport;
+	auto deferredRenderer = m_sceneManager->get_deferred_renderer();
+
 	frameCmd->begin();
+	deferredRenderer->fill_compute_cmd(frameCmd, currIndex);
 
 	vp->begin_draw_cmd(frameCmd);
+	deferredRenderer->fill_deferred_cmd(frameCmd, currIndex);
 
 
 
@@ -101,7 +105,10 @@ void GSceneRenderer::render_the_scene()
 	vp->end_draw_cmd(frameCmd);
 
 	vp->begin_composition_draw_cmd(frameCmd);
+	deferredRenderer->fill_composition_cmd(frameCmd, currIndex);
+
 	m_cubemapRenderer->render(frameCmd, currIndex,vp);
+
 
 
 	if (m_gridRenderer->wants_render())
@@ -284,11 +291,12 @@ bool GSceneRenderer::init()
 	assert(m_cubemapRenderer->init());
 	assert(m_gridRenderer->init());
 
-	/*auto win = new GImGuiGridSettingsWindow(m_gridRenderer.get());
+	auto win = new GImGuiGridSettingsWindow(m_gridRenderer.get());
 	if (!EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->create_imgui_window(win, GIMGUIWINDOWDIR_LEFT_BOTTOM))
 	{
 		delete win;
-	}*/
+	}
+	m_sceneManager = sceneMng;
 	return true;
 }
 

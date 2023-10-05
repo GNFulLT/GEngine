@@ -55,8 +55,9 @@ GImage_Descriptor* CubemapImageLoader::load(std::string_view path, int dedicated
 	{
 
 
-		Bitmap in(texWidth, texHeight, 4, eBitmapFormat_Float, img32.data());
-		Bitmap out = convertEquirectangularMapToVerticalCross(in);
+		Bitmap* in = new Bitmap(texWidth, texHeight, 4, eBitmapFormat_Float, img32.data());
+		Bitmap out = convertEquirectangularMapToVerticalCross(*in);
+		delete in;
 
 		Bitmap cube = convertVerticalCrossToCubeMapFaces(out);
 		imageData = malloc(cube.data_.size());

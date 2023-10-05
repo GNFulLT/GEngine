@@ -67,11 +67,11 @@ bool GridRenderer::init()
 	depthInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthInfo.pNext = nullptr;
 	depthInfo.flags = 0;
-	depthInfo.depthTestEnable = VK_FALSE;
+	depthInfo.depthTestEnable = VK_TRUE;
 	depthInfo.depthWriteEnable = VK_FALSE;
-	depthInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 	depthInfo.stencilTestEnable = false;
-	depthInfo.minDepthBounds = 0;
+	depthInfo.minDepthBounds = 1;
 	depthInfo.maxDepthBounds = 1;
 
 	states.push_back(m_boundedDevice->create_vertex_input_state(nullptr, nullptr));

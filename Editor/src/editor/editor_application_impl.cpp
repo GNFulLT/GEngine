@@ -182,9 +182,8 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
     m_logger->log_d("Creating Render Viewport");
     auto deferredRenderer = sceneManager->get_deferred_renderer();
-    m_renderViewport = sceneManager->create_default_deferred_viewport(deferredRenderer->get_deferred_pass(),deferredRenderer->get_composition_pass(),VK_FORMAT_B8G8R8A8_UNORM);
-    sceneManager->init_deferred_renderer(m_renderViewport);
-    m_imguiLayer->set_viewport(m_renderViewport);
+    m_renderViewport = sceneManager->create_default_deferred_viewport(deferredRenderer->get_deferred_pass(),deferredRenderer->get_composition_pass(),VK_FORMAT_R8G8B8A8_UNORM);
+    m_imguiLayer->set_viewport(m_renderViewport,sceneManager);
 
     
     if (auto logWin = m_imguiLayer->get_log_window();logWin != nullptr)

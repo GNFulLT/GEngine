@@ -18,6 +18,8 @@ public:
 
 	virtual void fill_composition_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) = 0;
 
+	virtual void fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) = 0;
+
 	virtual std::vector<VkFormat> get_deferred_formats() const noexcept = 0;
 
 	virtual VkFormat get_composition_format() const noexcept = 0;

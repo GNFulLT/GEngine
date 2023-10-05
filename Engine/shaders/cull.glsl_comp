@@ -1,0 +1,147 @@
+#version 460 core
+#extension GL_EXT_scalar_block_layout : require
+
+layout (local_size_x = 256) in;
+
+struct DrawCullData
+{
+	vec4 frustumPlanes[6];
+	vec4 frustumCorners[8];
+	float lodBase, lodStep; // lod distance i = base * pow(step, i)
+	uint maxDrawCount;
+};
+
+struct GlobalData
+{
+	uint count;
+};
+
+struct IndirectCommand
+{
+    uint    indexCount;
+    uint    instanceCount;
+    uint    firstIndex;
+    uint    vertexOffset;
+    uint    firstInstance;
+};
+
+#define MAX_LOD_COUNT 8
+
+struct BoundingBox
+{
+	vec3 min;
+	vec3 max;
+};
+
+struct MeshData{
+	BoundingBox boundingBox;
+	vec4 extents;
+	uint lodCount;
+	uint indexOffset;
+	uint vertexOffset;
+	uint vertexCount;
+	uint lodOffset[MAX_LOD_COUNT];
+}; 
+
+struct DrawData
+{
+	uint meshIndex;
+	uint materialIndex;
+	uint transformIndex;
+};
+
+struct AABBVec
+{
+	vec4 min;
+	vec4 max;
+};
+
+// Bindings
+//X Cam Data
+layout(set = 0,binding = 0,scalar) uniform  UniformBuffer { mat4   inMtx; vec3 camPos;} ubo;
+
+//X Global Data
+layout(set = 1,binding = 0) writeonly buffer GlobalDatas { GlobalData data; } globalData;
+
+//X Draw Commands
+layout(set = 1,binding = 1,scalar) buffer DrawCommands { IndirectCommand data[]; } drawCommands;
+
+//X Mesh Data
+layout(set = 2,binding = 0,scalar) readonly buffer MeshDatas { MeshData data[]; } meshDatas;
+
+//X Draw Data
+layout(set = 2,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
+
+layout(set = 2,binding = 2,scalar) writeonly buffer DrawID { uint data[]; } drawIDs;
+	
+layout(set = 3,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
+
+//X Cull Data
+layout(set = 4,binding = 0) uniform constants{   
+   DrawCullData cullData;
+} pushConstants;
+
+
+#define frustumPlanes  pushConstants.cullData.frustumPlanes
+#define frustumCorners  pushConstants.cullData.frustumCorners
+
+bool isAABBinFrustumX(AABBVec boxVec)
+{
+	for (int i = 0; i < 6; i++) {
+		int r = 0;
+		r += ( dot( frustumPlanes[i], boxVec.min ) < 0.0 ) ? 1 : 0;
+		r += ( dot( frustumPlanes[i], vec4(boxVec.max.x, boxVec.min.y, boxVec.min.z, 1.0f) ) < 0.0 ) ? 1 : 0;
+		r += ( dot( frustumPlanes[i], vec4(boxVec.min.x, boxVec.max.y, boxVec.min.z, 1.0f) ) < 0.0 ) ? 1 : 0;
+		r += ( dot( frustumPlanes[i], vec4(boxVec.max.x, boxVec.max.y, boxVec.min.z, 1.0f) ) < 0.0 ) ? 1 : 0;
+		r += ( dot( frustumPlanes[i], vec4(boxVec.min.x, boxVec.min.y, boxVec.max.z, 1.0f) ) < 0.0 ) ? 1 : 0;
+		r += ( dot( frustumPlanes[i], vec4(boxVec.max.x, boxVec.min.y, boxVec.max.z, 1.0f) ) < 0.0 ) ? 1 : 0;
+		r += ( dot( frustumPlanes[i], vec4(boxVec.min.x, boxVec.max.y, boxVec.max.z, 1.0f) ) < 0.0 ) ? 1 : 0;
+		r += ( dot( frustumPlanes[i], boxVec.max ) < 0.0 ) ? 1 : 0;
+		if ( r == 8 ) return false;
+	}
+
+	int r = 0;
+	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].x > boxVec.max.x) ? 1 : 0 ); if ( r == 8 ) return false;
+	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].x < boxVec.min.x) ? 1 : 0 ); if ( r == 8 ) return false;
+	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].y > boxVec.max.y) ? 1 : 0 ); if ( r == 8 ) return false;
+	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].y < boxVec.min.y) ? 1 : 0 ); if ( r == 8 ) return false;
+	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].z > boxVec.max.z) ? 1 : 0 ); if ( r == 8 ) return false;
+	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].z < boxVec.min.z) ? 1 : 0 ); if ( r == 8 ) return false;
+
+	return true;
+}
+
+
+void main()
+{
+	const uint idx = gl_GlobalInvocationID.x;
+	if(idx < pushConstants.cullData.maxDrawCount)
+	{
+uint meshId = drawDatas.data[idx].meshIndex;
+uint transformId = drawDatas.data[idx].transformIndex;
+
+        AABBVec boxVec;
+        boxVec.min = transformDatas.data[transformId] * vec4(meshDatas.data[meshId].boundingBox.min.x,meshDatas.data[meshId].boundingBox.min.y,meshDatas.data[meshId].boundingBox.min.z,1);
+        boxVec.max = transformDatas.data[transformId] * vec4(meshDatas.data[meshId].boundingBox.max.x,meshDatas.data[meshId].boundingBox.max.y,meshDatas.data[meshId].boundingBox.max.z,1);
+
+        uint numInstances = isAABBinFrustumX(boxVec) ? 1 : 0;
+        if(numInstances == 1)
+        {
+            uint commandIndex = atomicAdd(globalData.data.count,1);
+            drawCommands.data[commandIndex].instanceCount = 1;
+	    drawCommands.data[commandIndex].firstInstance = commandIndex;
+	    // Mesh datas    
+            vec3 center = vec3((boxVec.min + boxVec.max).xyz)/2;
+	    vec3 dist = abs(ubo.camPos - center);
+            float lodIndexF = log2(length(dist) / pushConstants.cullData.lodBase) / log2(pushConstants.cullData.lodStep);
+	    uint lodIndex = min(uint(max(lodIndexF + 1, 0)), meshDatas.data[meshId].lodCount - 1);
+drawCommands.data[commandIndex].firstIndex = meshDatas.data[meshId].indexOffset + meshDatas.data[meshId].lodOffset[lodIndex] -  meshDatas.data[meshId].lodOffset[0];
+            drawCommands.data[commandIndex].indexCount = meshDatas.data[meshId].lodOffset[lodIndex+1] -  meshDatas.data[meshId].lodOffset[lodIndex];
+	    drawCommands.data[commandIndex].vertexOffset = meshDatas.data[meshId].vertexOffset;
+            drawIDs.data[commandIndex] = idx;
+	    
+        }
+	
+   }
+}
+

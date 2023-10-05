@@ -7,6 +7,8 @@
 #include "engine/rendering/vulkan/ivulkan_descriptor.h"
 #include "engine/gengine.h"
 #include <cassert>
+#include "engine/imanager_table.h"
+#include "engine/manager/igscene_manager.h"
 
 GImGuiCompositionPortWindow::GImGuiCompositionPortWindow()
 {
@@ -61,6 +63,9 @@ void GImGuiCompositionPortWindow::on_resize()
 				deferredVp->get_sampler_for_named_attachment("albedo_attachment")).value();
 			EditorApplicationImpl::get_instance()->compositionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_composition_attachment(),
 				deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
+			auto sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
+			sceneManager->init_deferred_renderer(deferredVp);
+
 		});
 
 	EditorApplicationImpl::get_instance()->albedoPortSet = nullptr;

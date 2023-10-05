@@ -12,6 +12,9 @@
 #include "engine/manager/igshader_manager.h"
 #include "engine/manager/igresource_manager.h"
 #include "engine/rendering/renderer/igvulkan_deferred_renderer.h"
+#include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
+#include "engine/manager/igcamera_manager.h"
+#include "engine/manager/igscene_manager.h"
 
 struct VkDescriptorPool_T;
 struct VkPipelineLayout_T;
@@ -27,10 +30,33 @@ public:
 	inline constexpr static const uint32_t COMPUTE_SET = 2;
 	inline constexpr static const uint32_t BINDLESS_TEXTURE_SET = 3;
 
-	GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectManager* pipelineManager,IGResourceManager* res,IGShaderManager* shaderMng,
+	GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectManager* pipelineManager,IGResourceManager* res,IGShaderManager* shaderMng,IGSceneManager* sceneMng,
 		uint32_t framesInFlight,VkFormat compositionFormat);
 
 	bool init(VkDescriptorSetLayout_T* globalUniformSet);
+
+
+	virtual IGVulkanNamedRenderPass* get_deferred_pass() const noexcept;
+	virtual IGVulkanNamedRenderPass* get_composition_pass() const noexcept;
+	virtual std::vector<VkFormat> get_deferred_formats() const noexcept;
+	virtual void fill_deferred_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
+	virtual void fill_composition_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
+	virtual void fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
+
+	virtual void update_cull_data(DrawCullData& cullData);
+
+	virtual VkFormat get_composition_format() const noexcept override;
+
+	virtual void set_composition_views(IVulkanImage* position, IVulkanImage* albedo, IVulkanImage* emission, IVulkanImage* pbr,VkSampler_T* sampler,IGVulkanNamedViewport* deferredVp, IGVulkanNamedViewport* compositionVp);
+
+	uint32_t add_material_to_scene(const std::vector< MaterialDescription>& desc);
+	uint32_t add_mesh_to_scene(const MeshData* meshData, uint32_t shapeID = 0);
+	uint32_t create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex);
+	uint32_t add_default_transform();
+
+	void set_transform_by_index(uint32_t index,glm::mat4* data);
+	
+
 
 	void destroy();
 private:
@@ -53,10 +79,6 @@ private:
 		return enoughSize / perSize;
 	}
 
-	virtual IGVulkanNamedRenderPass* get_deferred_pass() const noexcept;
-	virtual IGVulkanNamedRenderPass* get_composition_pass() const noexcept;
-	virtual std::vector<VkFormat> get_deferred_formats() const noexcept;
-
 private:
 	IGVulkanLogicalDevice* p_boundedDevice;
 	IGPipelineObjectManager* p_pipelineManager;
@@ -65,8 +87,20 @@ private:
 
 	GPUMeshStreamResources* m_meshStreamResources;
 
-	GPUMeshStreamResources::CPUGPUData<glm::mat4> m_globalTransformData;
+	GPUMeshStreamResources::RCPUGPUData<glm::mat4> m_globalTransformData;
 	GPUMeshStreamResources::CPUGPUData<MaterialDescription> m_globalMaterialData;
+	VkDescriptorSet_T* m_drawDataSet;
+	VkDescriptorSet_T* m_cullDataSet;
+
+	IGVulkanNamedSetLayout* m_cullDataLayout;
+	IGVulkanNamedPipelineLayout* m_computePipelineLayout;
+
+	VkPipeline_T* m_compPipeline;
+
+	DrawCullData m_globalDrawCullData;
+	std::unique_ptr<IVulkanBuffer> m_globalDrawCullBuffer;
+	void* m_globalDrawCullBufferMappedMem;
+
 
 	IGVulkanNamedSetLayout* m_drawDataSetLayout;
 	VkDescriptorPool_T* m_bindlessPool;
@@ -91,6 +125,8 @@ private:
 	IGShaderResource* m_compositionVertexShaderRes;
 	IGShaderResource* m_compositionFragmentShaderRes;
 
+	IGShaderResource* m_cullComputeShaderRes;
+
 	VkFormat m_compositionFormat;
 
 
@@ -98,12 +134,13 @@ private:
 	GVulkanNamedGraphicPipeline* m_compositionPipeline;
 
 
-	uint32_t m_framesInFlight;
+	IGVulkanNamedViewport* m_deferredVp;
+	IGVulkanNamedViewport* m_compositionVp;
 
-	// Inherited via IGVulkanDeferredRenderer
-	virtual void fill_deferred_cmd(GVulkanCommandBuffer* cmd,uint32_t frame) override;
-	virtual void fill_composition_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
-	virtual VkFormat get_composition_format() const noexcept override;
+
+	IGSceneManager* p_sceneManager;
+	
+	uint32_t m_framesInFlight;
 };
 
 #endif // GSCENE_RENDERER_2_H

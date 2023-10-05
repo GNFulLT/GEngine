@@ -24,8 +24,11 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 
 
 	//X Copy data to gpu
-
 	memcpy(m_globalBufferMappedMem[frame], &m_globalData,sizeof(GlobalUniformBuffer));
+	
+	//X Update Cull Data
+	auto cullData = *m_cameraManager->get_cull_data();
+	m_deferredRenderer->update_cull_data(cullData);
 }
 
 bool GSceneManager::init(uint32_t framesInFlight)
@@ -56,7 +59,7 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		bindings[0].binding = 0;
 		bindings[0].descriptorCount = 1;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[0].pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutCreateInfo setinfo = {};
@@ -114,9 +117,13 @@ bool GSceneManager::init(uint32_t framesInFlight)
 	}
 	//X Create the renderer
 	{
-		m_deferredRenderer = new GSceneRenderer2(m_logicalDevice, pipelineManager,resManager,shaderManager,m_framesInFlight,VK_FORMAT_R8G8B8A8_UNORM);
+		m_deferredRenderer = new GSceneRenderer2(m_logicalDevice, pipelineManager,resManager,shaderManager,this,m_framesInFlight,VK_FORMAT_R8G8B8A8_UNORM);
 		assert(m_deferredRenderer->init(m_globalDataSetLayout->get_layout()));
 	}
+	std::vector<MaterialDescription> desc;
+	m_editorScene = Scene::create_scene_with_default_material(desc);
+	m_currentScene = m_editorScene;
+	m_deferredRenderer->add_material_to_scene(desc);
 	return true;
 }
 
@@ -145,6 +152,8 @@ void GSceneManager::destroy()
 bool GSceneManager::init_deferred_renderer(IGVulkanNamedDeferredViewport* deferred)
 {
 	m_deferredTargetedViewport = deferred;
+	m_deferredRenderer->set_composition_views(deferred->get_position_attachment(), deferred->get_albedo_attachment(),deferred->get_emission_attachment(),deferred->get_pbr_attachment(),deferred->get_sampler_for_named_attachment(""),m_deferredTargetedViewport,
+		this->m_deferredTargetedViewport);
 	return true;
 }
 
@@ -165,4 +174,32 @@ IGVulkanDeferredRenderer* GSceneManager::get_deferred_renderer() const noexcept
 IGVulkanNamedDeferredViewport* GSceneManager::create_default_deferred_viewport(IGVulkanNamedRenderPass* deferredPass, IGVulkanNamedRenderPass* compositionPass, VkFormat compositionFormat)
 {
 	return new GVulkanNamedBaseDeferredViewport(m_logicalDevice,deferredPass,compositionPass,VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM,compositionFormat);
+}
+
+uint32_t GSceneManager::add_node_to_root()
+{
+	return Scene::add_node(*m_currentScene, 0, m_currentScene->hierarchy[0].level + 1);
+}
+
+uint32_t GSceneManager::add_mesh_to_scene(const MeshData* mesh)
+{
+	return this->m_deferredRenderer->add_mesh_to_scene(mesh);
+}
+
+uint32_t GSceneManager::add_node_with_mesh_and_defaults(uint32_t meshIndex)
+{
+	//X First create a node
+	uint32_t nodeId = add_node_to_root();
+
+	//X First create transform data for the mesh
+	uint32_t nodeGpuIndex = m_deferredRenderer->add_default_transform();
+	m_cpu_to_gpu_map.emplace(nodeId, nodeGpuIndex);
+
+	uint32_t drawId = m_deferredRenderer->create_draw_data(meshIndex, 0, nodeGpuIndex);
+
+	//X Add mesh and default material
+	m_currentScene->meshes_.emplace(nodeId, meshIndex);
+	m_currentScene->materialForNode_.emplace(nodeId, 0);
+	
+	return nodeId;
 }

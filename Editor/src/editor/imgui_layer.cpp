@@ -248,7 +248,7 @@ void ImGuiLayer::render(GVulkanCommandBuffer* cmd)
 
 }
 
-void ImGuiLayer::set_viewport(IGVulkanNamedDeferredViewport* viewport)
+void ImGuiLayer::set_viewport(IGVulkanNamedDeferredViewport* viewport, IGSceneManager* sceneManager)
 {
 	auto deferredVp = viewport;
 	deferredVp->init(640, 320);
@@ -261,6 +261,9 @@ void ImGuiLayer::set_viewport(IGVulkanNamedDeferredViewport* viewport)
 		deferredVp->get_sampler_for_named_attachment("albedo_attachment")).value();
 	EditorApplicationImpl::get_instance()->compositionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_composition_attachment(),
 		deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
+	
+	sceneManager->init_deferred_renderer(deferredVp);
+	
 	//m_renderViewportWindow->set_the_viewport(viewport);
 	m_sceneRenderer = new GSceneRenderer(viewport, m_dev);
 	m_sceneRenderer->init();

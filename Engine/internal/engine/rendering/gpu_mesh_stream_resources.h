@@ -9,12 +9,32 @@
 #include <vector>
 #include "engine/rendering/vulkan/named/igvulkan_named_set_layout.h"
 #include "engine/manager/igpipeline_object_manager.h"
+#include "engine/rendering/vulkan/vulkan_command_buffer.h"
 
 struct VkDescriptorSet_T;
 
 class GPUMeshStreamResources
 {
 public:
+	template<typename T>
+	struct RCPUGPUData
+	{
+		std::unique_ptr<IVulkanBuffer> gpuBuffer;
+		T* gpuBegin = nullptr;
+		T* gpuCurrentPos = nullptr;
+		uint32_t inUsage = 0;
+
+		void create_internals();
+
+		uint32_t get_current_pos_as_index();
+
+		void unload_gpu_buffer();
+
+		uint32_t add_to_buffer(const std::vector<T>& buff);
+
+		void destroy();
+	};
+
 	template<typename T>
 	struct CPUGPUData
 	{
@@ -40,9 +60,17 @@ public:
 
 	bool init(uint32_t beginVertexCount, uint32_t beginIndexCount, uint32_t beginMeshCount, uint32_t beginDrawDataAndIdCount);
 
-	void add_mesh_data(MeshData* meshData);
+	uint32_t add_mesh_data(const MeshData* meshData);
+	uint32_t create_draw_data(uint32_t meshIndex,uint32_t materialIndex,uint32_t transformIndex);
+	uint32_t get_max_indirect_command_count();
+	IGVulkanNamedSetLayout* get_indirect_set_layout();
 
 	void destroy();
+	
+	void bind_vertex_index_stream(GVulkanCommandBuffer* cmd,uint32_t frameIndex);
+	void cmd_draw_indirect_data(GVulkanCommandBuffer* cmd, uint32_t frameIndex);
+	void cmd_reset_indirect_buffers(GVulkanCommandBuffer* cmd, uint32_t frameIndex);
+	void cmd_indirect_barrier_for_indirect_read(GVulkanCommandBuffer* cmd, uint32_t frameIndex);
 	
 	uint32_t get_count_of_draw_data();
 
@@ -57,7 +85,7 @@ private:
 	void update_compute_sets();
 private:
 	uint32_t m_framesInFlight;
-
+	uint32_t m_maxIndirectDrawCommand = 0;
 
 	IGPipelineObjectManager* p_pipelineObjectMng;
 
@@ -116,7 +144,7 @@ inline uint32_t GPUMeshStreamResources::CPUGPUData<T>::add_to_buffer(const std::
 
 	//X Move the cursor
 	gpuCurrentPos += buff.size();
-
+	inUsage += buff.size();
 	return currentPosIndex;
 }
 
@@ -137,6 +165,56 @@ inline void GPUMeshStreamResources::CPUGPUData<T>::destroy()
 	inUsage = 0;
 }
 
-#endif // GPU_MESH_RESOURCES_H
+template<typename T>
+inline void GPUMeshStreamResources::RCPUGPUData<T>::create_internals()
+{
+	assert(gpuBuffer->get_size() % sizeof(T) == 0);
+	this->gpuBegin = (T*)this->gpuBuffer->map_memory();
+	this->gpuCurrentPos = gpuBegin;
+}
 
+template<typename T>
+inline uint32_t GPUMeshStreamResources::RCPUGPUData<T>::get_current_pos_as_index()
+{
+	return this->gpuCurrentPos - this->gpuBegin;
+}
+
+template<typename T>
+inline void GPUMeshStreamResources::RCPUGPUData<T>::unload_gpu_buffer()
+{
+
+	gpuBuffer->unmap_memory();
+	gpuBuffer->unload();
+	gpuBuffer.reset();
+	gpuBegin = gpuCurrentPos = nullptr;
+}
+
+template<typename T>
+inline uint32_t GPUMeshStreamResources::RCPUGPUData<T>::add_to_buffer(const std::vector<T>& buff)
+{
+	//X First check there is space
+	uint32_t currentPosIndex = get_current_pos_as_index();
+	if ((buff.size() + currentPosIndex) > gpuBuffer->get_size())
+	{
+		//X No space resize
+		assert(false);
+	}
+	//X Copy to gpu
+	memcpy(gpuCurrentPos, buff.data(), buff.size() * sizeof(T));
+
+	//X Move the cursor
+	gpuCurrentPos += buff.size();
+	inUsage += buff.size();
+	return currentPosIndex;
+}
+
+template<typename T>
+inline void GPUMeshStreamResources::RCPUGPUData<T>::destroy()
+{
+	unload_gpu_buffer();
+	inUsage = 0;
+}
+
+
+#endif // GPU_MESH_RESOURCES_H
 

@@ -9,13 +9,17 @@
 #include "engine/manager/igresource_manager.h"
 #include "engine/resource/igtexture_resource.h"
 #include "volk.h"
+#include "engine/manager/igscene_manager.h"
+#include "engine/gengine.h"
+#include "engine/imanager_table.h"
+
 GImGuiModelAssetDescriptor::GImGuiModelAssetDescriptor()
 {
 	m_encoder.reset(new GMeshEncoder(EditorApplicationImpl::get_instance()->get_editor_log_window_logger().get()));
 	m_supportedTypes.push_back(FILE_TYPE_GLB);
 	m_supportedTypes.push_back(FILE_TYPE_OBJ);
 	m_supportedTypes.push_back(FILE_TYPE_GLTF);
-
+	m_sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 }
 
 const std::vector<FILE_TYPE>* GImGuiModelAssetDescriptor::get_file_types()
@@ -38,6 +42,13 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 	}
 	if (ImGui::Selectable("Add to scene"))
 	{
+		std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>> texturePaths;
+		std::vector<MaterialDescription> materials;
+		auto filePath = path.string();
+		auto mesh = con->load_all_meshes(filePath.c_str(), materials, texturePaths);
+		uint32_t meshIndex = m_sceneManager->add_mesh_to_scene(mesh);
+		m_sceneManager->add_node_with_mesh_and_defaults(meshIndex);
+
 		/*std::unordered_map<uint32_t,std::unordered_map<TEXTURE_MAP_TYPE, std::string>> texturePaths;
 		std::vector<MaterialDescription> materials;
 		auto filePath = path.string();

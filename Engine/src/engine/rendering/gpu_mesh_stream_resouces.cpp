@@ -47,9 +47,10 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 	m_globalIndirectCommandBuffers.resize(m_framesInFlight);
 	for (int i = 0; i < m_framesInFlight; i++)
 	{
-		m_globalIndirectCommandBuffers[i].reset(p_boundedDevice->create_buffer(uint64_t(m_globalIndirectCommandsBeginOffset) + sizeOfIndirectCommands, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
+		m_globalIndirectCommandBuffers[i].reset(p_boundedDevice->create_buffer(uint64_t(m_globalIndirectCommandsBeginOffset) + sizeOfIndirectCommands, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
 	}
-
+	assert((m_globalIndirectCommandBuffers[0]->get_size() - m_globalIndirectCommandsBeginOffset) % sizeof(VkDrawIndexedIndirectCommand) == 0);
+	m_maxIndirectDrawCommand = 0;
 	//X Create named sets
 
 	//X First create the DrawStreamSet
@@ -59,21 +60,21 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 		bindings[0].binding = 0;
 		bindings[0].descriptorCount = 1;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[0].pImmutableSamplers = nullptr;
 
 		//X DrawData Buffer
 		bindings[1].binding = 1;
 		bindings[1].descriptorCount = 1;
 		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[1].pImmutableSamplers = nullptr;
 
 		//X DrawID Buffer
 		bindings[2].binding = 2;
 		bindings[2].descriptorCount = 1;
 		bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		bindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[2].pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutCreateInfo setinfo = {};
@@ -108,7 +109,7 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 		setinfo.flags = 0;
 		setinfo.pBindings = bindings.data();
 
-		m_computeSetLayout = p_pipelineObjectMng->create_or_get_named_set_layout("ComputeSet", &setinfo);
+		m_computeSetLayout = p_pipelineObjectMng->create_or_get_named_set_layout("IndirectSet", &setinfo);
 	}
 
 	//X Allocate sets
@@ -152,10 +153,13 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 		}
 
 	}
+
+	update_compute_sets();
+	update_draw_data_sets();
 	return true;
 }
 
-void GPUMeshStreamResources::add_mesh_data(MeshData* meshData)
+uint32_t GPUMeshStreamResources::add_mesh_data(const MeshData* meshData)
 {
 	//X Add the vertices and indices
 	uint32_t beginVertexFloat = m_mergedVertex.add_to_buffer(meshData->vertexData_);
@@ -174,6 +178,25 @@ void GPUMeshStreamResources::add_mesh_data(MeshData* meshData)
 		memcpy(&gmeshes[i].lodOffset[0], &meshData->meshes_[i].lodOffset[0], sizeof(uint32_t) * MeshConstants::MAX_LOD_COUNT);
 	}
 	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
+	return beginMeshIndex; 
+}
+
+uint32_t GPUMeshStreamResources::create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex)
+{
+	std::vector<DrawData> drawDatas(1);
+	drawDatas[0] = DrawData{ .mesh = meshIndex,.material = materialIndex,.transformIndex = transformIndex };
+	m_maxIndirectDrawCommand++;
+	return m_globalDrawData.add_to_buffer(drawDatas);
+}
+
+uint32_t GPUMeshStreamResources::get_max_indirect_command_count()
+{
+	return m_maxIndirectDrawCommand;
+}
+
+IGVulkanNamedSetLayout* GPUMeshStreamResources::get_indirect_set_layout()
+{
+	return m_computeSetLayout;
 }
 
 void GPUMeshStreamResources::destroy()
@@ -223,6 +246,57 @@ void GPUMeshStreamResources::destroy()
 
 }
 
+void GPUMeshStreamResources::bind_vertex_index_stream(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	VkBuffer vertBuff = m_mergedVertex.gpuBuffer->get_vk_buffer();
+	VkDeviceSize deviceOffset = 0;
+
+	vkCmdBindVertexBuffers(cmd->get_handle(), 0, 1, &vertBuff, &deviceOffset);
+	vkCmdBindIndexBuffer(cmd->get_handle(), m_mergedIndex.gpuBuffer->get_vk_buffer(), 0, VK_INDEX_TYPE_UINT32);
+
+}
+
+void GPUMeshStreamResources::cmd_draw_indirect_data(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	vkCmdDrawIndexedIndirectCount(cmd->get_handle(), m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), m_globalIndirectCommandsBeginOffset,
+		m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), 0, m_maxIndirectDrawCommand, sizeof(VkDrawIndexedIndirectCommand));
+}
+
+void GPUMeshStreamResources::cmd_reset_indirect_buffers(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	VkBufferMemoryBarrier barr = {};
+	barr.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	barr.pNext = nullptr;
+	barr.srcAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+	barr.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barr.buffer = m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer();
+	barr.size = m_globalIndirectCommandBuffers[frameIndex]->get_size();
+	
+	vkCmdPipelineBarrier(cmd->get_handle(), VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, 0, 1, &barr, 0, 0);
+	//X Reset Cmd
+	vkCmdFillBuffer(cmd->get_handle(), barr.buffer, 0, barr.size, 0);
+
+	barr.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barr.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+
+	//X Reading from compute pipeline
+	vkCmdPipelineBarrier(cmd->get_handle(),VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, 0, 1, &barr, 0, 0);
+
+}
+
+void GPUMeshStreamResources::cmd_indirect_barrier_for_indirect_read(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	VkBufferMemoryBarrier barr = {};
+	barr.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	barr.pNext = nullptr;
+	barr.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+	barr.dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+	barr.buffer = m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer();
+	barr.size = m_globalIndirectCommandBuffers[frameIndex]->get_size();
+
+	vkCmdPipelineBarrier(cmd->get_handle(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, 0, 1, &barr, 0, 0);
+}
+
 uint32_t GPUMeshStreamResources::get_count_of_draw_data()
 {
 	return m_globalDrawData.cpuVector.size();
@@ -270,7 +344,7 @@ void GPUMeshStreamResources::update_draw_data_sets()
 	setWrites[0].pNext = nullptr;
 	setWrites[0].dstBinding = 0;
 	setWrites[0].descriptorCount = 1;
-	setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	setWrites[0].pBufferInfo = &(bufferInfos[0]);
 	//-------------------
 	setWrites[1] = {};
@@ -309,7 +383,7 @@ void GPUMeshStreamResources::update_compute_sets()
 	setWrites[0].pNext = nullptr;
 	setWrites[0].dstBinding = 0;
 	setWrites[0].descriptorCount = 1;
-	setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	setWrites[0].pBufferInfo = &(bufferInfos[0]);
 	//-------------------
 	setWrites[1] = {};

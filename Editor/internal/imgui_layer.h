@@ -1,6 +1,8 @@
 #ifndef IMGUI_LAYER_H
 #define IMGUI_LAYER_H
 
+#include "engine/manager/igscene_manager.h"
+
 class IGVulkanDevice;
 class IGVulkanApp;
 class Window;
@@ -30,7 +32,7 @@ public:
 	bool before_render();
 	void render(GVulkanCommandBuffer* cmd);
 
-	void set_viewport(IGVulkanNamedDeferredViewport* viewport);
+	void set_viewport(IGVulkanNamedDeferredViewport* viewport,IGSceneManager* sceneManager);
 
 	ImGuiWindowManager* get_window_manager();
 	

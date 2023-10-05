@@ -16,6 +16,7 @@ class GridRenderer;
 
 #include "public/core/templates/shared_ptr.h"
 #include "engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h"
+class IGSceneManager;
 
 class GSceneRenderer
 {
@@ -47,6 +48,8 @@ private:
 	GSharedPtr<GCubeRenderer> m_cubemapRenderer;
 	GSharedPtr< GridRenderer> m_gridRenderer;
 	Renderable* triangle;
+
+	IGSceneManager* m_sceneManager;
 };
 
 #endif // GSCENE_RENDERER_H

@@ -18,6 +18,8 @@ enum SCENE_DECODE_ERROR
 	SCENE_DECODE_ERROR_UNKNOWN
 };
 
+
+
 struct Scene {
 	inline constexpr static const std::string_view EXTENSION_NAME = ".gscene";
 	inline constexpr static const int MAX_NODE_LEVEL = 16;
