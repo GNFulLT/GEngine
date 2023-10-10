@@ -17,6 +17,7 @@ enum VkFormat;
 class IGVulkanUniformBuffer;
 struct MeshData;
 class Scene;
+#include "engine/resource/igtexture_resource.h"
 
 class ENGINE_API IGSceneManager
 {
@@ -43,11 +44,19 @@ public:
 	
 	virtual uint32_t add_mesh_to_scene(const MeshData* mesh) = 0;
 	virtual uint32_t add_node_with_mesh_and_defaults(uint32_t meshIndex) = 0;
+	virtual uint32_t add_node_with_mesh_and_material(uint32_t meshIndex,uint32_t materialIndex) = 0;
+	virtual uint32_t add_node_with_mesh_and_material_and_transform(uint32_t meshIndex, uint32_t materialIndex,const glm::mat4* transform) = 0;
+	virtual uint32_t add_child_node_with_mesh_and_material_and_transform(uint32_t parentNode,uint32_t meshIndex, uint32_t materialIndex, const glm::mat4* transform) = 0;
 
+	virtual uint32_t add_material_to_scene(const MaterialDescription* material) = 0;
 	virtual Scene* get_current_scene() const noexcept = 0;
 
 	virtual std::span<MaterialDescription> get_current_scene_materials() = 0;
 
 	virtual void set_material_by_index(const MaterialDescription* material,uint32_t index) = 0;
+
+	virtual uint32_t register_texture_to_scene(IGTextureResource* textureRes) = 0;
+	
+	virtual uint32_t add_point_light_node() = 0;
 };
 #endif // ISCENE_MANAGER_H

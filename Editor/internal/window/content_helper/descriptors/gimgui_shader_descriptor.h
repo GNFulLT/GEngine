@@ -13,12 +13,12 @@ public:
 	GImGuiShaderDescriptor();
 	~GImGuiShaderDescriptor();
 	// Inherited via IGImGuiContentDescriptorImpl
-	virtual const std::vector<FILE_TYPE>* get_file_types() override;
+	virtual const std::vector<std::string>* get_file_types() override;
 	virtual void draw_menu_for_file(std::filesystem::path path) override;
 
 	void try_to_compile_shader(std::filesystem::path path);
 private:
-	std::vector<FILE_TYPE> m_supportedFiles;
+	std::vector<std::string> m_supportedFiles;
 	std::future<void> m_compileFuture;
 	
 	IGShaderManager* m_shaderManager;

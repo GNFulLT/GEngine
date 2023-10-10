@@ -18,9 +18,10 @@ public:
 	
 	void register_descriptor(IGImGuiContentDescriptorImpl* impl);
 
-	const std::vector<GImGuiContentDescriptor*>* get_descriptor_of_type_if_any(FILE_TYPE type);
+	const std::vector<GImGuiContentDescriptor*>* get_descriptor_of_type_if_any(const std::string& extension);
+
 private:
-	ankerl::unordered_dense::segmented_map<FILE_TYPE, std::vector<GImGuiContentDescriptor*>> m_descriptorMap;
+	ankerl::unordered_dense::segmented_map<std::string, std::vector<GImGuiContentDescriptor*>> m_descriptorMap;
 
 	std::vector<GImGuiContentDescriptor*> m_allDescriptors;
 

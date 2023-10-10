@@ -233,6 +233,7 @@ bool GVulkanLogicalDevice::init()
 	ftrs.drawIndirectCount = VK_TRUE;
 	ftrs.descriptorBindingPartiallyBound = VK_TRUE;
 	ftrs.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	ftrs.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
 	VkDeviceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	createInfo.pNext = &ftrs;

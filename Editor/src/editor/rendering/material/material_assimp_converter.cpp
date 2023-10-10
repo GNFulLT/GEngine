@@ -234,6 +234,11 @@ MaterialDescription MaterialAssimpConvert::aimaterial_to_gmaterial(const aiMater
 	{
 		textureFiles.emplace(TEXTURE_MAP_TYPE_ALBEDO, Path.C_Str());
 	}
+	if (aiGetMaterialTexture(m, aiTextureType_NORMALS, 0, &Path, &Mapping, &UVIndex, &Blend, &TextureOp, TextureMapMode, &TextureFlags) == AI_SUCCESS)
+	{
+		textureFiles.emplace(TEXTURE_MAP_TYPE_NORMAL, Path.C_Str());
+
+	}
 	return desc;
 }
 

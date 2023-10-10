@@ -25,8 +25,6 @@ enum VkFormat;
 class GSceneRenderer2 : public IGVulkanDeferredRenderer
 {
 public:
-	inline constexpr static const uint32_t MAX_BINDLESS_TEXTURE = 16536;
-
 	inline constexpr static const uint32_t DRAWSTREAM_SET = 0;
 	inline constexpr static const uint32_t DRAWDATA_SET = 1;
 	inline constexpr static const uint32_t COMPUTE_SET = 2;
@@ -35,9 +33,9 @@ public:
 	GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectManager* pipelineManager,IGResourceManager* res,IGShaderManager* shaderMng,IGSceneManager* sceneMng,
 		uint32_t framesInFlight,VkFormat compositionFormat);
 
-	bool init(VkDescriptorSetLayout_T* globalUniformSet);
-
-
+	bool init(VkDescriptorSetLayout_T* globalUniformSet,IGVulkanNamedSetLayout* drawDataSetLayout,IGVulkanNamedSetLayout* lightDataSetLayout);
+	void set_drawdata_set(VkDescriptorSet_T* drawDataSet);
+	void set_lightdata_set(VkDescriptorSet_T* lightDataSet);
 	virtual IGVulkanNamedRenderPass* get_deferred_pass() const noexcept;
 	virtual IGVulkanNamedRenderPass* get_composition_pass() const noexcept;
 	virtual std::vector<VkFormat> get_deferred_formats() const noexcept;
@@ -50,20 +48,16 @@ public:
 	virtual VkFormat get_composition_format() const noexcept override;
 
 	virtual void set_composition_views(IVulkanImage* position, IVulkanImage* albedo, IVulkanImage* emission, IVulkanImage* pbr,VkSampler_T* sampler,IGVulkanNamedViewport* deferredVp, IGVulkanNamedViewport* compositionVp);
-	std::span<MaterialDescription> get_materials();
-	uint32_t add_material_to_scene(const std::vector< MaterialDescription>& desc);
+
 	uint32_t add_mesh_to_scene(const MeshData* meshData, uint32_t shapeID = 0);
 	uint32_t create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex);
-	uint32_t add_default_transform();
 
-	void set_transform_by_index(uint32_t index,glm::mat4* data);
-	void set_material_by_index(const MaterialDescription* data,uint32_t indexs);
-
-
+	VkDescriptorSet_T* get_bindless_set();
 	void destroy();
-private:
+
+	uint32_t get_max_count_of_draw_data();
 	template<typename T>
-	uint32_t calculate_nearest_10mb()
+	static uint32_t calculate_nearest_10mb()
 	{
 		constexpr static const uint32_t SIZE = 1024 * 1024 * 10;
 		uint32_t perSize = sizeof(T);
@@ -72,7 +66,7 @@ private:
 		return enoughSize / perSize;
 	}
 	template<typename T>
-	uint32_t calculate_nearest_1mb()
+	static uint32_t calculate_nearest_1mb()
 	{
 		constexpr static const uint32_t SIZE = 1024 * 1024;
 		uint32_t perSize = sizeof(T);
@@ -80,8 +74,12 @@ private:
 		uint32_t enoughSize = SIZE - mod;
 		return enoughSize / perSize;
 	}
+private:
+	VkDescriptorSet_T* m_drawDataSet;
+	VkDescriptorSet_T* m_lightDataSet;
 
 private:
+	uint32_t MAX_BINDLESS_TEXTURE = 16536;
 	IGVulkanLogicalDevice* p_boundedDevice;
 	IGPipelineObjectManager* p_pipelineManager;
 	IGResourceManager* p_resourceManager;
@@ -89,9 +87,6 @@ private:
 
 	GPUMeshStreamResources* m_meshStreamResources;
 
-	GPUMeshStreamResources::RCPUGPUData<glm::mat4> m_globalTransformData;
-	GPUMeshStreamResources::CPUGPUData<MaterialDescription> m_globalMaterialData;
-	VkDescriptorSet_T* m_drawDataSet;
 	VkDescriptorSet_T* m_cullDataSet;
 
 	IGVulkanNamedSetLayout* m_cullDataLayout;
@@ -104,7 +99,6 @@ private:
 	void* m_globalDrawCullBufferMappedMem;
 
 
-	IGVulkanNamedSetLayout* m_drawDataSetLayout;
 	VkDescriptorPool_T* m_bindlessPool;
 	VkDescriptorSetLayout_T* m_bindlessSetLayout;
 	VkDescriptorSet_T* m_bindlessSet;

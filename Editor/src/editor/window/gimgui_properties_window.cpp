@@ -96,7 +96,10 @@ void GImGuiPropertiesWindow::render()
 		ImGui::Checkbox("Scale Down Material Textures", &f);
 		ImGui::Checkbox("Automized LODs", &f);
 		ImGui::Checkbox("Sloppy LODs Enabled", &f);
-		
+		if (ImGui::Button("Add Default Light"))
+		{
+			m_sceneManager->add_point_light_node();
+		}
 		/*ImGui::Checkbox("Wireframe Pipeline", &f);
 		ImGui::SliderFloat("Wireframe Thickness", &wireframeSpec->thickness, 0.01f, 1.f, "%.2f");
 		ImGui::SliderFloat("Wireframe Step", &wireframeSpec->step, 0.1f, 10.f, "%.3f");

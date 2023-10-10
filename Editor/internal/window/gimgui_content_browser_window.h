@@ -34,7 +34,7 @@ private:
 	GImGuiWindowStorage* m_storage;
 	std::filesystem::path m_currentPath;
 	std::filesystem::path m_rightClickedFile;
-	FILE_TYPE m_rightClickedFileType;
+	std::string m_rightClickedFileType;
 
 	std::string m_name;
 	GSharedPtr<IGTextureResource> m_folderIcon;

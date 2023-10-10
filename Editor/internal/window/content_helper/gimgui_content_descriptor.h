@@ -10,7 +10,7 @@ public:
 
 	void destroy();
 
-	const std::vector<FILE_TYPE>* get_file_type();
+	const std::vector<std::string>* get_file_type();
 
 	void draw_menu_for_file(std::filesystem::path path);
 private:

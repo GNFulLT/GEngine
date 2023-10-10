@@ -161,36 +161,47 @@ void GImGuiContentBrowserWindow::render()
 	
 	std::filesystem::directory_entry entry;
 	std::filesystem::directory_entry pathEntry;
-	FILE_TYPE selectedFile = FILE_TYPE_UNKNOWN;
+	std::string selectedFile;
 	auto iter = m_currentPath;
 	bool enteredFolder = false;
 	for (const auto& dirEntry : directory_iterator(iter))
 	{
 		VkDescriptorSet_T* desc = nullptr;
-		auto str = dirEntry.path().filename().string();
-		
-		FILE_TYPE fileType = get_file_type_from_name(str.c_str());
-		
-		switch (fileType)
+		auto entryAsPath = dirEntry.path();
+		auto str = entryAsPath.filename().string();
+		bool isFolder = std::filesystem::is_directory(entryAsPath);
+		std::string fileType;
+
+		if (!isFolder)
 		{
-		case FILE_TYPE_FOLDER:
+			fileType = entryAsPath.filename().extension().string().c_str();
+		}
+		if (isFolder)
+		{
 			desc = m_folderIcon->get_descriptor_set()->get_vk_descriptor();
-			break;
-		case FILE_TYPE_TXT:
-			desc = m_txtIcon->get_descriptor_set()->get_vk_descriptor();
-			break;
-		case FILE_TYPE_HLSL:
-			desc = m_hlslIcon->get_descriptor_set()->get_vk_descriptor();
-			break;
-		case FILE_TYPE_GLSL:
-			desc = m_glslIcon->get_descriptor_set()->get_vk_descriptor();
-			break;
-		case FILE_TYPE_SPIRV:
-			desc = m_spvIcon->get_descriptor_set()->get_vk_descriptor();
-			break;
-		default:
-			desc = m_txtIcon->get_descriptor_set()->get_vk_descriptor();
-			break;
+		}
+		else
+		{
+			if (strcmp(fileType.c_str(), ".txt") == 0)
+			{
+				desc = m_txtIcon->get_descriptor_set()->get_vk_descriptor();
+			}
+			else if (is_hlsl_file(fileType.c_str()))
+			{
+				desc = m_hlslIcon->get_descriptor_set()->get_vk_descriptor();
+			}
+			else if (is_glsl_file(fileType.c_str()))
+			{
+				desc = m_glslIcon->get_descriptor_set()->get_vk_descriptor();
+			}
+			else if (strcmp(fileType.c_str(), ".spirv") == 0)
+			{
+				desc = m_spvIcon->get_descriptor_set()->get_vk_descriptor();
+			}
+			else
+			{
+				desc = m_txtIcon->get_descriptor_set()->get_vk_descriptor();
+			}
 		}
 
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -199,7 +210,7 @@ void GImGuiContentBrowserWindow::render()
 		
 
 		if (ImGui::ImageButton(desc, ImVec2{ btn_size,btn_size }, { 0,0 }, { 1,1 }, frame));
-		if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && fileType == FILE_TYPE_FOLDER && !enteredFolder)
+		if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && isFolder && !enteredFolder)
 		{
 			enteredFolder = true;
 		}
@@ -228,7 +239,7 @@ void GImGuiContentBrowserWindow::render()
 
 	if (m_mouse->get_mouse_button_state(MOUSE_BUTTON_RIGHT) && entry.exists())
 	{
-		auto descriptors = m_contentHelper.get_descriptor_of_type_if_any(selectedFile);
+		auto descriptors = m_contentHelper.get_descriptor_of_type_if_any(selectedFile.c_str());
 		if (descriptors != nullptr && descriptors->size() > 0)
 		{
 			m_rightClickedFile = entry.path();

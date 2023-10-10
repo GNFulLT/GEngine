@@ -12,17 +12,18 @@
 #include "engine/manager/igscene_manager.h"
 #include "engine/gengine.h"
 #include "engine/imanager_table.h"
+#include <unordered_map>
 
 GImGuiModelAssetDescriptor::GImGuiModelAssetDescriptor()
 {
 	m_encoder.reset(new GMeshEncoder(EditorApplicationImpl::get_instance()->get_editor_log_window_logger().get()));
-	m_supportedTypes.push_back(FILE_TYPE_GLB);
-	m_supportedTypes.push_back(FILE_TYPE_OBJ);
-	m_supportedTypes.push_back(FILE_TYPE_GLTF);
+	m_supportedTypes.push_back(".glb");
+	m_supportedTypes.push_back(".obj");
+	m_supportedTypes.push_back(".gltf");
 	m_sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 }
 
-const std::vector<FILE_TYPE>* GImGuiModelAssetDescriptor::get_file_types()
+const std::vector<std::string>* GImGuiModelAssetDescriptor::get_file_types()
 {
 	return &m_supportedTypes;
 }
@@ -43,12 +44,85 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 	if (ImGui::Selectable("Add to scene"))
 	{
 		std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>> texturePaths;
+		Scene* convertedScene;
 		std::vector<MaterialDescription> materials;
 		auto filePath = path.string();
-		auto mesh = con->load_all_meshes(filePath.c_str(), materials, texturePaths);
-		uint32_t meshIndex = m_sceneManager->add_mesh_to_scene(mesh);
-		m_sceneManager->add_node_with_mesh_and_defaults(meshIndex);
+		auto mesh = con->load_all_meshes(filePath.c_str(), materials, texturePaths,&convertedScene);
 
+		//m_sceneManager->add_node_with_mesh_and_defaults(meshIndex);
+		//X Generate draw datas for mesh
+		if (mesh != nullptr)
+		{
+			uint32_t meshIndex = m_sceneManager->add_mesh_to_scene(mesh);
+			std::unordered_map<uint32_t, uint32_t> meshToMaterial;
+			assert(mesh->meshes_.size() == materials.size());
+			for (int i = 0; i < mesh->meshes_.size(); i++)
+			{
+				auto engineMeshIndex = meshIndex + i;
+				uint32_t materialIndex = 0;
+				//X Check is there any material for this mesh
+				if (auto paths = texturePaths.find(i); paths != texturePaths.end())
+				{
+					//X Load the texture
+					auto itr = paths->second.find(TEXTURE_MAP_TYPE_ALBEDO);
+					if (itr != paths->second.end())
+					{
+						auto albedo = itr->second;
+						std::string albedoTexturePath = "./";
+						albedoTexturePath += albedo;
+						auto resource = ((GSharedPtr<IGResourceManager>*)(EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE)))->get();
+						auto textureRes = resource->create_texture_resource(albedo, "editor", albedoTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
+						assert(RESOURCE_INIT_CODE_OK == textureRes->load());
+						//X Save the texture to the scene
+						auto albedoTextureID = m_sceneManager->register_texture_to_scene(textureRes);
+						materials[i].albedoMap_ = albedoTextureID;
+					}
+					materialIndex = m_sceneManager->add_material_to_scene(&materials[i]);
+				}
+				//X Add corresponded material to the map
+				meshToMaterial.emplace(engineMeshIndex, materialIndex);
+			}
+
+			//X Add to the real scene virtual data
+			std::queue<uint32_t> queue;
+			std::unordered_map<uint32_t, uint32_t> virtual_to_scene;
+			queue.push(0);
+
+			while (!queue.empty())
+			{
+				auto iter = queue.front();
+				queue.pop();
+				uint32_t nodeIndex = -1;
+				if (auto mesh = convertedScene->meshes_.find(iter); mesh != convertedScene->meshes_.end())
+				{
+					auto localMeshIndex = mesh->second;
+					uint32_t material = 0;
+					if (auto mat = meshToMaterial.find(localMeshIndex); mat != meshToMaterial.end())
+					{
+						material = mat->second;
+					}
+					uint32_t parent = 0;
+					if (auto parentIter = virtual_to_scene.find(iter); parentIter != virtual_to_scene.end())
+					{
+						parent = parentIter->second;
+					}
+					nodeIndex = m_sceneManager->add_child_node_with_mesh_and_material_and_transform(parent,localMeshIndex + meshIndex, material, &convertedScene->localTransform_[iter]);
+				}
+				// Enqueue children (if any)
+				uint32_t child = convertedScene->hierarchy[iter].firstChild;
+				while (child != UINT32_MAX)
+				{
+					queue.push(child);
+					if (nodeIndex != -1)
+					{
+						virtual_to_scene.emplace(child, nodeIndex);
+					}
+					child = convertedScene->hierarchy[child].nextSibling;
+					
+				}
+			}
+			delete convertedScene;
+		}
 		/*std::unordered_map<uint32_t,std::unordered_map<TEXTURE_MAP_TYPE, std::string>> texturePaths;
 		std::vector<MaterialDescription> materials;
 		auto filePath = path.string();

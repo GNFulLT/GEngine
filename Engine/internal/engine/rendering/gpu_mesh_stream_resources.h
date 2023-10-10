@@ -31,6 +31,7 @@ public:
 		void unload_gpu_buffer();
 
 		uint32_t add_to_buffer(const std::vector<T>& buff);
+		void set_by_index(const T* data, uint32_t index);
 
 		void destroy();
 	};
@@ -218,6 +219,12 @@ inline uint32_t GPUMeshStreamResources::RCPUGPUData<T>::add_to_buffer(const std:
 	gpuCurrentPos += buff.size();
 	inUsage += buff.size();
 	return currentPosIndex;
+}
+
+template<typename T>
+inline void GPUMeshStreamResources::RCPUGPUData<T>::set_by_index(const T* data, uint32_t index)
+{
+	memcpy(&gpuBegin[index], data, sizeof(T));
 }
 
 template<typename T>

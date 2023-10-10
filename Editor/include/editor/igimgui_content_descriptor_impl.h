@@ -11,7 +11,7 @@ class EDITOR_API IGImGuiContentDescriptorImpl
 public:
 	virtual ~IGImGuiContentDescriptorImpl() = default;
 
-	virtual const std::vector<FILE_TYPE>* get_file_types() = 0;
+	virtual const std::vector<std::string>* get_file_types() = 0;
 	
 	virtual void draw_menu_for_file(std::filesystem::path path) = 0;
 private:

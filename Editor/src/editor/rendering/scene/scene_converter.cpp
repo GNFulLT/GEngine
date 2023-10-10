@@ -7,7 +7,7 @@
 #include "internal/rendering/mesh/gmesh_assimp_encoder.h"
 #include "engine/rendering/material/gmaterial.h"
 #include "internal/rendering/material/material_assimp_converter.h"
-
+#include <queue>
 void SceneConverter::traverse(const aiScene* sourceScene, Scene& scene, aiNode* node, int parent, int atLevel)
 {
     int newNode = Scene::add_node(scene, parent, atLevel);
@@ -142,7 +142,16 @@ void SceneConverter::process_scene(const SceneConfig& cfg)
 	Scene::save_the_scene(ourScene, cfg.outputScene.c_str());
 }
 
-MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles)
+glm::mat4 convertMatrix(const aiMatrix4x4& aiMat)
+{
+	return {
+	aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
+	aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2,
+	aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3,
+	aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4
+	};
+}
+MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** virtualScene)
 {
 	MeshData* meshData = new MeshData();
 	uint32_t indexOffset = 0;
@@ -191,5 +200,53 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 	}
 
 	recalculateBoundingBoxes(*meshData);
+	std::vector<MaterialDescription> materialDescs;
+	Scene* gscene = Scene::create_scene_with_default_material(materialDescs);
+
+	std::queue<aiNode*> queue;
+	if (scene->mRootNode->mNumMeshes != 0)
+	{
+		assert(false);
+	}
+	queue.push(scene->mRootNode);
+	int level = 1;
+	std::unordered_map<aiNode*,uint32_t> ai_to_scene;
+	while (!queue.empty())
+	{
+		auto iter = queue.front();
+		queue.pop();
+		
+		//X Iterate childrens
+		for (int i = 0; i < iter->mNumChildren; i++)
+		{
+			int meshCount = iter->mChildren[i]->mNumMeshes;
+			queue.push(iter->mChildren[i]);
+			if (meshCount == 0)
+				break;
+
+			uint32_t parent = 0;
+			if (auto parentItr = ai_to_scene.find(iter->mChildren[i]); parentItr != ai_to_scene.end())
+			{
+				parent = parentItr->second;
+			}
+			auto glmT = glm::transpose(glm::make_mat4(&iter->mChildren[i]->mTransformation.a1));
+			
+			uint32_t nodeIndex = gscene->add_node(*gscene, parent, level);
+
+			ai_to_scene.emplace(iter->mChildren[i], nodeIndex);
+			
+			gscene->localTransform_[nodeIndex] = glmT;
+			
+			gscene->meshes_.emplace(nodeIndex, iter->mChildren[i]->mMeshes[0]);
+			
+			for (int j = 0; j < iter->mChildren[i]->mNumChildren; j++)
+			{
+				queue.push(iter->mChildren[i]->mChildren[j]);
+				ai_to_scene.emplace(iter->mChildren[i]->mChildren[j], nodeIndex);
+			}
+		}
+		level++;
+	}
+	*virtualScene = gscene;
 	return meshData;
 }

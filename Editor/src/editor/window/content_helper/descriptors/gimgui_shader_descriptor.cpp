@@ -9,11 +9,18 @@
 #include "engine/shader/ispirv_shader.h"
 #include "engine/manager/igshader_manager.h"
 #include "internal/shader/spirv_shader_utils.h"
+#include "internal/utils.h"
 
 GImGuiShaderDescriptor::GImGuiShaderDescriptor()
 {
-	m_supportedFiles.push_back(FILE_TYPE_GLSL);
-	m_supportedFiles.push_back(FILE_TYPE_HLSL);
+	for (auto& glsl : all_glsl_files)
+	{
+		m_supportedFiles.push_back(glsl);
+	}
+	for (auto& hlsl : all_glsl_files)
+	{
+		m_supportedFiles.push_back(hlsl);
+	}
 	m_shaderManager = nullptr;
 }
 
@@ -22,7 +29,7 @@ GImGuiShaderDescriptor::~GImGuiShaderDescriptor()
 	int a = 5;
 }
 
-const std::vector<FILE_TYPE>* GImGuiShaderDescriptor::get_file_types()
+const std::vector<std::string>* GImGuiShaderDescriptor::get_file_types()
 {
 	m_shaderManager = ((GSharedPtr<IGShaderManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SHADER))->get();
 	return &m_supportedFiles;

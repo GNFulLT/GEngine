@@ -4,14 +4,21 @@
 #include "editor/editor_application_impl.h"
 #include "internal/imgui_layer.h"
 #include "internal/imgui_window_manager.h"
+#include "internal/utils.h"
 GImGuiTextEditorDescriptor::GImGuiTextEditorDescriptor()
 {
-	m_supportedFiles.push_back(FILE_TYPE_GLSL);
-	m_supportedFiles.push_back(FILE_TYPE_HLSL);
-	m_supportedFiles.push_back(FILE_TYPE_TXT);
+	for (auto& glsl : all_glsl_files)
+	{
+		m_supportedFiles.push_back(glsl);
+	}
+	for (auto& hlsl : all_glsl_files)
+	{
+		m_supportedFiles.push_back(hlsl);
+	}
+	m_supportedFiles.push_back(".txt");
 }
 
-const std::vector<FILE_TYPE>* GImGuiTextEditorDescriptor::get_file_types()
+const std::vector<std::string>* GImGuiTextEditorDescriptor::get_file_types()
 {
 	return &m_supportedFiles;
 }

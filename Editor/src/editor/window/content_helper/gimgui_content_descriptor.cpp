@@ -11,7 +11,7 @@ void GImGuiContentDescriptor::destroy()
 	m_impl = nullptr;
 }
 
-const std::vector<FILE_TYPE>* GImGuiContentDescriptor::get_file_type()
+const std::vector<std::string>* GImGuiContentDescriptor::get_file_type()
 {
 	return m_impl->get_file_types();
 }

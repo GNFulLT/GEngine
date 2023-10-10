@@ -6,10 +6,10 @@
 
 GImGuiGMeshDescriptor::GImGuiGMeshDescriptor()
 {
-	m_supportedFileTypes.push_back(FILE_TYPE_GMESH);
+	m_supportedFileTypes.push_back(".gmesh");
 }
 
-const std::vector<FILE_TYPE>* GImGuiGMeshDescriptor::get_file_types()
+const std::vector<std::string>* GImGuiGMeshDescriptor::get_file_types()
 {
 	return &m_supportedFileTypes;
 }

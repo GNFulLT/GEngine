@@ -16,10 +16,10 @@
 GImGuiSpirvDescriptor::GImGuiSpirvDescriptor()
 {
 	p_shaderManager = nullptr;
-	m_supportedFiles.push_back(FILE_TYPE_SPIRV);
+	m_supportedFiles.push_back(".spv");
 }
 
-const std::vector<FILE_TYPE>* GImGuiSpirvDescriptor::get_file_types()
+const std::vector<std::string>* GImGuiSpirvDescriptor::get_file_types()
 {
 	p_shaderManager = ((GSharedPtr<IGShaderManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SHADER))->get();
 	return &m_supportedFiles;

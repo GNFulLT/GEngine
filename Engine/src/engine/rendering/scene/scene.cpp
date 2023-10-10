@@ -61,11 +61,9 @@ ENGINE_API bool Scene::recalculate_transforms()
 
 ENGINE_API glm::mat4* Scene::get_matrix_of(uint32_t nodeID)
 {
-	if (auto msh = meshes_.find(nodeID); msh != meshes_.end())
-	{
-		return &localTransform_[nodeID];
-	}
-	return nullptr;
+	if (nodeID > localTransform_.size())
+		return nullptr;
+	return &localTransform_[nodeID];
 }
 
 ENGINE_API Scene* Scene::create_scene_with_default_material(std::vector<MaterialDescription>& mat)

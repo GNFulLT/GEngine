@@ -132,3 +132,82 @@ FILE_TYPE get_file_type_from_name(const char* str)
         return FILE_TYPE_UNKNOWN;
     }
 }
+
+bool is_glsl_file(const char* str)
+{
+     if (endsWith(str, ".glsl"))
+     {
+         return true;
+
+     }
+     else if (endsWith(str, ".glsl_frag"))
+     {
+         return true;
+
+     }
+     else if (endsWith(str, ".glsl_vert"))
+     {
+         return true;
+
+    }
+     else if (endsWith(str, ".glsl_geom"))
+     {
+         return true;
+
+    }
+     else if (endsWith(str, ".glsl_comp"))
+     {
+         return true;
+
+    }
+     else if (endsWith(str, ".glsl_tesc"))
+     {
+         return true;
+
+    }
+     else if (endsWith(str, ".glsl_tese"))
+     {
+         return true;
+    }
+    return false;
+}
+
+bool is_hlsl_file(const char* str)
+{
+
+    if (endsWith(str, ".hlsl"))
+    {
+        return true;
+
+    }
+    else if (endsWith(str, ".hlsl_frag"))
+    {
+        return true;
+
+    }
+    else if (endsWith(str, ".hlsl_vert"))
+    {
+        return true;
+
+    }
+    else if (endsWith(str, ".hlsl_geom"))
+    {
+        return true;
+
+    }
+    else if (endsWith(str, ".hlsl_comp"))
+    {
+        return true;
+
+    }
+    else if (endsWith(str, ".hlsl_tesc"))
+    {
+        return true;
+
+    }
+    else if (endsWith(str, ".hlsl_tese"))
+    {
+        return true;
+    }
+    return false;
+}

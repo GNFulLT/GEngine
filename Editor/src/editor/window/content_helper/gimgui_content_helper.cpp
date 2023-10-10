@@ -35,8 +35,8 @@ void GImGuiContentHelper::register_descriptor(IGImGuiContentDescriptorImpl* impl
 	m_allDescriptors.emplace_back(descriptor);
 }
 
-const std::vector<GImGuiContentDescriptor*>* GImGuiContentHelper::get_descriptor_of_type_if_any(FILE_TYPE type)
+const std::vector<GImGuiContentDescriptor*>* GImGuiContentHelper::get_descriptor_of_type_if_any(const std::string& extension)
 {
-	auto iter = m_descriptorMap.find(type);
+	auto iter = m_descriptorMap.find(std::string(extension));
 	return iter == m_descriptorMap.end() ? nullptr : &iter->second;
 }

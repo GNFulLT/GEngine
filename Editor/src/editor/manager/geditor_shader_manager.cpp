@@ -119,10 +119,12 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GEditorShaderManager::compile
 	}
 	
 	if (!glslang_shader_parse(shader, &input)) {
+		auto log = glslang_shader_get_info_log(shader);
+		auto dlog = glslang_shader_get_info_debug_log(shader);
 		if (logger.is_valid())
 		{
-			logger->log_e(glslang_shader_get_info_log(shader)); ;
-			logger->log_e(glslang_shader_get_info_debug_log(shader));
+			logger->log_e(log);
+			logger->log_e(dlog);
 		}
 	
 		glslang_shader_delete(shader);

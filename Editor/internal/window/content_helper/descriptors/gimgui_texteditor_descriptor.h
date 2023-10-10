@@ -10,10 +10,10 @@ class GImGuiTextEditorDescriptor : public IGImGuiContentDescriptorImpl
 public:
 	GImGuiTextEditorDescriptor();
 	// Inherited via IGImGuiContentDescriptorImpl
-	virtual const std::vector<FILE_TYPE>* get_file_types() override;
+	virtual const std::vector<std::string>* get_file_types() override;
 	virtual void draw_menu_for_file(std::filesystem::path path) override;
 private:
-	std::vector<FILE_TYPE> m_supportedFiles;
+	std::vector<std::string> m_supportedFiles;
 };
 
 

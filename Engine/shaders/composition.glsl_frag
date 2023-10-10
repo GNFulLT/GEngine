@@ -1,10 +1,33 @@
 #version 460
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: enable
 
 layout (set = 0,binding = 0) uniform sampler2D samplerPosition;
 layout (set = 0,binding = 1) uniform sampler2D samplerAlbedo;
 layout (set = 0,binding = 2) uniform sampler2D samplerEmission;
 layout (set = 0,binding = 3) uniform sampler2D samplerPBR;
 
+
+struct PointLight
+{
+      vec3 position;
+      vec3 color;
+      float intensity;	
+      float radius;	
+      float quadraticFalloff;	
+      float linearFalloff;	
+};
+
+layout(set = 1,binding = 0,scalar) readonly buffer PointLightData { PointLight data[]; } pointLights;
+layout(set = 2,binding = 0,scalar) uniform  UniformBuffer 
+{ 
+	mat4   inMtx;
+ 	vec3 camPos;
+	mat4 view;
+	float resolutionWidth;
+	float resolutionHeight;
+	uint lightCount;
+} ubo;
 
 layout (location = 0) in vec2 inUV;
 layout (location = 0) out vec4 outColor;
@@ -28,10 +51,48 @@ void main()
 	vec2 uoctaNormal = vec2(albedoUOcta.a,emisUOcta.a);
 	vec2 octaNormal = (uoctaNormal *2.f) -1.f;
 	vec3 worldNormal = octahedral_decode(octaNormal) ;
-	vec4 fragPos = texture(samplerPosition,inUV).rgba;
+	
+	vec3 fragPos = texture(samplerPosition,inUV).rgb;
 	vec3 n = worldNormal;
 	n = normalize(n);
+	
+	float ambient = 0.1;
+
+	vec3 fragColor = albedo * ambient;
+	
+	
+	for(int i = 0;i<ubo.lightCount;i++)
+	{
+		// Vector to the light
+		vec3 L = pointLights.data[i].position - fragPos;
+		
+		// Distance
+		float dist = length(L);
+		
+		// Viewer to fragment
+		vec3 V = ubo.camPos - fragPos;
+		
+		V = normalize(V);
+		L = normalize(L);
+
+		// Attenuation
+		float atten = pointLights.data[i].radius / (pow(dist, 2.0) + 1.0);
+		
+		float NdotL = max(0.0,dot(n, L));
+		
+		//X Diffuse
+		vec3 diff = pointLights.data[i].color * albedo * NdotL * atten;
+
+		//X Specular
+		vec3 R = reflect(-L, n);
+		float NdotR = max(0.0, dot(R, V));
+		vec3 spec = pointLights.data[i].color * 1.f * pow(NdotR, 16.0) * atten;
+
+		fragColor += diff + spec;	
+	}
+		
+	//X Sun Light directional
 	vec3 lightDir = normalize(vec3(-1.0, -1.0, 0.1));
-  	float NdotL = clamp( dot(n, lightDir), 0.3, 1.0 );
-  	outColor = vec4( albedo.rgb * NdotL + emission, 1.0 );
+  	float NdotLS = clamp( dot(n, lightDir), 0.3, 1.0 );
+  	outColor = vec4(fragColor,1.f);
 }
