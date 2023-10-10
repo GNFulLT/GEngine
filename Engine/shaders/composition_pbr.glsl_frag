@@ -1,0 +1,166 @@
+#version 460
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: enable
+
+layout (set = 0,binding = 0) uniform sampler2D samplerPosition;
+layout (set = 0,binding = 1) uniform sampler2D samplerAlbedo;
+layout (set = 0,binding = 2) uniform sampler2D samplerEmission;
+layout (set = 0,binding = 3) uniform sampler2D samplerPBR;
+
+
+struct PointLight
+{
+      vec3 position;
+      vec3 color;
+      float intensity;	
+      float radius;	
+      float quadraticFalloff;	
+      float linearFalloff;	
+};
+
+layout(set = 1,binding = 0,scalar) readonly buffer PointLightData { PointLight data[]; } pointLights;
+layout(set = 2,binding = 0,scalar) uniform  UniformBuffer 
+{ 
+	mat4   inMtx;
+ 	vec3 camPos;
+	mat4 view;
+	float resolutionWidth;
+	float resolutionHeight;
+	uint lightCount;
+} ubo;
+
+layout (location = 0) in vec2 inUV;
+layout (location = 0) out vec4 outColor;
+
+#define PI 3.1415926535897932384626433832795
+#define EPSILON 0.000001
+
+struct PBRInfo
+{
+	float alpha;
+	vec3 N;
+	vec3 V;
+	vec3 L;
+	vec3 H;
+	vec3 albedoColor;
+	float metallic;	
+};
+
+vec3 octahedral_decode(vec2 f) {
+    vec3 n = vec3(f.x, f.y, 1.0 - abs(f.x) - abs(f.y));
+    float t = max(-n.z, 0.0);
+    n.x += n.x >= 0.0 ? -t : t;
+    n.y += n.y >= 0.0 ? -t : t;
+    return normalize(n);
+}
+
+// GGX/Trowbridge-reitz Normal distribution function
+float D(float alpha, vec3 N, vec3 H)
+{
+	float numerator = pow(alpha,2.f);
+	float NdotH = max(0.0,dot(N,H));
+	float denominator = PI * pow(pow(NdotH,2.0)* (numerator -1.0) + 1.0,2.0);
+	denominator = max(denominator,EPSILON);
+	return numerator / denominator;
+}
+
+// Schlikck-Beckmann Geometry Shadowing Function
+float G1(float alpha,vec3 N,vec3 X)
+{
+	float numerator = max(0.0,dot(N,X));
+	float k = alpha / 2.0;
+	float denominator = (numerator * (1.0 - k)) + k;
+	denominator = max(denominator,EPSILON);
+	return numerator / denominator;
+}
+
+// Smith Model
+float G(float alpha,vec3 N,vec3 V, vec3 L)
+{
+	return G1(alpha,N,V) * G1(alpha,N,L);
+}
+
+vec3 F(vec3 F0,vec3 V,vec3 H)
+{
+	return F0 + (vec3(1.0)-F0) * pow(1 - max(0.0,dot(V,H) ),5.0);
+}
+
+vec3 BRDF(PBRInfo info)
+{
+	vec3 f0 = vec3(0.04);
+	vec3 specularColor = mix(f0, info.albedoColor, info.metallic);
+	vec3 ks = F(f0,info.V,info.H);	
+	vec3 kd = (1.0 - ks);
+	
+	 
+	vec3 diffuseContrib = kd*(info.albedoColor / PI);
+	
+	// Cook Torrance Function
+	vec3 cookTorranceNumerator = D(info.alpha,info.N,info.H) * G(info.alpha,info.N,info.V,info.L) * ks;
+	float cookTorranceDenominator = max(0.0,dot(info.N,info.V)) * max(0.0,dot(info.N,info.L)) * 4.0;
+	cookTorranceDenominator = max(cookTorranceDenominator,EPSILON);
+	
+	vec3 specContrib = cookTorranceNumerator / cookTorranceDenominator;
+	
+	return specContrib + diffuseContrib;
+}
+
+void main() 
+{
+	vec4 emisUOcta = texture(samplerEmission,inUV).rgba;
+	vec3 emission = emisUOcta.rgb;
+	vec4 albedoUOcta = texture(samplerAlbedo,inUV).rgba;
+	vec3 albedo = albedoUOcta.rgb;
+	
+	vec3 aoMetallicRoughness = texture(samplerPBR,inUV).rgb; 
+
+  	vec3 normalSample = vec3(0.0, 0.0, 1.0);
+	vec2 uoctaNormal = vec2(albedoUOcta.a,emisUOcta.a);
+	vec2 octaNormal = (uoctaNormal *2.f) -1.f;
+	vec3 worldNormal = octahedral_decode(octaNormal) ;
+	
+	vec3 fragPos = texture(samplerPosition,inUV).rgb;
+	vec3 n = worldNormal;
+	n = normalize(n);
+	
+	float ambient = 0.1;
+
+	vec3 fragColor = albedo * ambient;
+	// Viewer to fragment
+	vec3 V = ubo.camPos - fragPos;
+	V = normalize(V);
+	
+	PBRInfo pbrInfo = PBRInfo(
+	1.0,
+	n,
+	V,
+	vec3(0,0,0),
+	vec3(0,0,0),
+	albedo,
+	aoMetallicRoughness.g
+	);
+	
+	for(int i = 0;i<ubo.lightCount;i++)
+	{
+		// Vector to the light
+		vec3 L = pointLights.data[i].position - fragPos;
+		L = normalize(L);
+		vec3 H = normalize(L+V);
+		
+		pbrInfo.L = L;
+		pbrInfo.H = H;
+		
+		// Distance
+		float dist = length(L);
+		// Attenuation
+		float atten = pointLights.data[i].radius / (pow(dist, 2.0) + 1.0);
+		float NdotL = max(0.0,dot(n, L));
+
+		fragColor += NdotL * BRDF(pbrInfo) * atten * pointLights.data[i].color;	
+	}
+		
+	//X Sun Light directional
+	vec3 lightDir = normalize(vec3(-1.0, -1.0, 0.1));
+  	float NdotLS = clamp( dot(n, lightDir), 0.3, 1.0 );
+  	outColor = vec4(fragColor,1.f);
+}
