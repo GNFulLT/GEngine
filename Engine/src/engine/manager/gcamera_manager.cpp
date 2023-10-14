@@ -149,3 +149,8 @@ DrawCullData* GCameraManager::get_cull_data() noexcept
 {
 	return &m_cullData;
 }
+
+const CameraData* GCameraManager::get_camera_data() noexcept
+{
+	return m_selectedPositioner->get_camera_data();
+}

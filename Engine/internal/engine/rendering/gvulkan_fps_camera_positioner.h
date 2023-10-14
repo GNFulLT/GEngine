@@ -23,6 +23,7 @@ public:
 	virtual const float* get_view_matrix() const noexcept override;
 
 	virtual const float* get_proj_matrix() const noexcept override;
+	virtual const CameraData* get_camera_data() noexcept override;
 
 private:
 
@@ -45,6 +46,7 @@ private:
 	float m_maxSpeed = 10.0f;
 
 	IKeyboardManager* p_keyboardManager;
+	CameraData m_cameraData;
 };
 
 #endif // GVULKAN_FPS_CAMERA_CONTROLLER_H

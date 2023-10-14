@@ -24,6 +24,9 @@ public:
 		float view[16];
 		float resolution[2];
 		uint32_t pointLightCount = 0;
+		uint32_t activePointLightCount = 0;
+		float zNear;
+		float zFar;
 	};
 	// Inherited via IGSceneManager
 	virtual IGVulkanUniformBuffer* get_global_buffer_for_frame(uint32_t frame) const noexcept override;
@@ -59,6 +62,10 @@ private:
 	GPUMeshStreamResources::CPUGPUData<MaterialDescription> m_globalMaterialData;
 	GPUMeshStreamResources::CPUGPUData<GPointLight> m_globalPointLights;
 
+	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightIndices;
+	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightBins;
+	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightTiles;
+
 
 	GlobalUniformBuffer m_globalData;
 	IGCameraManager* m_cameraManager;
@@ -79,7 +86,7 @@ private:
 
 	std::vector<VkDescriptorSet_T*> m_globalSets;
 	VkDescriptorSet_T* m_drawDataSet;
-	VkDescriptorSet_T* m_globalLightSet;
+	std::vector<VkDescriptorSet_T*> m_globalLightSets;
 	std::unordered_map<uint32_t, uint32_t> m_cpu_to_gpu_map;
 	std::unordered_map<uint32_t, uint32_t> m_nodeToLight;
 

@@ -12,6 +12,8 @@
 
 GFpsCameraPositioner::GFpsCameraPositioner() : m_camDir(gvec3(0.f, 0.f, 1.f))
 {
+	m_cameraData.zNear = 0.1f;
+	m_cameraData.zFar = 1000.f;
 	m_projMatrix = perspective(70.f, 16.f / 9.f, 0.1f, 1000.f);
 	m_viewMatrix = look_at(m_campos,m_campos+m_camDir,m_camUp);
 	m_viewProjMatrix = m_projMatrix * m_viewMatrix;
@@ -89,5 +91,10 @@ const float* GFpsCameraPositioner::get_view_matrix() const noexcept
 const float* GFpsCameraPositioner::get_proj_matrix() const noexcept
 {
 	return &m_projMatrix.xx;
+}
+
+const CameraData* GFpsCameraPositioner::get_camera_data() noexcept
+{
+	return &m_cameraData;
 }
 

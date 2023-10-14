@@ -53,6 +53,9 @@ private:
 
 	// Inherited via IGCameraManager
 	virtual DrawCullData* get_cull_data() noexcept override;
+
+	// Inherited via IGCameraManager
+	virtual const CameraData* get_camera_data() noexcept override;
 };
 
 

@@ -3,8 +3,8 @@
 
 #include "engine/GEngine_EXPORT.h"
 #include <cstdint>
+#include "engine/rendering/icamera_positioner.h"
 
-class ICameraPositioner;
 class IGVulkanUniformBuffer;
 
 #include <glm/glm.hpp>
@@ -45,6 +45,8 @@ public:
 	virtual DrawCullData* get_cull_data() noexcept = 0;
 
 	virtual void update_frustrum_proj_matrix(const glm::mat4& frustrum) noexcept = 0;
+	
+	virtual const CameraData* get_camera_data() noexcept = 0;
 private:
 };
 #endif // IGCAMERA_MANAGER_H

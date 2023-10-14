@@ -11,6 +11,34 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+struct AABB
+{
+	glm::vec4 min;
+	glm::vec4 max;
+};
+
+
+//X 8x8
+static const uint32_t TILE_SIZE = 8;
+static const uint32_t BIN_SIZE = 16;
+
+struct SortedLight {
+
+	uint32_t             light_index;
+	float             projected_z;
+	float             projected_z_min;
+	float             projected_z_max;
+}; // struct SortedLight
+
+static int sorting_light_fn(const void* a, const void* b) {
+	const SortedLight* la = (const SortedLight*)a;
+	const SortedLight* lb = (const SortedLight*)b;
+
+	if (la->projected_z < lb->projected_z) return -1;
+	else if (la->projected_z > lb->projected_z) return 1;
+	return 0;
+}
+
 IGVulkanUniformBuffer* GSceneManager::get_global_buffer_for_frame(uint32_t frame) const noexcept
 {
 	return m_globalBuffers[frame];
@@ -24,15 +52,15 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 	memcpy(&m_globalData.pos[0], m_cameraManager->get_camera_position(), 3 * sizeof(float));
 	m_globalData.resolution[0] = m_deferredTargetedViewport->get_viewport_area()->width;
 	m_globalData.resolution[1] = m_deferredTargetedViewport->get_viewport_area()->height;
-
-
+	m_globalData.zNear = m_cameraManager->get_camera_data()->zNear;
+	auto cullData = *m_cameraManager->get_cull_data();
+	m_globalData.zFar = 10.f;
 	//X Copy data to gpu
 	memcpy(m_globalBufferMappedMem[frame], &m_globalData,sizeof(GlobalUniformBuffer));
 	
 	//X Update Cull Data
-	auto cullData = *m_cameraManager->get_cull_data();
 	m_deferredRenderer->update_cull_data(cullData);
-
+	
 	//X Update Global Transformations
 	bool recalculated = m_currentScene->recalculate_transforms();
 	if (recalculated)
@@ -58,6 +86,196 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 			}
 		}
 	}
+	std::vector<SortedLight> sortedLights(m_globalData.pointLightCount);
+	//X Set to frustum far plane
+	float zFar = 10.f;
+	//X Iterate the point lights
+	glm::mat4 camView = glm::make_mat4(m_cameraManager->get_camera_view_matrix());
+
+	for (int i = 0; i < m_globalData.pointLightCount; i++)
+	{
+		GPointLight& light = m_globalPointLights.cpuVector[i];
+		glm::vec4 p = glm::vec4(light.position, 1.f);
+	
+		auto projected_p = camView * p;
+		auto projected_p_min = projected_p + glm::vec4(0, 0, light.radius, 0.f);
+		auto projected_p_max = projected_p + glm::vec4(0, 0, -light.radius, 0.f);
+
+		SortedLight& sortedLight = sortedLights[i];
+		sortedLight.light_index = i;
+		sortedLight.projected_z = (m_cameraManager->get_camera_data()->zNear - projected_p.z) / (zFar - m_cameraManager->get_camera_data()->zNear);
+		sortedLight.projected_z_min = (m_cameraManager->get_camera_data()->zNear - projected_p_min.z) / (zFar - m_cameraManager->get_camera_data()->zNear);
+		sortedLight.projected_z_max = (m_cameraManager->get_camera_data()->zNear - projected_p_max.z) / (zFar - m_cameraManager->get_camera_data()->zNear);
+	}
+	qsort(sortedLights.data(), m_globalData.pointLightCount, sizeof(SortedLight), sorting_light_fn);
+
+	for (int i = 0; i < m_globalData.pointLightCount; i++)
+	{
+		SortedLight& sortedLight = sortedLights[i];
+		m_globalPointLightIndices[frame].cpuVector[i] = sortedLight.light_index;
+	}
+	memcpy(m_globalPointLightIndices[frame].gpuBegin, m_globalPointLightIndices[frame].cpuVector.data(),sizeof(uint32_t)* m_globalData.pointLightCount);
+	
+	//x Create bins per light
+
+	const float binSize = 1.0f / BIN_SIZE;
+	std::vector<uint32_t> binRangePerLight(m_globalData.pointLightCount);
+	for (int i = 0; i < m_globalData.pointLightCount; i++)
+	{
+		const SortedLight& sortedLight = sortedLights[i];
+
+		if (sortedLight.projected_z_min < 0.0f && sortedLight.projected_z_max < 0.0f) {
+			// Light is behind the camera
+			binRangePerLight[i] = UINT32_MAX;
+			continue;
+		}
+		const uint32_t min_bin = glm::max(0.f, glm::floor(sortedLight.projected_z_min * BIN_SIZE));
+		const uint32_t max_bin = glm::max(0.f, glm::ceil(sortedLight.projected_z_max * BIN_SIZE));
+
+		binRangePerLight[i] = (min_bin & 0xffff) | ((max_bin & 0xffff) << 16);
+	}
+
+	std::vector<uint32_t> bins(BIN_SIZE);
+	//X Set Bins
+	for (int i = 0; i < BIN_SIZE; i++)
+	{
+		uint32_t minLightId = m_globalData.pointLightCount + 1;
+		uint32_t maxLightId = 0;
+			
+		for (int j = 0; j < m_globalData.pointLightCount; j++)
+		{
+			const SortedLight& sortedLight = sortedLights[j];
+			const uint32_t binsOfLight = binRangePerLight[j];
+			if (binsOfLight == UINT32_MAX)
+				continue;
+
+			const uint32_t min_bin = binsOfLight & 0xffff;
+			const uint32_t max_bin = binsOfLight >> 16;
+
+			if (i >= min_bin && i <= max_bin) {
+				if (j < minLightId) {
+					minLightId = j;
+				}
+
+				if (j > maxLightId) {
+					maxLightId = j;
+				}
+			}
+		}
+
+		bins[i] = minLightId | (maxLightId << 16);
+	}
+	memcpy(m_globalPointLightBins[frame].gpuBegin,bins.data(),sizeof(uint32_t) * BIN_SIZE);
+	uint32_t minLightIdBin = bins[0] & 0XFFFF;
+	uint32_t maxLightIdBin = (bins[0] >> 16) & 0XFFFF;
+
+	const uint32_t tileXCount = m_globalData.resolution[0] / TILE_SIZE;
+	const uint32_t tileYCount = m_globalData.resolution[1] / TILE_SIZE;
+	const uint32_t numWords = (m_globalData.pointLightCount + 31) / 32;
+	const uint32_t tilesEntryCount = tileXCount * tileYCount * numWords;
+	const uint32_t bufferSize = tilesEntryCount * sizeof(uint32_t);
+	float tileSizeInv = 1.0f / TILE_SIZE;
+
+	uint32_t tileStride = tileXCount * numWords;
+
+	std::vector<uint32_t> tilesBit(tilesEntryCount,0);
+	auto zNear = m_cameraManager->get_camera_data()->zNear;
+	for (int i = 0; i < m_globalData.pointLightCount; i++)
+	{
+		GPointLight& light = m_globalPointLights.cpuVector[sortedLights[i].light_index];
+
+
+		glm::vec4 pos = glm::vec4(light.position, 1.f);
+		float radius = light.radius;
+		glm::vec4 viewSpacePos = camView * pos;
+		bool cameraVisible = -viewSpacePos.z - radius < m_cameraManager->get_camera_data()->zNear;
+		if (!cameraVisible)
+		{
+			continue;
+		}
+
+		//X Build an AABB for this light
+		glm::vec4 aabb_min(FLT_MAX,FLT_MAX,FLT_MAX,FLT_MAX);
+		glm::vec4 aabb_max(FLT_MIN, FLT_MIN, FLT_MIN, FLT_MIN);
+		glm::vec4 aabb;
+		for (int c = 0; c < 8; c++)
+		{
+			glm::vec3 corner((c % 2) ? 1.f : -1.f, (c & 2) ? 1.f : -1.f, (c & 4) ? 1.f : -1.f);
+			corner = corner * radius;
+			corner = corner + glm::vec3(pos);
+
+			glm::vec4 viewSpaceCorner = camView * glm::vec4(corner,1.f);
+
+			//X Clamp the coordinates
+			viewSpaceCorner.z = glm::max(zNear, viewSpaceCorner.z);
+
+			glm::vec4 viewProjCorner = camView * viewSpaceCorner;
+			viewProjCorner = viewProjCorner / viewProjCorner.w;
+			aabb_min.x = glm::min(aabb_min.x, viewProjCorner.x);
+			aabb_min.y = glm::min(aabb_min.y, viewProjCorner.y);
+
+			aabb_max.x = glm::max(aabb_max.x, viewProjCorner.x);
+			aabb_max.y = glm::max(aabb_max.y, viewProjCorner.y);
+		}
+		aabb.x = aabb_min.x;
+		aabb.z = aabb_max.x;
+		// Invert aabb
+		aabb.w = -1 * aabb_min.y;
+		aabb.y = -1 * aabb_max.y;
+
+		glm::vec4 aabb_screen{ (aabb.x * 0.5f + 0.5f) * (m_globalData.resolution[0] - 1),
+						 (aabb.y * 0.5f + 0.5f) * (m_globalData.resolution[1] - 1),
+						 (aabb.z * 0.5f + 0.5f) * (m_globalData.resolution[0] - 1),
+						 (aabb.w * 0.5f + 0.5f) * (m_globalData.resolution[1] - 1) };
+
+		float width = aabb_screen.z - aabb_screen.x;
+		float height = aabb_screen.w - aabb_screen.y;
+
+		if (width < 0.0001f || height < 0.0001f) {
+			continue;
+		}
+		float min_x = aabb_screen.x;
+		float min_y = aabb_screen.y;
+
+		float max_x = min_x + width;
+		float max_y = min_y + height;
+
+		if (min_x > m_globalData.resolution[0] || min_y > m_globalData.resolution[1]) {
+			continue;
+		}
+
+		if (max_x < 0.0f || max_y < 0.0f) {
+			continue;
+		}
+
+		min_x = glm::max(min_x, 0.0f);
+		min_y = glm::max(min_y, 0.0f);
+
+		max_x = glm::min(max_x, (m_globalData.resolution[0]));
+		max_y = glm::min(max_y, (m_globalData.resolution[1]));
+
+		uint32_t first_tile_x = (uint32_t)(min_x * tileSizeInv);
+		uint32_t last_tile_x = glm::min(tileXCount - 1, (uint32_t)(max_x * tileSizeInv));
+
+		uint32_t first_tile_y = (uint32_t)(min_y * tileSizeInv);
+		uint32_t last_tile_y = glm::min(tileYCount - 1, (uint32_t)(max_y * tileSizeInv));
+
+		for (uint32_t y = first_tile_y; y <= last_tile_y; ++y) {
+			for (uint32_t x = first_tile_x; x <= last_tile_x; ++x) {
+				uint32_t array_index = y * tileStride + x;
+
+				uint32_t word_index = i / 32;
+				uint32_t bit_index = i % 32;
+
+				tilesBit[array_index + word_index] |= (1 << bit_index);
+			}
+		}
+	}
+
+	//X Copy tiles bit
+	memcpy(m_globalPointLightTiles[frame].gpuBegin,tilesBit.data(),tilesBit.size() * sizeof(uint32_t));
+	m_deferredRenderer->set_lightdata_set(m_globalLightSets[frame]);
+
 }
 
 bool GSceneManager::init(uint32_t framesInFlight)
@@ -130,12 +348,31 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		//X Create Light Set
 		{
 			//X Point Light Buffer
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
+			std::array<VkDescriptorSetLayoutBinding, 4> bindings;
 			bindings[0].binding = 0;
 			bindings[0].descriptorCount = 1;
 			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT |  VK_SHADER_STAGE_COMPUTE_BIT;
 			bindings[0].pImmutableSamplers = nullptr;
+
+			bindings[1].binding = 1;
+			bindings[1].descriptorCount = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+			bindings[1].pImmutableSamplers = nullptr;
+
+			bindings[2].binding = 2;
+			bindings[2].descriptorCount = 1;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+			bindings[2].pImmutableSamplers = nullptr;
+
+
+			bindings[3].binding = 3;
+			bindings[3].descriptorCount = 1;
+			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+			bindings[3].pImmutableSamplers = nullptr;
 
 			VkDescriptorSetLayoutCreateInfo setinfo = {};
 			setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -153,10 +390,9 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		//X First create necessary pool
 		std::unordered_map<VkDescriptorType, int> map;
 		map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
-		map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3);
-
-		//X 2 Global 1 Draw Data 1 Light Data
-		m_globalPool = m_logicalDevice->create_and_init_vector_pool(map, m_framesInFlight+2);
+		map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 6); 
+		//X FRAMES Global 1 Draw Data FRAMES Light Data
+		m_globalPool = m_logicalDevice->create_and_init_vector_pool(map, (m_framesInFlight*2)+1);
 	}
 
 	//X Create set and update sets
@@ -177,8 +413,11 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		allocInfo.pSetLayouts = &vkSetLayout;
 		assert(VK_SUCCESS == vkAllocateDescriptorSets(m_logicalDevice->get_vk_device(), &allocInfo, &m_drawDataSet));
 		
-		vkSetLayout = m_globalLightSetLayout->get_layout();
-		assert(VK_SUCCESS == vkAllocateDescriptorSets(m_logicalDevice->get_vk_device(), &allocInfo, &m_globalLightSet));
+		std::vector<VkDescriptorSetLayout> lightSetLayouts(framesInFlight, m_globalLightSetLayout->get_layout());
+		allocInfo.descriptorSetCount = lightSetLayouts.size();
+		allocInfo.pSetLayouts = lightSetLayouts.data();
+		m_globalLightSets.resize(lightSetLayouts.size());
+		assert(VK_SUCCESS == vkAllocateDescriptorSets(m_logicalDevice->get_vk_device(), &allocInfo, m_globalLightSets.data()));
 
 		//X Update sets
 		VkDescriptorBufferInfo buff = {};
@@ -219,20 +458,40 @@ bool GSceneManager::init(uint32_t framesInFlight)
 			m_globalMaterialData.create_internals();
 
 			m_globalPointLights.gpuBuffer.reset(m_logicalDevice->create_buffer(100 * sizeof(GPointLight),
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());	
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 
 			m_globalPointLights.create_internals();
+			m_globalPointLightIndices.resize(framesInFlight);
+			m_globalPointLightTiles.resize(framesInFlight);
+			m_globalPointLightBins.resize(framesInFlight);
+			for (int i = 0; i < framesInFlight; i++)
+			{
+				m_globalPointLightIndices[i].gpuBuffer.reset(m_logicalDevice->create_buffer(100 * sizeof(uint32_t),
+					VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+				m_globalPointLightIndices[i].create_internals();
+				
+				m_globalPointLightBins[i].gpuBuffer.reset(m_logicalDevice->create_buffer(100 * sizeof(uint32_t),
+					VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+				m_globalPointLightBins[i].create_internals();
+
+				m_globalPointLightTiles[i].gpuBuffer.reset(m_logicalDevice->create_buffer(1920 * sizeof(uint32_t) * 135,
+					VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+				m_globalPointLightTiles[i].create_internals();
+				
+			}
+		
+			
 		}
 		//X Write Draw Data Sets Sets
 		{
 			//X Now update draw set
 			{
 				//X First Draw Data Set
-				std::array<VkDescriptorBufferInfo, 2> infos;
+				std::array<VkDescriptorBufferInfo, 4> infos;
 				infos[0] = { .buffer = m_globalTransformData.gpuBuffer->get_vk_buffer() ,.offset = 0,.range = m_globalTransformData.gpuBuffer->get_size() };
 				infos[1] = { .buffer = m_globalMaterialData.gpuBuffer->get_vk_buffer() ,.offset = 0,.range = m_globalMaterialData.gpuBuffer->get_size() };
-
-				std::array<VkWriteDescriptorSet, 2> writeSets;
+				
+				std::array<VkWriteDescriptorSet, 4> writeSets;
 				writeSets[0] = {};
 				writeSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				writeSets[0].descriptorCount = 1;
@@ -249,18 +508,43 @@ bool GSceneManager::init(uint32_t framesInFlight)
 				writeSets[1].dstSet = m_drawDataSet;
 				writeSets[1].pBufferInfo = &infos[1];
 
-				vkUpdateDescriptorSets(m_logicalDevice->get_vk_device(), writeSets.size(), writeSets.data(), 0, 0);
+				vkUpdateDescriptorSets(m_logicalDevice->get_vk_device(), 2, writeSets.data(), 0, 0);
+
+				writeSets[2] = {};
+				writeSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeSets[2].descriptorCount = 1;
+				writeSets[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				writeSets[2].dstBinding = 2;
+				writeSets[2].pBufferInfo = &infos[2];
+
+				writeSets[3] = {};
+				writeSets[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeSets[3].descriptorCount = 1;
+				writeSets[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				writeSets[3].dstBinding = 3;
+				writeSets[3].pBufferInfo = &infos[3];
 
 				//X Update Light
 				infos[0] = { .buffer = m_globalPointLights.gpuBuffer->get_vk_buffer() ,.offset = 0,.range = m_globalPointLights.gpuBuffer->get_size() };
-				writeSets[0].dstSet = m_globalLightSet;
+							
+				for (int i = 0; i < m_framesInFlight; i++)
+				{
+					infos[1] = { .buffer = m_globalPointLightIndices[i].gpuBuffer->get_vk_buffer() ,.offset = 0,.range = m_globalPointLightIndices[i].gpuBuffer->get_size()};
+					infos[2] = { .buffer = m_globalPointLightTiles[i].gpuBuffer->get_vk_buffer() ,.offset = 0,.range = m_globalPointLightTiles[i].gpuBuffer->get_size()};
+					infos[3] = { .buffer = m_globalPointLightBins[i].gpuBuffer->get_vk_buffer() ,.offset = 0,.range = m_globalPointLightBins[i].gpuBuffer->get_size() };
 
-				vkUpdateDescriptorSets(m_logicalDevice->get_vk_device(), 1, writeSets.data(), 0, 0);
+					writeSets[0].dstSet = m_globalLightSets[i];
+					writeSets[1].dstSet = m_globalLightSets[i];
+					writeSets[2].dstSet = m_globalLightSets[i];
+					writeSets[3].dstSet = m_globalLightSets[i];
+
+					vkUpdateDescriptorSets(m_logicalDevice->get_vk_device(), 4, writeSets.data(), 0, 0);
+				}
+
 
 			}
 		}
 		m_deferredRenderer->set_drawdata_set(m_drawDataSet);
-		m_deferredRenderer->set_lightdata_set(m_globalLightSet);
 	}
 	std::vector<MaterialDescription> desc;
 	m_editorScene = Scene::create_scene_with_default_material(desc);

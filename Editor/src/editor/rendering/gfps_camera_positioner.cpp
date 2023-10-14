@@ -18,6 +18,8 @@ GEditorFPSCameraPositioner::GEditorFPSCameraPositioner(ImGuiWindowManager* windo
 {
 	p_windowManager = windowManager;
 	p_mouseManager = nullptr;
+	m_cameraData.zNear = 0.001f;
+	m_cameraData.zFar = 1000.f;
 	m_projection = glm::perspective(70.f, 16.f / 9.f, 0.001f, 1000.f);
 	cameraPosition_ = glm::vec3(1, 0, -5.f);
 	up_ = glm::vec3(0,1,0);
@@ -144,6 +146,10 @@ bool GEditorFPSCameraPositioner::init()
 	return true;
 }
 
+const CameraData* GEditorFPSCameraPositioner::get_camera_data() noexcept 
+{
+	 return &m_cameraData;
+}
 void GEditorFPSCameraPositioner::setup_up_vector()
 {
 	const glm::mat4 t = glm::translate(glm::mat4(1.0f), -cameraPosition_);

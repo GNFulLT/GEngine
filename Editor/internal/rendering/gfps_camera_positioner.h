@@ -27,6 +27,8 @@ public:
 	virtual const float* get_view_matrix() const noexcept override;
 
 	virtual const float* get_proj_matrix() const noexcept override;
+
+	virtual const CameraData* get_camera_data() noexcept override;
 private:
 
 	void setup_up_vector();
@@ -53,6 +55,8 @@ private:
 	IKeyboardManager* p_keyboardManager;
 	IMouseManager* p_mouseManager;
 	ImGuiWindowManager* p_windowManager;
+
+	CameraData m_cameraData;
 };
 
 #endif // GVULKAN_FPS_CAMERA_CONTROLLER_H
