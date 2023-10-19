@@ -2,6 +2,7 @@
 #include "public/core/templates/shared_ptr.h"
 #include <gtest/gtest.h>
 #include "public/core/templates/signal/gslot.h"
+#include "slotclass.h"
 
 void s(int a)
 {
@@ -17,15 +18,15 @@ void s2(int a)
 
 TEST(GSignal, SignalConnect)
 {
-	GSlot<void(int)> slot;
+	SlotClass sc;
 
 	auto fnc = std::bind(&s, std::placeholders::_1);
 	fnc(5);
 	{
-		auto signal = slot.connect(fnc);
+		auto signal = sc.bind_slot(fnc);
 	}
-	auto signal2 = slot.connect(std::bind(&s2, std::placeholders::_1));
-	slot(5);
+	auto signal2 = sc.bind_slot(std::bind(&s2, std::placeholders::_1));
+	sc.trigger(5);
 }
 
 //TEST(WeakPtrTest, All)

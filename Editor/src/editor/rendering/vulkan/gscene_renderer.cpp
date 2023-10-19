@@ -30,6 +30,7 @@
 #include "internal/imgui_layer.h"
 #include "internal/imgui_window_manager.h"
 #include "internal/window/gimgui_grid_settings_window.h"
+#include "internal/window/gimgui_scene_window.h"
 
 static int perFrameCmd = 2;
 
@@ -109,7 +110,15 @@ void GSceneRenderer::render_the_scene()
 
 	m_cubemapRenderer->render(frameCmd, currIndex,vp);
 
-
+	auto sceneWindow = EditorApplicationImpl::get_instance()->get_editor_layer()->get_scene_window();
+	if (auto selectedNode = sceneWindow->get_selected_entity(); selectedNode != -1)
+	{
+		auto drawId = m_sceneManager->get_draw_id_of_node(selectedNode);
+		if (drawId != -1)
+		{
+			deferredRenderer->fill_aabb_cmd_for(frameCmd, currIndex, selectedNode);
+		}
+	}
 
 	if (m_gridRenderer->wants_render())
 	{

@@ -114,6 +114,11 @@ void GImGuiPropertiesWindow::render()
 	m_cam->update_frustrum_proj_matrix(m_frustrumMatrix);
 	cullData->lodBase = m_lodBase;
 	cullData->lodStep = m_lodStep;
+	auto cullEnabled = m_sceneManager->is_cull_enabled();
+	if(ImGui::Checkbox("Cull Enabled", &cullEnabled))
+	{
+		m_sceneManager->set_cull_enabled(cullEnabled);
+	}
 }
 
 void GImGuiPropertiesWindow::on_resize()

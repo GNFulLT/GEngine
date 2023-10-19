@@ -1,6 +1,6 @@
 enable_testing()
 
-add_executable(GEngine_test "${CMAKE_CURRENT_SOURCE_DIR}/smart_ptr_test.cpp")
+add_executable(GEngine_test "${CMAKE_CURRENT_SOURCE_DIR}/smart_ptr_test.cpp" "slotclass.h" "slotclass.cpp")
 
 include(FetchContent)
 FetchContent_Declare(

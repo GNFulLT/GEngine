@@ -69,7 +69,7 @@ void GEditorFPSCameraPositioner::update(float deltaTime)
 		{
 			//X TODO : GVEC2
 			std::pair<int, int> curr = p_mouseManager->get_mouse_pos();
-			glm::quat delta = glm::quat( glm::vec3((-(curr.second - m_mousePos.second))* mouseSpeed_, (curr.first - m_mousePos.first)* mouseSpeed_, 0));
+			glm::quat delta = glm::quat( glm::vec3(((curr.second - m_mousePos.second))* mouseSpeed_, (curr.first - m_mousePos.first)* mouseSpeed_, 0));
 			cameraOrientation_ = delta * cameraOrientation_;
 			cameraOrientation_ = glm::normalize(cameraOrientation_);
 			m_mousePos = curr;

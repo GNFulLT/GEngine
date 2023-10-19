@@ -15,7 +15,7 @@ public:
 
 	VmaAllocation* get_allocation();
 	VkBuffer* get_buffer_pptr();
-
+	void set_name(const char* name);
 	virtual VkBuffer_T* get_vk_buffer() override;
 
 	// Inherited via IVulkanBuffer

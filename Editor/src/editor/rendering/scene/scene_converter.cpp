@@ -204,9 +204,19 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 	Scene* gscene = Scene::create_scene_with_default_material(materialDescs);
 
 	std::queue<aiNode*> queue;
-	if (scene->mRootNode->mNumMeshes != 0)
+	if (auto meshCount = scene->mRootNode->mNumMeshes;meshCount != 0)
 	{
-		assert(false);
+		assert(scene->mRootNode->mChildren == 0);
+		uint32_t parent = 0;
+		
+		for (int i = 0; i < meshCount; i++)
+		{
+			auto glmT = glm::transpose(glm::make_mat4(&scene->mRootNode->mTransformation.a1));
+			uint32_t nodeIndex = gscene->add_node(*gscene, parent, 1);
+			gscene->localTransform_[nodeIndex] = glmT;
+			gscene->meshes_.emplace(nodeIndex, i);
+			gscene->materialForNode_.emplace(nodeIndex, scene->mMeshes[i]->mMaterialIndex);
+		}
 	}
 	queue.push(scene->mRootNode);
 	int level = 1;
@@ -221,8 +231,7 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 		{
 			int meshCount = iter->mChildren[i]->mNumMeshes;
 			queue.push(iter->mChildren[i]);
-			if (meshCount == 0)
-				break;
+			
 
 			uint32_t parent = 0;
 			if (auto parentItr = ai_to_scene.find(iter->mChildren[i]); parentItr != ai_to_scene.end())
@@ -236,8 +245,12 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 			ai_to_scene.emplace(iter->mChildren[i], nodeIndex);
 			
 			gscene->localTransform_[nodeIndex] = glmT;
-			
-			gscene->meshes_.emplace(nodeIndex, iter->mChildren[i]->mMeshes[0]);
+			if (meshCount != 0)
+			{
+				auto meshIndex = iter->mChildren[i]->mMeshes[0];
+				gscene->meshes_.emplace(nodeIndex, meshIndex);
+				gscene->materialForNode_.emplace(nodeIndex, scene->mMeshes[meshIndex]->mMaterialIndex);
+			}
 			
 			for (int j = 0; j < iter->mChildren[i]->mNumChildren; j++)
 			{

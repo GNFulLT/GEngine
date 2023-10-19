@@ -23,6 +23,8 @@ public:
 	virtual std::vector<VkFormat> get_deferred_formats() const noexcept = 0;
 
 	virtual VkFormat get_composition_format() const noexcept = 0;
+
+	virtual void fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t frame, uint32_t drawId) = 0;
 private:
 };
 

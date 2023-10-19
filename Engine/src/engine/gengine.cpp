@@ -235,12 +235,33 @@ bool GEngine::before_render()
 {
 
 	m_frames[m_currentFrame]->wait_fence();
-	return m_vulkanSwapchain->acquire_draw_image(m_frames[m_currentFrame]->get_image_acquired_semaphore()) && m_frames[m_currentFrame]->prepare_for_rendering();
-	
+	auto success = m_vulkanSwapchain->acquire_draw_image(m_frames[m_currentFrame]->get_image_acquired_semaphore()) && m_frames[m_currentFrame]->prepare_for_rendering();
+	if (success)
+	{
+		m_frames[m_currentFrame]->get_cmd()->begin();
+		//X Execute staging deletion
+		while (!m_stagingDeletionQueue.empty())
+		{
+			auto fnc = m_stagingDeletionQueue.front();
+			m_stagingDeletionQueue.pop();
+			fnc();
+		}
+		//X Register execute copy stage
+		while (!m_copyStageQueue.empty())
+		{
+			auto fnc = m_copyStageQueue.front();
+			m_copyStageQueue.pop();
+			fnc(m_frames[m_currentFrame]->get_cmd());
+		}
+		return true;
+	}
+	return false;
 }
 
 void GEngine::after_render()
 {
+	m_frames[m_currentFrame]->get_cmd()->end();
+
 	m_frames[m_currentFrame]->submit_the_cmd();
 
 	//X Wait here to present the last image
@@ -259,6 +280,16 @@ uint32_t GEngine::get_frame_count()
 IGVulkanFrameData* GEngine::get_frame_data_by_index(uint32_t index)
 {
 	return m_frames[m_currentFrame];
+}
+
+void GEngine::bind_copy_stage(std::function<void(GVulkanCommandBuffer*)> fnc)
+{
+	m_copyStageQueue.push(fnc);
+}
+
+void GEngine::bind_staging_delete_stage(std::function<void()> fnc)
+{
+	m_stagingDeletionQueue.push(fnc);
 }
 
 //IGVulkanMainViewport* GEngine::create_viewport(int width, int height)

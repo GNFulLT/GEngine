@@ -68,7 +68,14 @@ bool GVulkanNamedBaseDeferredViewport::init(uint32_t width, uint32_t height)
 {
 	//X Create attachments
 	m_viewport.width = width;
-	m_viewport.height = height;
+	
+	//x Flip Height
+	int intHeight = height;
+
+	m_viewport.y = height;
+
+	m_viewport.height = -intHeight;
+
 	m_scissor.extent.width = width;
 	m_scissor.extent.height = height;
 

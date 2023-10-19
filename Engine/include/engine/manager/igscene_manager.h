@@ -58,5 +58,13 @@ public:
 	virtual uint32_t register_texture_to_scene(IGTextureResource* textureRes) = 0;
 	
 	virtual uint32_t add_point_light_node() = 0;
+
+	virtual bool is_cull_enabled() = 0;
+
+	virtual void set_cull_enabled(bool cullEnabled) = 0;
+	
+	virtual uint32_t get_draw_id_of_node(uint32_t nodeId) = 0;
+
+	virtual uint32_t get_gpu_transform_index(uint32_t nodeId) const noexcept = 0;
 };
 #endif // ISCENE_MANAGER_H

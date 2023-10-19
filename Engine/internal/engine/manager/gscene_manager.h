@@ -17,6 +17,11 @@ class IGVulkanUniformBuffer;
 class GSceneManager : public IGSceneManager
 {
 public:
+	struct GlobalCullBuffer
+	{
+		DrawCullData cullData;
+		bool cullEnabled = true;
+	};
 	struct GlobalUniformBuffer
 	{
 		float viewProj[16];
@@ -66,13 +71,19 @@ private:
 	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightBins;
 	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightTiles;
 
-
+	GlobalCullBuffer m_globalCullData;
+	IGVulkanNamedSetLayout* m_cullDataLayout;
 	GlobalUniformBuffer m_globalData;
 	IGCameraManager* m_cameraManager;
 	IGVulkanLogicalDevice* m_logicalDevice;
 	uint32_t m_framesInFlight;
 	std::vector<IGVulkanUniformBuffer*> m_globalBuffers;
 	std::vector<void*> m_globalBufferMappedMem;
+
+	std::vector<IVulkanBuffer*> m_globalCullBuffers;
+	std::vector<void*> m_globalCullBufferMappedMems;
+
+
 	IGVulkanNamedDeferredViewport* m_deferredTargetedViewport = nullptr;
 	
 	IGVulkanNamedSetLayout* m_globalDataSetLayout;
@@ -86,10 +97,11 @@ private:
 
 	std::vector<VkDescriptorSet_T*> m_globalSets;
 	VkDescriptorSet_T* m_drawDataSet;
+	std::vector<VkDescriptorSet_T*> m_cullDataSets;
 	std::vector<VkDescriptorSet_T*> m_globalLightSets;
 	std::unordered_map<uint32_t, uint32_t> m_cpu_to_gpu_map;
 	std::unordered_map<uint32_t, uint32_t> m_nodeToLight;
-
+	std::unordered_map<uint32_t, uint32_t> m_nodeToDrawID;
 	std::vector<IGTextureResource*> m_registeredTextures;
 
 	Scene* m_currentScene;
@@ -106,6 +118,20 @@ private:
 
 	// Inherited via IGSceneManager
 	virtual uint32_t add_child_node_with_mesh_and_material_and_transform(uint32_t parentNode, uint32_t meshIndex, uint32_t materialIndex, const glm::mat4* transform) override;
+
+
+	// Inherited via IGSceneManager
+	virtual bool is_cull_enabled() override;
+
+	virtual void set_cull_enabled(bool cullEnabled) override;
+
+
+	// Inherited via IGSceneManager
+	virtual uint32_t get_draw_id_of_node(uint32_t nodeId) override;
+
+
+	// Inherited via IGSceneManager
+	virtual uint32_t get_gpu_transform_index(uint32_t nodeId) const noexcept override;
 
 };
 

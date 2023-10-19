@@ -3,12 +3,12 @@
 
 #include "gapplication_impl.h"
 #include "GEngine_EXPORT.h"
-#include "public/core/templates/shared_ptr.h"
 #include "engine/rendering/mesh/gmesh.h"
 #include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
-
+#include "public/core/templates/shared_ptr.h"
 #include <vector>
 #include <queue>
+#include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include <functional>
 
 class IGVulkanRenderPass;
@@ -24,7 +24,6 @@ class IGVulkanSwapchain;
 class GVulkanFrameData;
 class IGVulkanFrameData;
 class IGVulkanChainedViewport;
-class GVulkanCommandBuffer;
 class Scene;
 struct MaterialDescription;
 struct WireFrameSpec;
@@ -64,6 +63,10 @@ public:
 
 	IGVulkanFrameData* get_frame_data_by_index(uint32_t index);
 
+	void bind_copy_stage(std::function<void(GVulkanCommandBuffer*)> fnc);
+
+	void bind_staging_delete_stage(std::function<void()> fnc);
+
 	void add_recreation(std::function<void()> recreationFun);
 
 private:
@@ -87,7 +90,10 @@ private:
 	IGVulkanChainedViewport* create_offscreen_viewport_depth_chained(IGVulkanDescriptorCreator* descriptor, uint32_t imageCount);
 	IGVulkanViewport* create_offscreen_viewport(IGVulkanDescriptorCreator* descriptor);
 
+	
 	std::queue<std::function<void()>> m_recreationQueues;
+	std::queue<std::function<void(GVulkanCommandBuffer*)>> m_copyStageQueue;
+	std::queue<std::function<void()>> m_stagingDeletionQueue;
 #ifdef _DEBUG
 	bool m_inited = false;
 #endif

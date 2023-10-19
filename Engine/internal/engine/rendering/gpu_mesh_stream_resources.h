@@ -1,6 +1,7 @@
 #ifndef GPU_MESH_STREAM_RESOURCES_H
 #define GPU_MESH_STREAM_RESOURCES_H
-
+#include "volk.h"
+#include "vma/vk_mem_alloc.h"
 #include <memory>
 #include "engine/rendering/vulkan/ivulkan_buffer.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
@@ -10,12 +11,36 @@
 #include "engine/rendering/vulkan/named/igvulkan_named_set_layout.h"
 #include "engine/manager/igpipeline_object_manager.h"
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
-
+#include <queue>
+#include <functional>
 struct VkDescriptorSet_T;
+class GSceneRenderer2;
 
 class GPUMeshStreamResources
 {
 public:
+	typedef std::function<void(GVulkanCommandBuffer*)> vkcmd_func;
+	typedef std::function<void()> vkcmd_delete_func;
+
+	template<typename T>
+	struct CPURGPUData
+	{
+		IGVulkanLogicalDevice* dev;
+		std::queue<vkcmd_func>* copyQueue;
+		std::queue<vkcmd_delete_func>* deleteQueue;
+
+		std::unique_ptr<IVulkanBuffer> gpuBuffer;
+		std::vector<T> cpuVector;
+		uint32_t inUsage = 0;
+		uint32_t gpuCurrentStride = 0;
+		void create_internals(std::queue<vkcmd_func>* copyQueue, std::queue<vkcmd_delete_func>* deleteQueue, IGVulkanLogicalDevice* dev, VkAccessFlagBits srcAccess, VkPipelineStageFlagBits srcStage);
+		void unload_gpu_buffer();
+		void destroy();
+		uint32_t add_to_buffer(const std::vector<T>& buff);
+
+		VkAccessFlagBits expectedFlag;
+		VkPipelineStageFlagBits expectedPipelineStage;
+	};
 	template<typename T>
 	struct RCPUGPUData
 	{
@@ -23,16 +48,11 @@ public:
 		T* gpuBegin = nullptr;
 		T* gpuCurrentPos = nullptr;
 		uint32_t inUsage = 0;
-
 		void create_internals();
-
 		uint32_t get_current_pos_as_index();
-
 		void unload_gpu_buffer();
-
 		uint32_t add_to_buffer(const std::vector<T>& buff);
 		void set_by_index(const T* data, uint32_t index);
-
 		void destroy();
 	};
 
@@ -74,7 +94,8 @@ public:
 	void cmd_draw_indirect_data(GVulkanCommandBuffer* cmd, uint32_t frameIndex);
 	void cmd_reset_indirect_buffers(GVulkanCommandBuffer* cmd, uint32_t frameIndex);
 	void cmd_indirect_barrier_for_indirect_read(GVulkanCommandBuffer* cmd, uint32_t frameIndex);
-	
+	void cmd_copy_cmd(GVulkanCommandBuffer* cmd);
+	void cmd_delete_cmd(GVulkanCommandBuffer* cmd);
 	uint32_t get_count_of_draw_data();
 
 	IGVulkanNamedSetLayout* get_draw_set_layout();
@@ -87,15 +108,19 @@ private:
 	void update_draw_data_sets();
 	void update_compute_sets();
 private:
+	std::queue<vkcmd_func> m_copyQueue;
+	std::queue<vkcmd_delete_func> m_deleteQueue;
+
 	uint32_t m_framesInFlight;
 	uint32_t m_maxIndirectDrawCommand = 0;
 
 	IGPipelineObjectManager* p_pipelineObjectMng;
 
-	CPUGPUData<float> m_mergedVertex;
-	CPUGPUData<uint32_t> m_mergedIndex;
+	CPURGPUData<float> m_mergedVertex;
+	CPURGPUData<uint32_t> m_mergedIndex;
 	CPUGPUData<GMeshData> m_mergedMesh;
 	CPUGPUData<DrawData> m_globalDrawData;
+	friend class GSceneRenderer2;
 
 	std::unique_ptr<IVulkanBuffer> m_globalDrawIdBuffer;
 	uint32_t m_inUsageSizeGlobalDrawDataBuffer;
@@ -234,6 +259,84 @@ inline void GPUMeshStreamResources::RCPUGPUData<T>::destroy()
 	inUsage = 0;
 }
 
+template<typename T>
+inline void GPUMeshStreamResources::CPURGPUData<T>::create_internals(std::queue<vkcmd_func>* copyQueue, std::queue<vkcmd_delete_func>* deleteQueue, IGVulkanLogicalDevice* dev, VkAccessFlagBits srcAccess, VkPipelineStageFlagBits srcStage)
+{
+	this->dev = dev;
+	this->cpuVector.resize(this->gpuBuffer->get_size() / sizeof(T));
+	this->copyQueue = copyQueue;
+	this->deleteQueue = deleteQueue;
+	this->expectedFlag = srcAccess;
+	this->expectedPipelineStage = srcStage;
+}
+
+template<typename T>
+inline void GPUMeshStreamResources::CPURGPUData<T>::unload_gpu_buffer()
+{
+	gpuBuffer->unload();
+	gpuBuffer.reset();
+	inUsage = 0;
+	this->gpuCurrentStride = 0;
+}
+
+template<typename T>
+inline void GPUMeshStreamResources::CPURGPUData<T>::destroy()
+{
+	unload_gpu_buffer();
+}
+
+template<typename T>
+inline uint32_t GPUMeshStreamResources::CPURGPUData<T>::add_to_buffer(const std::vector<T>& buff)
+{
+	uint32_t currentPosIndex = inUsage / sizeof(T);
+	if ((buff.size())*sizeof(T) > gpuBuffer->get_size())
+	{
+		//X No space resize
+		assert(false);
+	}
+	
+	//X TODO : OPTIMIZE IT
+	//X Copy to cpu
+	auto size = buff.size() * sizeof(T);
+	memcpy(&cpuVector[currentPosIndex], buff.data(), size);
+	//X Create a staging buffer that stores newly data
+	auto stagingBuffer = dev->create_buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY).value();
+	auto stagingMapped = stagingBuffer->map_memory();
+	memcpy(stagingMapped, buff.data(), size);
+	stagingBuffer->unmap_memory();
+	this->copyQueue->push([&,stagingBuff = stagingBuffer,dstOffset = currentPosIndex* sizeof(T)](GVulkanCommandBuffer* cmd) {		
+		//X Add Barrier For Copy OP
+		VkBufferMemoryBarrier barr = {};
+		barr.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+		barr.pNext = nullptr;
+		barr.srcAccessMask = expectedFlag;
+		barr.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barr.buffer = gpuBuffer->get_vk_buffer();
+		barr.size = gpuBuffer->get_size();
+		
+		vkCmdPipelineBarrier(cmd->get_handle(), expectedPipelineStage, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, 0, 1, &barr, 0, 0);
+		VkBufferCopy region = {};
+		region.size = stagingBuff->get_size();
+		region.srcOffset = 0;
+		region.dstOffset = dstOffset;
+
+		vkCmdCopyBuffer(cmd->get_handle(), stagingBuff->get_vk_buffer(), gpuBuffer->get_vk_buffer(), 1, &region);
+
+		barr.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barr.dstAccessMask = expectedFlag;
+
+		vkCmdPipelineBarrier(cmd->get_handle(), VK_PIPELINE_STAGE_TRANSFER_BIT, expectedPipelineStage, 0, 0, 0, 1, &barr, 0, 0);
+
+		deleteQueue->push([stagingBufft = stagingBuff]() {
+			stagingBufft->unload();
+			delete stagingBufft;
+		});
+	});
+	//X Move the cursor
+	inUsage += buff.size();
+	return currentPosIndex;
+
+}
 
 #endif // GPU_MESH_RESOURCES_H
 

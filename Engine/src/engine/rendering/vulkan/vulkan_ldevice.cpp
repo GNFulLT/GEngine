@@ -127,6 +127,10 @@ bool GVulkanLogicalDevice::init()
 			swapchainExsIndex = i;
 			break;
 		}
+		else if (strcmp(implicitExs[i].extensionName, VK_KHR_MAINTENANCE1_EXTENSION_NAME) == 0)
+		{
+			m_deviceExtensions[IMPLICIT_EXTENSIONS_NAME].push_back(implicitExs[i]);
+		}
 	}
 
 	//X TODO : LOGGER
@@ -137,7 +141,6 @@ bool GVulkanLogicalDevice::init()
 
 	//X Push swapchain extension
 	m_deviceExtensions[IMPLICIT_EXTENSIONS_NAME].push_back(implicitExs[swapchainExsIndex]);
-	
 	//X PLUGIN GOES HERE
 
 

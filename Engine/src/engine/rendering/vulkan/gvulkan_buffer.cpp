@@ -87,3 +87,7 @@ void GVulkanBuffer::unmap_memory()
 	vmaUnmapMemory(m_allocatorRef, m_allocationBlock);
 }
 
+void GVulkanBuffer::set_name(const char* name)
+{
+	vmaSetAllocationName(m_allocatorRef, m_allocationBlock, name);
+}

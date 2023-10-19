@@ -69,7 +69,6 @@ void GImGuiCompositionPortWindow::render()
 			float height = ImGui::GetWindowHeight();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, width,height);
 			auto camProj = glm::make_mat4(m_cameraManager->get_camera_proj_matrix());
-			camProj[1][1] *= -1.0f;
 			bool isChanged = ImGuizmo::Manipulate(m_cameraManager->get_camera_view_matrix(), glm::value_ptr(camProj), ImGuizmo::TRANSLATE,
 				ImGuizmo::LOCAL, glm::value_ptr(*mtrx));
 

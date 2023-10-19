@@ -14,6 +14,7 @@
 #include "engine/imanager_table.h"
 #include <unordered_map>
 
+
 GImGuiModelAssetDescriptor::GImGuiModelAssetDescriptor()
 {
 	m_encoder.reset(new GMeshEncoder(EditorApplicationImpl::get_instance()->get_editor_log_window_logger().get()));
@@ -54,13 +55,9 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 		if (mesh != nullptr)
 		{
 			uint32_t meshIndex = m_sceneManager->add_mesh_to_scene(mesh);
-			std::unordered_map<uint32_t, uint32_t> meshToMaterial;
-			assert(mesh->meshes_.size() == materials.size());
-			for (int i = 0; i < mesh->meshes_.size(); i++)
+			std::unordered_map<uint32_t, uint32_t> aiMatToSceneMat;
+			for (int i = 0; i < materials.size(); i++)
 			{
-				auto engineMeshIndex = meshIndex + i;
-				uint32_t materialIndex = 0;
-				//X Check is there any material for this mesh
 				if (auto paths = texturePaths.find(i); paths != texturePaths.end())
 				{
 					//X Load the texture
@@ -77,12 +74,12 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 						auto albedoTextureID = m_sceneManager->register_texture_to_scene(textureRes);
 						materials[i].albedoMap_ = albedoTextureID;
 					}
-					materialIndex = m_sceneManager->add_material_to_scene(&materials[i]);
+					auto materialIndex = m_sceneManager->add_material_to_scene(&materials[i]);
+					aiMatToSceneMat.emplace(i, materialIndex);
 				}
-				//X Add corresponded material to the map
-				meshToMaterial.emplace(engineMeshIndex, materialIndex);
-			}
 
+			}
+		
 			//X Add to the real scene virtual data
 			std::queue<uint32_t> queue;
 			std::unordered_map<uint32_t, uint32_t> virtual_to_scene;
@@ -97,9 +94,9 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 				{
 					auto localMeshIndex = mesh->second;
 					uint32_t material = 0;
-					if (auto mat = meshToMaterial.find(localMeshIndex); mat != meshToMaterial.end())
+					if (auto mat = convertedScene->materialForNode_.find(iter); mat != convertedScene->materialForNode_.end())
 					{
-						material = mat->second;
+						material = aiMatToSceneMat.find(mat->second)->second;
 					}
 					uint32_t parent = 0;
 					if (auto parentIter = virtual_to_scene.find(iter); parentIter != virtual_to_scene.end())

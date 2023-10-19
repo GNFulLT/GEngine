@@ -51,15 +51,17 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 	memcpy(&m_globalData.view[0], m_cameraManager->get_camera_view_matrix(), 16 * sizeof(float));
 	memcpy(&m_globalData.pos[0], m_cameraManager->get_camera_position(), 3 * sizeof(float));
 	m_globalData.resolution[0] = m_deferredTargetedViewport->get_viewport_area()->width;
-	m_globalData.resolution[1] = m_deferredTargetedViewport->get_viewport_area()->height;
+	m_globalData.resolution[1] = std::abs(m_deferredTargetedViewport->get_viewport_area()->height);
+	
 	m_globalData.zNear = m_cameraManager->get_camera_data()->zNear;
-	auto cullData = *m_cameraManager->get_cull_data();
 	m_globalData.zFar = 10.f;
 	//X Copy data to gpu
 	memcpy(m_globalBufferMappedMem[frame], &m_globalData,sizeof(GlobalUniformBuffer));
 	
 	//X Update Cull Data
-	m_deferredRenderer->update_cull_data(cullData);
+	m_globalCullData.cullData = *m_cameraManager->get_cull_data();
+	m_globalCullData.cullData.drawCount = m_deferredRenderer->get_max_indirect_draw_count();
+	memcpy(m_globalCullBufferMappedMems[frame], &m_globalCullData, sizeof(GlobalCullBuffer));
 	
 	//X Update Global Transformations
 	bool recalculated = m_currentScene->recalculate_transforms();
@@ -275,6 +277,7 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 	//X Copy tiles bit
 	memcpy(m_globalPointLightTiles[frame].gpuBegin,tilesBit.data(),tilesBit.size() * sizeof(uint32_t));
 	m_deferredRenderer->set_lightdata_set(m_globalLightSets[frame]);
+	m_deferredRenderer->set_culldata_set(m_cullDataSets[frame]);
 
 }
 
@@ -299,6 +302,9 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		auto buff = buffRes.value();
 		m_globalBuffers.push_back(buff);
 		m_globalBufferMappedMem.push_back(buff->map_memory());
+		auto cullBuff = m_logicalDevice->create_buffer(sizeof(GlobalCullBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU).value();
+		m_globalCullBuffers.push_back(cullBuff);
+		m_globalCullBufferMappedMems.push_back(cullBuff->map_memory());
 	}
 	//X Create named global set
 	{
@@ -317,7 +323,24 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		setinfo.pBindings = bindings.data();
 
 		m_globalDataSetLayout = pipelineManager->create_or_get_named_set_layout("GlobalDataSetLayout", &setinfo);
+		//X Create Cull Data Set Layout
+		{
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
+			bindings[0].binding = 0;
+			bindings[0].descriptorCount = 1;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			bindings[0].pImmutableSamplers = nullptr;
 
+			VkDescriptorSetLayoutCreateInfo setinfo = {};
+			setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			setinfo.pNext = nullptr;
+			setinfo.bindingCount = bindings.size();
+			setinfo.flags = 0;
+			setinfo.pBindings = bindings.data();
+
+			m_cullDataLayout = pipelineManager->create_or_get_named_set_layout("CullDataSetLayout", &setinfo);
+		}
 		//X Create Draw Data Set Layout
 		{
 			//X Transform Buffer
@@ -389,10 +412,11 @@ bool GSceneManager::init(uint32_t framesInFlight)
 	{
 		//X First create necessary pool
 		std::unordered_map<VkDescriptorType, int> map;
-		map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
+		map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2);
 		map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 6); 
-		//X FRAMES Global 1 Draw Data FRAMES Light Data
-		m_globalPool = m_logicalDevice->create_and_init_vector_pool(map, (m_framesInFlight*2)+1);
+		//X Cull Data should be as frames 
+		//X FRAMES Global 1 Draw Data FRAMES Light Data + FRAMES Cull Data
+		m_globalPool = m_logicalDevice->create_and_init_vector_pool(map, (m_framesInFlight*3)+1);
 	}
 
 	//X Create set and update sets
@@ -412,12 +436,20 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.pSetLayouts = &vkSetLayout;
 		assert(VK_SUCCESS == vkAllocateDescriptorSets(m_logicalDevice->get_vk_device(), &allocInfo, &m_drawDataSet));
-		
+
+		//X Create drawdataset 
 		std::vector<VkDescriptorSetLayout> lightSetLayouts(framesInFlight, m_globalLightSetLayout->get_layout());
 		allocInfo.descriptorSetCount = lightSetLayouts.size();
 		allocInfo.pSetLayouts = lightSetLayouts.data();
 		m_globalLightSets.resize(lightSetLayouts.size());
 		assert(VK_SUCCESS == vkAllocateDescriptorSets(m_logicalDevice->get_vk_device(), &allocInfo, m_globalLightSets.data()));
+
+		std::vector<VkDescriptorSetLayout> cullSetLayout(m_framesInFlight, m_cullDataLayout->get_layout());
+		allocInfo.pSetLayouts = cullSetLayout.data();
+		allocInfo.descriptorSetCount = cullSetLayout.size();
+		m_cullDataSets.resize(m_framesInFlight);
+
+		assert(VK_SUCCESS == vkAllocateDescriptorSets(m_logicalDevice->get_vk_device(), &allocInfo, m_cullDataSets.data()));
 
 		//X Update sets
 		VkDescriptorBufferInfo buff = {};
@@ -438,13 +470,35 @@ bool GSceneManager::init(uint32_t framesInFlight)
 			setWrite.pBufferInfo = &buff;
 
 			vkUpdateDescriptorSets(m_logicalDevice->get_vk_device(), 1, &setWrite, 0, nullptr);
+
+			//X Write Sets
+			{
+				//X First Draw Data Set
+				std::array<VkDescriptorBufferInfo, 1> infos;
+				std::array<VkWriteDescriptorSet, 1> writeSets;
+
+				//X Now Write Cull data
+				infos[0] = { .buffer = m_globalCullBuffers[i]->get_vk_buffer() ,.offset = 0,.range = m_globalCullBuffers[i]->get_size()};
+				writeSets[0] = {};
+				writeSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeSets[0].descriptorCount = 1;
+				writeSets[0].dstBinding = 0;
+				writeSets[0].pBufferInfo = &infos[0];
+				writeSets[0].dstSet = m_cullDataSets[i];
+				writeSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+				vkUpdateDescriptorSets(m_logicalDevice->get_vk_device(), 1, writeSets.data(), 0, 0);
+
+			}
 		}
+
+
 	}
 
 	//X Create the renderer
 	{
 		m_deferredRenderer = new GSceneRenderer2(m_logicalDevice, pipelineManager,resManager,shaderManager,this,m_framesInFlight,VK_FORMAT_R8G8B8A8_UNORM);
-		assert(m_deferredRenderer->init(m_globalDataSetLayout->get_layout(),m_drawDataSetLayout,m_globalLightSetLayout));	
+		assert(m_deferredRenderer->init(m_globalDataSetLayout->get_layout(),m_drawDataSetLayout,m_globalLightSetLayout, m_cullDataLayout));
 		//X Create Global Draw Data
 		{
 			uint32_t countOfTranssformMatrix = m_deferredRenderer->get_max_count_of_draw_data();
@@ -560,6 +614,10 @@ void GSceneManager::destroy()
 		m_globalBuffers[i]->unmap_memory();
 		m_globalBuffers[i]->unload();
 		delete m_globalBuffers[i];
+		m_globalCullBuffers[i]->unmap_memory();
+		m_globalCullBuffers[i]->unload();
+		delete m_globalCullBuffers[i];
+
 	}
 	if (m_globalPool != nullptr)
 	{
@@ -575,6 +633,13 @@ void GSceneManager::destroy()
 	}
 	m_globalTransformData.destroy();
 	m_globalMaterialData.destroy();
+	m_globalPointLights.destroy();
+	for (int i = 0; i < m_framesInFlight; i++)
+	{
+		m_globalPointLightBins[i].destroy();
+		m_globalPointLightTiles[i].destroy();
+		m_globalPointLightIndices[i].destroy();
+	}
 }
 
 bool GSceneManager::init_deferred_renderer(IGVulkanNamedDeferredViewport* deferred)
@@ -721,7 +786,7 @@ uint32_t GSceneManager::add_node_with_mesh_and_material_and_transform(uint32_t m
 	//X Add mesh and default material
 	m_currentScene->meshes_.emplace(nodeId, meshIndex);
 	m_currentScene->materialForNode_.emplace(nodeId, materialIndex);
-
+	m_nodeToDrawID.emplace(nodeId, drawId);
 	return nodeId;
 }
 
@@ -745,9 +810,38 @@ uint32_t GSceneManager::add_child_node_with_mesh_and_material_and_transform(uint
 	//X Add mesh and default material
 	m_currentScene->meshes_.emplace(nodeId, meshIndex);
 	m_currentScene->materialForNode_.emplace(nodeId, materialIndex);
-
+	m_nodeToDrawID.emplace(nodeId, drawId);
 	return nodeId;
 
+}
+
+bool GSceneManager::is_cull_enabled()
+{
+	return m_globalCullData.cullEnabled;
+}
+
+void GSceneManager::set_cull_enabled(bool cullEnabled)
+{
+	m_globalCullData.cullEnabled = cullEnabled;
+}
+
+uint32_t GSceneManager::get_draw_id_of_node(uint32_t nodeId)
+{
+	if (auto iter = m_nodeToDrawID.find(nodeId); iter != m_nodeToDrawID.end())
+	{
+		return iter->second;
+	}
+	// UINT32_MAX
+	return -1;
+}
+
+uint32_t GSceneManager::get_gpu_transform_index(uint32_t nodeId) const noexcept
+{
+	if (auto g = m_cpu_to_gpu_map.find(nodeId); g != m_cpu_to_gpu_map.end())
+	{
+		return g->second;
+	}
+	return -1;
 }
 
 uint32_t GSceneManager::add_point_light_node()

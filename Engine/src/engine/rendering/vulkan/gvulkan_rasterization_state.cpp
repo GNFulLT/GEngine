@@ -12,7 +12,7 @@ GVulkanRasterizationState::GVulkanRasterizationState()
 	m_createInfo.lineWidth = 1.0f;
 	//no backface cull
 	m_createInfo.cullMode = VK_CULL_MODE_NONE;
-	m_createInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	m_createInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	//no depth bias
 	m_createInfo.depthBiasEnable = VK_FALSE;
 	m_createInfo.depthBiasConstantFactor = 0.0f;

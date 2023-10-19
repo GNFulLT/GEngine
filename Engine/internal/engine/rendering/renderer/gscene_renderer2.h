@@ -17,7 +17,6 @@
 #include "engine/manager/igscene_manager.h"
 
 #include <span>
-
 struct VkDescriptorPool_T;
 struct VkPipelineLayout_T;
 enum VkFormat;
@@ -33,17 +32,18 @@ public:
 	GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectManager* pipelineManager,IGResourceManager* res,IGShaderManager* shaderMng,IGSceneManager* sceneMng,
 		uint32_t framesInFlight,VkFormat compositionFormat);
 
-	bool init(VkDescriptorSetLayout_T* globalUniformSet,IGVulkanNamedSetLayout* drawDataSetLayout,IGVulkanNamedSetLayout* lightDataSetLayout);
+	bool init(VkDescriptorSetLayout_T* globalUniformSet,IGVulkanNamedSetLayout* drawDataSetLayout,IGVulkanNamedSetLayout* lightDataSetLayout, IGVulkanNamedSetLayout* cullSetLayout);
 	void set_drawdata_set(VkDescriptorSet_T* drawDataSet);
 	void set_lightdata_set(VkDescriptorSet_T* lightDataSet);
+	void set_culldata_set(VkDescriptorSet_T* cullDataSet);
+	uint32_t get_max_indirect_draw_count();
 	virtual IGVulkanNamedRenderPass* get_deferred_pass() const noexcept;
 	virtual IGVulkanNamedRenderPass* get_composition_pass() const noexcept;
 	virtual std::vector<VkFormat> get_deferred_formats() const noexcept;
 	virtual void fill_deferred_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
 	virtual void fill_composition_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
 	virtual void fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
-
-	virtual void update_cull_data(DrawCullData& cullData);
+	virtual void fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t frame,uint32_t drawId) override;
 
 	virtual VkFormat get_composition_format() const noexcept override;
 
@@ -77,6 +77,7 @@ public:
 private:
 	VkDescriptorSet_T* m_drawDataSet;
 	VkDescriptorSet_T* m_lightDataSet;
+	VkDescriptorSet_T* m_cullDataSet;
 
 private:
 	uint32_t MAX_BINDLESS_TEXTURE = 16536;
@@ -87,23 +88,17 @@ private:
 
 	GPUMeshStreamResources* m_meshStreamResources;
 
-	VkDescriptorSet_T* m_cullDataSet;
-
-	IGVulkanNamedSetLayout* m_cullDataLayout;
+	
 	IGVulkanNamedPipelineLayout* m_computePipelineLayout;
 
 	VkPipeline_T* m_compPipeline;
-
-	DrawCullData m_globalDrawCullData;
-	std::unique_ptr<IVulkanBuffer> m_globalDrawCullBuffer;
-	void* m_globalDrawCullBufferMappedMem;
-
 
 	VkDescriptorPool_T* m_bindlessPool;
 	VkDescriptorSetLayout_T* m_bindlessSetLayout;
 	VkDescriptorSet_T* m_bindlessSet;
 
 	IGVulkanNamedPipelineLayout* m_deferredLayout;
+	IGVulkanNamedPipelineLayout* m_aabbDrawLayout;
 
 	IGVulkanDescriptorPool* m_compositionPool;
 	VkDescriptorSetLayout_T* m_compositionSetLayout;
@@ -123,12 +118,15 @@ private:
 
 	IGShaderResource* m_cullComputeShaderRes;
 
+	IGShaderResource* m_boundingBoxVertexShaderRes;
+	IGShaderResource* m_boundingBoxFragmentShaderRes;
+
 	VkFormat m_compositionFormat;
 
 
 	GVulkanNamedGraphicPipeline* m_deferredPipeline;
 	GVulkanNamedGraphicPipeline* m_compositionPipeline;
-
+	GVulkanNamedGraphicPipeline* m_aabbPipeline;
 
 	IGVulkanNamedViewport* m_deferredVp;
 	IGVulkanNamedViewport* m_compositionVp;

@@ -1,11 +1,11 @@
-#include "volk.h"
 #include "internal/engine/rendering/gpu_mesh_stream_resources.h"
-#include "vma/vk_mem_alloc.h"
 #include "engine/rendering/vulkan/ivulkan_pdevice.h"
 #include <array>
 #include <unordered_map>
 #include <cassert>
 #include "engine/rendering/vulkan/ivulkan_descriptor_pool.h"
+#include "engine/gengine.h"
+
 GPUMeshStreamResources::GPUMeshStreamResources(IGVulkanLogicalDevice* dev,uint32_t floatCountPerVertex, uint32_t framesInFlight, IGPipelineObjectManager* mng)
 {
 	m_drawStreamSetLayout = nullptr;
@@ -19,11 +19,11 @@ GPUMeshStreamResources::GPUMeshStreamResources(IGVulkanLogicalDevice* dev,uint32
 
 bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndexCount, uint32_t beginMeshCount, uint32_t beginDrawDataAndIdCount)
 {
-	m_mergedVertex.gpuBuffer.reset(p_boundedDevice->create_buffer(uint64_t(beginVertexCount) * m_floatPerVertex * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-	m_mergedVertex.create_internals();
-
-	m_mergedIndex.gpuBuffer.reset(p_boundedDevice->create_buffer(beginIndexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-	m_mergedIndex.create_internals();
+	m_mergedVertex.gpuBuffer.reset(p_boundedDevice->create_buffer(uint64_t(beginVertexCount) * m_floatPerVertex * sizeof(float),VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
+	m_mergedVertex.create_internals(&m_copyQueue,&m_deleteQueue,p_boundedDevice,VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+	
+	m_mergedIndex.gpuBuffer.reset(p_boundedDevice->create_buffer(beginIndexCount * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_mergedIndex.create_internals(&m_copyQueue, &m_deleteQueue, p_boundedDevice, VK_ACCESS_INDEX_READ_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 	
 	m_mergedMesh.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 	m_mergedMesh.create_internals();
@@ -242,12 +242,21 @@ void GPUMeshStreamResources::destroy()
 		m_mergedMesh.destroy();
 		m_mergedVertex.destroy();
 		m_mergedIndex.destroy();
+
+		for (int i = 0; i < m_framesInFlight; i++)
+		{
+			m_globalIndirectCommandBuffers[i]->unload();
+			m_globalIndirectCommandBuffers[i].reset();
+		}
 	}
 
 }
 
 void GPUMeshStreamResources::bind_vertex_index_stream(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
 {
+	cmd_delete_cmd(cmd);
+	cmd_copy_cmd(cmd);
+
 	VkBuffer vertBuff = m_mergedVertex.gpuBuffer->get_vk_buffer();
 	VkDeviceSize deviceOffset = 0;
 
@@ -295,6 +304,28 @@ void GPUMeshStreamResources::cmd_indirect_barrier_for_indirect_read(GVulkanComma
 	barr.size = m_globalIndirectCommandBuffers[frameIndex]->get_size();
 
 	vkCmdPipelineBarrier(cmd->get_handle(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, 0, 1, &barr, 0, 0);
+}
+
+void GPUMeshStreamResources::cmd_copy_cmd(GVulkanCommandBuffer* cmd)
+{
+	//X Check there is any necessary copy buff
+	while (!m_copyQueue.empty())
+	{
+		auto cmdFunc = m_copyQueue.front();
+		m_copyQueue.pop();
+		GEngine::get_instance()->bind_copy_stage(cmdFunc);
+	}
+}
+
+void GPUMeshStreamResources::cmd_delete_cmd(GVulkanCommandBuffer* cmd)
+{
+	//X If there is any delete func execute it
+	while (!m_deleteQueue.empty())
+	{
+		auto deleteFunc = m_deleteQueue.front();
+		m_deleteQueue.pop();
+		GEngine::get_instance()->bind_staging_delete_stage(deleteFunc);
+	}
 }
 
 uint32_t GPUMeshStreamResources::get_count_of_draw_data()

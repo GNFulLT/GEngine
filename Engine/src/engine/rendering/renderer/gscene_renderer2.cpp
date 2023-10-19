@@ -12,11 +12,18 @@
 #include "engine/io/iowning_glogger.h"
 #include "internal/engine/manager/glogger_manager.h"
 #include <spdlog/fmt/fmt.h>
+#include "engine/rendering/scene/scene.h"
 #define POSITION_TARGET_COLOR_FORMAT VK_FORMAT_R32G32B32A32_SFLOAT
 #define EMISSION_TARGET_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 #define ALBEDO_TARGET_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 #define PBR_TARGET_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 #define DEPTH_TARGET_COLOR_FORMAT VK_FORMAT_D32_SFLOAT
+
+struct AABBDrawer
+{
+	uint32_t meshId;
+	glm::mat4 transform;
+};
 
 GSceneRenderer2::GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectManager* pipelineManager, IGResourceManager* res, IGShaderManager* shaderMng, IGSceneManager* sceneMng,
 	uint32_t framesInFlight, VkFormat compositionFormat)
@@ -30,36 +37,14 @@ GSceneRenderer2::GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectMan
 	m_compositionFormat = compositionFormat;
 }
 
-bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNamedSetLayout* drawDataSetLayout, IGVulkanNamedSetLayout* lightDataSetLayout)
+bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNamedSetLayout* drawDataSetLayout, IGVulkanNamedSetLayout* lightDataSetLayout, IGVulkanNamedSetLayout* cullSetLayout)
 {
 	m_meshStreamResources = new GPUMeshStreamResources(p_boundedDevice, 7, m_framesInFlight, p_pipelineManager);
-	assert(m_meshStreamResources->init(calculate_nearest_10mb<float>()*3, calculate_nearest_10mb<uint32_t>()*3, calculate_nearest_1mb<GMeshData>(),
+	assert(m_meshStreamResources->init(calculate_nearest_10mb<float>()*3, calculate_nearest_10mb<uint32_t>()*14, calculate_nearest_1mb<GMeshData>(),
 		calculate_nearest_1mb<DrawData>()));
-	m_globalDrawCullBuffer.reset(p_boundedDevice->create_buffer(sizeof(DrawCullData),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-	m_globalDrawCullBufferMappedMem = m_globalDrawCullBuffer->map_memory();
-
 	
 	//X Create DrawDataSet
 	{
-		
-		//X Cull Data Layout
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
-			bindings[0].binding = 0;
-			bindings[0].descriptorCount = 1;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			bindings[0].stageFlags =  VK_SHADER_STAGE_COMPUTE_BIT;
-			bindings[0].pImmutableSamplers = nullptr;
-
-			VkDescriptorSetLayoutCreateInfo setinfo = {};
-			setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			setinfo.pNext = nullptr;
-			setinfo.bindingCount = bindings.size();
-			setinfo.flags = 0;
-			setinfo.pBindings = bindings.data();
-
-			m_cullDataLayout = p_pipelineManager->create_or_get_named_set_layout("CullDataSetLayout", &setinfo);
-		}
 		//X Bindless Texture 
 		{
 			auto maxImage = p_boundedDevice->get_bounded_physical_device()->get_vk_properties()->limits.maxDescriptorSetSampledImages;
@@ -229,32 +214,6 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 				allocInfo.pSetLayouts = &m_compositionSetLayout;
 
 				assert(VK_SUCCESS == vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, &m_compositionSet));
-			
-				//X Create drawdataset 
-				auto vkSetLayout = m_cullDataLayout->get_layout();
-				allocInfo.pSetLayouts = &vkSetLayout;
-
-				assert(VK_SUCCESS == vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, &m_cullDataSet));
-				
-				//X Write Sets
-				{
-					//X First Draw Data Set
-					std::array<VkDescriptorBufferInfo, 1> infos;
-					std::array<VkWriteDescriptorSet, 1> writeSets;
-	
-					//X Now Write Cull data
-					infos[0] = { .buffer = m_globalDrawCullBuffer->get_vk_buffer() ,.offset = 0,.range = m_globalDrawCullBuffer->get_size() };
-					writeSets[0] = {};
-					writeSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-					writeSets[0].descriptorCount = 1;
-					writeSets[0].dstBinding = 0;
-					writeSets[0].pBufferInfo = &infos[0];
-					writeSets[0].dstSet = m_cullDataSet;
-					writeSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-
-					vkUpdateDescriptorSets(p_boundedDevice->get_vk_device(), 1, writeSets.data(), 0, 0);
-
-				}
 			}
 
 		}
@@ -307,7 +266,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			setLayouts[1] = m_meshStreamResources->get_indirect_set_layout()->get_layout();
 			setLayouts[2] = m_meshStreamResources->get_draw_set_layout()->get_layout();
 			setLayouts[3] = drawDataSetLayout->get_layout();
-			setLayouts[4] = m_cullDataLayout->get_layout();
+			setLayouts[4] = cullSetLayout->get_layout();
 
 			VkPipelineLayoutCreateInfo inf = {};
 			inf.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -319,6 +278,29 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 
 			m_computePipelineLayout = p_pipelineManager->create_or_get_named_pipeline_layout("ComputePipelineLayout", &inf);
 			assert(m_computePipelineLayout != nullptr);
+		}
+		//X AABB Draw Layout
+		{
+			std::array<VkDescriptorSetLayout, 3> setLayouts;
+			setLayouts[0] = globalUniformSet;
+			setLayouts[1] = m_meshStreamResources->get_draw_set_layout()->get_layout();
+			setLayouts[2] = drawDataSetLayout->get_layout();
+
+			VkPushConstantRange range = {};
+			range.offset = 0;
+			range.size = sizeof(AABBDrawer);
+			range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+			VkPipelineLayoutCreateInfo inf = {};
+			inf.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			inf.flags = 0;
+			inf.setLayoutCount = setLayouts.size();
+			inf.pSetLayouts = setLayouts.data();
+			inf.pushConstantRangeCount = 1;
+			inf.pPushConstantRanges = &range;
+
+			m_aabbDrawLayout = p_pipelineManager->create_or_get_named_pipeline_layout("BoundingBoxPipelineLayout", &inf);
+			assert(m_aabbDrawLayout != nullptr);
 		}
 	}
 	//X Create the renderpass
@@ -477,12 +459,16 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 		m_compositionVertexShaderRes = p_resourceManager->create_shader_resource("compositionVertex", "SceneRenderer", "./data/shader/composition.glsl_vert").value();
 		m_compositionFragmentShaderRes = p_resourceManager->create_shader_resource("compositionFrag", "SceneRenderer", "./data/shader/composition.glsl_frag").value();
 		m_cullComputeShaderRes = p_resourceManager->create_shader_resource("cullCompute", "SceneRenderer", "./data/shader/cull.glsl_comp").value();
+		m_boundingBoxVertexShaderRes = p_resourceManager->create_shader_resource("boundingBoxVertex", "SceneRenderer", "./data/shader/bounding_box.glsl_vert").value();
+		m_boundingBoxFragmentShaderRes = p_resourceManager->create_shader_resource("boundingBoxFrag", "SceneRenderer", "./data/shader/bounding_box.glsl_frag").value();
 
 		assert(m_deferredVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_deferredFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_compositionVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_compositionFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_cullComputeShaderRes->load() == RESOURCE_INIT_CODE_OK);
+		assert(m_boundingBoxVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
+		assert(m_boundingBoxFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 
 	}
 
@@ -580,6 +566,35 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 
 			delete stages[0];
 			delete stages[1];
+			
+			stages[0] = p_shaderManager->create_shader_stage_from_shader_res(m_boundingBoxVertexShaderRes).value();
+			stages[1] = p_shaderManager->create_shader_stage_from_shader_res(m_boundingBoxFragmentShaderRes).value();
+
+			delete states[0];
+			delete states[6];
+			delete states[5];
+
+			VkPipelineRasterizationStateCreateInfo rasterizationAABB = {};
+			rasterizationAABB.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+			rasterizationAABB.polygonMode = VK_POLYGON_MODE_LINE;
+			rasterizationAABB.lineWidth = 3.0f;
+			//no backface cull
+			rasterizationAABB.cullMode = VK_CULL_MODE_NONE;
+			rasterizationAABB.frontFace = VK_FRONT_FACE_CLOCKWISE;
+			//no depth bias
+			rasterizationAABB.depthBiasEnable = VK_FALSE;
+			rasterizationAABB.depthBiasConstantFactor = 0.0f;
+			rasterizationAABB.depthBiasClamp = 0.0f;
+			rasterizationAABB.depthBiasSlopeFactor = 0.0f;
+			dsInfo.depthTestEnable = false;
+
+
+			states[0] = p_boundedDevice->create_vertex_input_state(nullptr, nullptr);
+			states[5] = p_boundedDevice->create_custom_depth_stencil_state(&dsInfo);
+			states[6] = p_boundedDevice->create_custom_rasterization_state(&rasterizationAABB);
+			m_aabbPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_compositionPass, "boundingBoxPipeline");
+			m_aabbPipeline->init(m_aabbDrawLayout, stages, states);
+
 
 			for (int i = 0; i < states.size(); i++)
 			{
@@ -616,6 +631,16 @@ void GSceneRenderer2::set_drawdata_set(VkDescriptorSet_T* drawDataSet)
 void GSceneRenderer2::set_lightdata_set(VkDescriptorSet_T* lightDataSet)
 {
 	m_lightDataSet = lightDataSet;
+}
+
+void GSceneRenderer2::set_culldata_set(VkDescriptorSet_T* cullDataSet)
+{
+	m_cullDataSet = cullDataSet;
+}
+
+uint32_t GSceneRenderer2::get_max_indirect_draw_count()
+{
+	return m_meshStreamResources->get_max_indirect_command_count();
 }
 
 VkDescriptorSet_T* GSceneRenderer2::get_bindless_set()
@@ -689,11 +714,6 @@ void GSceneRenderer2::destroy()
 			vkDestroyPipeline(p_boundedDevice->get_vk_device(), m_compPipeline, nullptr);
 			m_compPipeline = nullptr;
 		}
-		if (m_globalDrawCullBuffer.get() != nullptr)
-		{
-			m_globalDrawCullBuffer->unload();
-			m_globalDrawCullBuffer.reset();
-		}
 	}
 }
 
@@ -720,13 +740,42 @@ void GSceneRenderer2::fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame
 	vkCmdDispatch(cmd->get_handle(), 10, 1, 1);
 
 	//X Make ready to read for indirect draw
-	m_meshStreamResources->cmd_indirect_barrier_for_indirect_read(cmd, frame);
+		m_meshStreamResources->cmd_indirect_barrier_for_indirect_read(cmd, frame);
 }
 
-void GSceneRenderer2::update_cull_data(DrawCullData& cullData)
+void GSceneRenderer2::fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t frame, uint32_t nodeId)
 {
-	cullData.drawCount = m_meshStreamResources->get_max_indirect_command_count();
-	memcpy(m_globalDrawCullBufferMappedMem, &cullData, sizeof(DrawCullData));
+	uint32_t drawId = p_sceneManager->get_draw_id_of_node(nodeId);
+	if (drawId == -1)
+		return;
+
+	uint32_t meshIndex = m_meshStreamResources->m_globalDrawData.cpuVector[drawId].mesh;
+	uint32_t transformIndex = m_meshStreamResources->m_globalDrawData.cpuVector[drawId].transformIndex;
+
+	const auto& mesh = m_meshStreamResources->m_mergedMesh.cpuVector[meshIndex];
+	auto center = glm::vec3((mesh.boundingBox.min_.x + mesh.boundingBox.max_.x)/2, (mesh.boundingBox.min_.y + mesh.boundingBox.max_.y) / 2, (mesh.boundingBox.min_.z + mesh.boundingBox.max_.z) / 2);
+	auto size = (mesh.boundingBox.max_ - mesh.boundingBox.min_);
+	glm::mat4 transform = glm::translate(glm::mat4(1), center) * glm::scale(glm::mat4(1), size);
+	auto currScene = p_sceneManager->get_current_scene();
+	glm::mat4 model = currScene->globalTransform_[nodeId];
+	uint32_t gpuTransformIndex = p_sceneManager->get_gpu_transform_index(nodeId);
+	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_aabbPipeline->get_vk_pipeline());
+	std::array<VkDescriptorSet, 3> descriptorSets;
+	descriptorSets[0] = p_sceneManager->get_global_set_for_frame(frame);
+	descriptorSets[1] = this->m_meshStreamResources->get_draw_set_by_index(frame);
+	descriptorSets[2] = m_drawDataSet;
+	vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_aabbDrawLayout->get_vk_pipeline_layout(), 0, descriptorSets.size(), descriptorSets.data(), 0, 0);
+
+	AABBDrawer drawer;
+	drawer.meshId = drawId;
+	drawer.transform = transform;
+
+	vkCmdPushConstants(cmd->get_handle(), m_aabbDrawLayout->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(AABBDrawer), &drawer);
+
+	vkCmdSetViewport(cmd->get_handle(), 0, 1, m_deferredVp->get_viewport_area());
+	vkCmdSetScissor(cmd->get_handle(), 0, 1, m_deferredVp->get_scissor_area());
+
+	vkCmdDraw(cmd->get_handle(), 36, 1, 0, 0);
 }
 
 IGVulkanNamedRenderPass* GSceneRenderer2::get_deferred_pass() const noexcept
