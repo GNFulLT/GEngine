@@ -10,8 +10,8 @@ struct GPointLight
 
 	float intensity = 1.f;
 	float radius = 1.f;
-	float quadraticFalloff = 0;
-	float linearFalloff = 0;
+	float quadraticFalloff = 1.f;
+	float linearFalloff = 0.f;
 };
 
 #endif // POINT_LIGHT_H

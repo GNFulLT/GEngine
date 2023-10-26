@@ -239,6 +239,22 @@ MaterialDescription MaterialAssimpConvert::aimaterial_to_gmaterial(const aiMater
 		textureFiles.emplace(TEXTURE_MAP_TYPE_NORMAL, Path.C_Str());
 
 	}
+	if (aiGetMaterialTexture(m, aiTextureType_METALNESS, 0, &Path, &Mapping, &UVIndex, &Blend, &TextureOp, TextureMapMode, &TextureFlags) == AI_SUCCESS)
+	{
+		textureFiles.emplace(TEXTURE_MAP_TYPE_METALNESS, Path.C_Str());
+	}
+	if (aiGetMaterialTexture(m, aiTextureType_DIFFUSE_ROUGHNESS, 0, &Path, &Mapping, &UVIndex, &Blend, &TextureOp, TextureMapMode, &TextureFlags) == AI_SUCCESS)
+	{
+		textureFiles.emplace(TEXTURE_MAP_TYPE_ROUGHNESS, Path.C_Str());
+	}
+	if (aiGetMaterialTexture(m, aiTextureType_LIGHTMAP, 0, &Path, &Mapping, &UVIndex, &Blend, &TextureOp, TextureMapMode, &TextureFlags) == AI_SUCCESS)
+	{
+		textureFiles.emplace(TEXTURE_MAP_TYPE_AMBIENT_OCCLUSION, Path.C_Str());
+	}
+	if (aiGetMaterialTexture(m, aiTextureType_EMISSIVE, 0, &Path, &Mapping, &UVIndex, &Blend, &TextureOp, TextureMapMode, &TextureFlags) == AI_SUCCESS)
+	{
+		textureFiles.emplace(TEXTURE_MAP_TYPE_EMISSIVE, Path.C_Str());
+	}
 	return desc;
 }
 

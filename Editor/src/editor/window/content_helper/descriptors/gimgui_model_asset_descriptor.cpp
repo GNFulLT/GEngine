@@ -21,6 +21,8 @@ GImGuiModelAssetDescriptor::GImGuiModelAssetDescriptor()
 	m_supportedTypes.push_back(".glb");
 	m_supportedTypes.push_back(".obj");
 	m_supportedTypes.push_back(".gltf");
+	m_supportedTypes.push_back(".blend");
+	m_supportedTypes.push_back(".dae");
 	m_sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 }
 
@@ -61,6 +63,7 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 				if (auto paths = texturePaths.find(i); paths != texturePaths.end())
 				{
 					//X Load the texture
+					//X Albedo
 					auto itr = paths->second.find(TEXTURE_MAP_TYPE_ALBEDO);
 					if (itr != paths->second.end())
 					{
@@ -73,6 +76,58 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 						//X Save the texture to the scene
 						auto albedoTextureID = m_sceneManager->register_texture_to_scene(textureRes);
 						materials[i].albedoMap_ = albedoTextureID;
+					}
+					//X AO
+					itr = paths->second.find(TEXTURE_MAP_TYPE_AMBIENT_OCCLUSION);
+					if (itr != paths->second.end())
+					{
+						auto ao = itr->second;
+						std::string aoTexturePath = "./";
+						aoTexturePath += ao;
+						auto resource = ((GSharedPtr<IGResourceManager>*)(EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE)))->get();
+						auto textureRes = resource->create_texture_resource(ao, "editor", aoTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
+						assert(RESOURCE_INIT_CODE_OK == textureRes->load());
+						auto aoId = m_sceneManager->register_texture_to_scene(textureRes);
+						materials[i].ambientOcclusionMap_ = aoId;
+					}
+					//X Roughness
+					itr = paths->second.find(TEXTURE_MAP_TYPE_ROUGHNESS);
+					if (itr != paths->second.end())
+					{
+						auto roughness = itr->second;
+						std::string roughnessTexturePath = "./";
+						roughnessTexturePath += roughness;
+						auto resource = ((GSharedPtr<IGResourceManager>*)(EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE)))->get();
+						auto textureRes = resource->create_texture_resource(roughness, "editor", roughnessTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
+						assert(RESOURCE_INIT_CODE_OK == textureRes->load());
+						auto roughnesssId = m_sceneManager->register_texture_to_scene(textureRes);
+						materials[i].roughnessMap_ = roughnesssId;
+					}
+					//X Metallic
+					itr = paths->second.find(TEXTURE_MAP_TYPE_METALNESS);
+					if (itr != paths->second.end())
+					{
+						auto metallic = itr->second;
+						std::string metallicTexturePath = "./";
+						metallicTexturePath += metallic;
+						auto resource = ((GSharedPtr<IGResourceManager>*)(EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE)))->get();
+						auto textureRes = resource->create_texture_resource(metallic, "editor", metallicTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
+						assert(RESOURCE_INIT_CODE_OK == textureRes->load());
+						auto metallicId = m_sceneManager->register_texture_to_scene(textureRes);
+						materials[i].metallicyMap_ = metallicId;
+					}
+					//X Emissive
+					itr = paths->second.find(TEXTURE_MAP_TYPE_EMISSIVE);
+					if (itr != paths->second.end())
+					{
+						auto emissive = itr->second;
+						std::string emissiveTexturePath = "./";
+						emissiveTexturePath += emissive;
+						auto resource = ((GSharedPtr<IGResourceManager>*)(EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE)))->get();
+						auto textureRes = resource->create_texture_resource(emissive, "editor", emissiveTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
+						assert(RESOURCE_INIT_CODE_OK == textureRes->load());
+						auto emissiveId = m_sceneManager->register_texture_to_scene(textureRes);
+						materials[i].emissiveMap_ = emissiveId;
 					}
 					auto materialIndex = m_sceneManager->add_material_to_scene(&materials[i]);
 					aiMatToSceneMat.emplace(i, materialIndex);

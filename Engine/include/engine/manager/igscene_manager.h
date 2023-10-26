@@ -19,6 +19,36 @@ struct MeshData;
 class Scene;
 #include "engine/resource/igtexture_resource.h"
 
+struct SunProperties
+{
+	float sunLightDirection[3];
+	float sunLightColor[3];
+	float sunIntensity = 1.f;
+};
+
+struct DrawData
+{
+	uint32_t mesh;
+	uint32_t material;
+	uint32_t transformIndex;
+};
+
+struct GlobalUniformBuffer
+{
+	float viewProj[16];
+	float pos[3];
+	float view[16];
+	float resolution[2];
+	uint32_t pointLightCount = 0;
+	uint32_t activePointLightCount = 0;
+	float zNear;
+	float zFar;
+	SunProperties sunProperties;
+	float sunLP[16];
+
+};
+struct GPointLight;
+
 class ENGINE_API IGSceneManager
 {
 public:
@@ -66,5 +96,19 @@ public:
 	virtual uint32_t get_draw_id_of_node(uint32_t nodeId) = 0;
 
 	virtual uint32_t get_gpu_transform_index(uint32_t nodeId) const noexcept = 0;
+	virtual const DrawData* get_draw_data_by_id(uint32_t drawId) const noexcept = 0;
+
+	virtual IGTextureResource* get_saved_texture_by_id(uint32_t textureId) const noexcept = 0;
+
+	virtual bool is_node_light(uint32_t nodeId) const noexcept = 0;
+
+	virtual const GPointLight* get_point_light(uint32_t nodeId) const noexcept = 0;
+
+	virtual void set_point_light(const GPointLight* data, uint32_t nodeId) noexcept = 0;
+
+	virtual const SunProperties* get_sun_properties() const noexcept = 0;
+	virtual void update_sun_properties(const SunProperties* sunProps) = 0;
+
+	virtual const GlobalUniformBuffer* get_global_data() const noexcept = 0;
 };
 #endif // ISCENE_MANAGER_H

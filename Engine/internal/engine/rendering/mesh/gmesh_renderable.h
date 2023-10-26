@@ -13,11 +13,4 @@ struct InstanceData {
 	uint32_t transformIndex;
 };
 
-struct DrawData
-{
-	uint32_t mesh;
-	uint32_t material;
-	uint32_t transformIndex;
-};
-
 #endif // GMESH_RENDERABLE_H

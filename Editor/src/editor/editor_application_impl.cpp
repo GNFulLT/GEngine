@@ -29,6 +29,7 @@
 #include "engine/imanager_table.h"
 #include "engine/manager/igcamera_manager.h"
 #include "engine/manager/igscene_manager.h"
+#include "internal/manager/geditor_texture_debug_manager.h"
 
 IGVulkanLogicalDevice* s_device;
 
@@ -125,7 +126,8 @@ bool EditorApplicationImpl::init(GEngine* engine)
     auto logger = (GSharedPtr<IGLoggerManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_LOGGER);
     auto resourceManager = ((GSharedPtr<IGResourceManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
     auto sceneManager = ((GSharedPtr<IGSceneManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
-
+    m_textureDebugManager = new GEditorTextureDebugManager();
+    assert(m_textureDebugManager->init());
     m_logger = (*logger)->create_owning_glogger("EditorLayer");
     m_logWindwLogger = (*logger)->create_owning_glogger("Editor",false);
     s_shaderManager->editor_init();
@@ -197,6 +199,11 @@ bool EditorApplicationImpl::init(GEngine* engine)
     
 
     return true;    
+}
+
+GEditorTextureDebugManager* EditorApplicationImpl::get_texture_debug_manager()
+{
+    return m_textureDebugManager;
 }
 
 GSharedPtr<IOwningGLogger> EditorApplicationImpl::get_editor_logger()

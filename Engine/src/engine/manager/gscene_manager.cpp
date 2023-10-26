@@ -10,6 +10,7 @@
 #include "vma/vk_mem_alloc.h"
 #include <glm/ext.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include "engine/rendering/vulkan/ivulkan_queue.h"
 
 struct AABB
 {
@@ -39,6 +40,17 @@ static int sorting_light_fn(const void* a, const void* b) {
 	return 0;
 }
 
+GSceneManager::GSceneManager()
+{
+	m_globalData.sunProperties.sunLightDirection[0] = 5.f;
+	m_globalData.sunProperties.sunLightDirection[1] = 30.f;
+	m_globalData.sunProperties.sunLightDirection[2] = 4.f;
+	m_globalData.sunProperties.sunLightColor[0] = 1.f;
+	m_globalData.sunProperties.sunLightColor[1] = 1.f;
+	m_globalData.sunProperties.sunLightColor[2] = 1.f;
+
+}
+
 IGVulkanUniformBuffer* GSceneManager::get_global_buffer_for_frame(uint32_t frame) const noexcept
 {
 	return m_globalBuffers[frame];
@@ -54,7 +66,16 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 	m_globalData.resolution[1] = std::abs(m_deferredTargetedViewport->get_viewport_area()->height);
 	
 	m_globalData.zNear = m_cameraManager->get_camera_data()->zNear;
-	m_globalData.zFar = 10.f;
+	m_globalData.zFar = 96.f;
+
+	auto lightPos = glm::normalize(glm::make_vec3(m_globalData.sunProperties.sunLightDirection)) * 40.f;
+	//glm::mat4 depthProjectionMatrix = glm::ortho(-35.f, 35.f,-35.f,35.f, globalData->zNear, globalData->zFar);
+	glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(45.f), 1.f, m_globalData.zNear, m_globalData.zFar);
+
+	glm::mat4 depthViewMatrix = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+
+	auto lp = depthProjectionMatrix * depthViewMatrix * glm::mat4(1.f);
+	memcpy(m_globalData.sunLP, glm::value_ptr(lp),sizeof(glm::mat4));
 	//X Copy data to gpu
 	memcpy(m_globalBufferMappedMem[frame], &m_globalData,sizeof(GlobalUniformBuffer));
 	
@@ -292,6 +313,8 @@ bool GSceneManager::init(uint32_t framesInFlight)
 	auto resManager = ((GSharedPtr<IGResourceManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
 	auto shaderManager = ((GSharedPtr<IGShaderManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SHADER))->get();
 
+	m_gpuCpuDataBuffers.resize(m_framesInFlight);
+	m_gpuCpuDataBufferMappedMems.resize(m_framesInFlight);
 	for (int i = 0; i < m_framesInFlight; i++)
 	{
 		auto buffRes = m_logicalDevice->create_uniform_buffer(sizeof(GlobalUniformBuffer));
@@ -305,6 +328,8 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		auto cullBuff = m_logicalDevice->create_buffer(sizeof(GlobalCullBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU).value();
 		m_globalCullBuffers.push_back(cullBuff);
 		m_globalCullBufferMappedMems.push_back(cullBuff->map_memory());
+		m_gpuCpuDataBuffers[i].reset(m_logicalDevice->create_buffer(sizeof(GPUCPUData),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VMA_MEMORY_USAGE_GPU_TO_CPU).value());
+		m_gpuCpuDataBufferMappedMems[i] = m_gpuCpuDataBuffers[i]->map_memory();
 	}
 	//X Create named global set
 	{
@@ -340,6 +365,24 @@ bool GSceneManager::init(uint32_t framesInFlight)
 			setinfo.pBindings = bindings.data();
 
 			m_cullDataLayout = pipelineManager->create_or_get_named_set_layout("CullDataSetLayout", &setinfo);
+		}
+		//X Create GPU CPU Set Layout
+		{
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
+			bindings[0].binding = 0;
+			bindings[0].descriptorCount = 1;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[0].stageFlags = VK_SHADER_STAGE_ALL;
+			bindings[0].pImmutableSamplers = nullptr;
+
+			VkDescriptorSetLayoutCreateInfo setinfo = {};
+			setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			setinfo.pNext = nullptr;
+			setinfo.bindingCount = bindings.size();
+			setinfo.flags = 0;
+			setinfo.pBindings = bindings.data();
+
+			m_gpuCpuDataSetLayout = pipelineManager->create_or_get_named_set_layout("GPUCPUDataSetLayout", &setinfo);
 		}
 		//X Create Draw Data Set Layout
 		{
@@ -617,7 +660,9 @@ void GSceneManager::destroy()
 		m_globalCullBuffers[i]->unmap_memory();
 		m_globalCullBuffers[i]->unload();
 		delete m_globalCullBuffers[i];
-
+		m_gpuCpuDataBuffers[i]->unmap_memory();
+		m_gpuCpuDataBuffers[i]->unload();
+		m_gpuCpuDataBuffers[i].reset();
 	}
 	if (m_globalPool != nullptr)
 	{
@@ -718,7 +763,7 @@ uint32_t GSceneManager::register_texture_to_scene(IGTextureResource* textureRes)
 	setWrites[0].dstArrayElement = currentIndex;
 
 	vkUpdateDescriptorSets(m_logicalDevice->get_vk_device(), setWrites.size(), setWrites.data(), 0, nullptr);
-
+	m_registeredTextureMap.emplace(currentIndex,textureRes);
 	return currentIndex;
 }
 
@@ -843,6 +888,59 @@ uint32_t GSceneManager::get_gpu_transform_index(uint32_t nodeId) const noexcept
 	}
 	return -1;
 }
+
+const DrawData* GSceneManager::get_draw_data_by_id(uint32_t drawId) const noexcept
+{
+	return m_deferredRenderer->get_draw_data_by_id(drawId);
+}
+
+IGTextureResource* GSceneManager::get_saved_texture_by_id(uint32_t textureId) const noexcept
+{
+	if (auto textureIter = m_registeredTextureMap.find(textureId); textureIter != m_registeredTextureMap.end())
+	{
+		return textureIter->second;
+	}
+	return nullptr;
+}
+
+bool GSceneManager::is_node_light(uint32_t nodeId) const noexcept
+{
+	auto iter = m_nodeToLight.find(nodeId);
+	return iter != m_nodeToLight.end();
+}
+
+const GPointLight* GSceneManager::get_point_light(uint32_t nodeId) const noexcept
+{
+	if (auto iter = m_nodeToLight.find(nodeId); iter != m_nodeToLight.end())
+	{
+		return &m_globalPointLights.cpuVector[iter->second];
+	}
+	return nullptr;
+}
+
+void GSceneManager::set_point_light(const GPointLight* data, uint32_t nodeId) noexcept
+{
+	if (auto iter = m_nodeToLight.find(nodeId); iter != m_nodeToLight.end())
+	{
+		m_globalPointLights.set_by_index(data, iter->second);
+	}
+}
+
+const SunProperties* GSceneManager::get_sun_properties() const noexcept
+{
+	return &m_globalData.sunProperties;
+}
+
+void GSceneManager::update_sun_properties(const SunProperties* sunProps)
+{
+	m_globalData.sunProperties = *sunProps;
+}
+
+const GlobalUniformBuffer* GSceneManager::get_global_data() const noexcept
+{
+	return &m_globalData;
+}
+
 
 uint32_t GSceneManager::add_point_light_node()
 {

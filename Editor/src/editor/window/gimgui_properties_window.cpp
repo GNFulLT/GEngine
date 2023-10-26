@@ -11,6 +11,9 @@
 #include "internal/window/gimgui_scene_window.h"
 #include "engine/rendering/scene/scene.h"
 #include "glm/gtx/matrix_decompose.hpp"
+#include "spdlog/fmt/fmt.h"
+#include "engine/rendering/point_light.h"
+
 GImGuiPropertiesWindow::GImGuiPropertiesWindow()
 {
 	m_name = "Properties";
@@ -40,6 +43,8 @@ bool GImGuiPropertiesWindow::need_render()
 void GImGuiPropertiesWindow::render()
 {
 	auto cullData = m_cam->get_cull_data();
+	auto renderer = m_sceneManager->get_deferred_renderer();
+	auto sunProps = *m_sceneManager->get_sun_properties();
 	//auto wireframeSpec = EditorApplicationImpl::get_instance()->m_engine->get_wireframe_spec();
 	if (auto selectedNode = m_sceneWindow->get_selected_entity();selectedNode != -1)
 	{
@@ -75,11 +80,52 @@ void GImGuiPropertiesWindow::render()
 				scene->mark_as_changed(m_currentSelectedNode);
 			}
 		}
+		auto drawId = m_sceneManager->get_draw_id_of_node(selectedNode);
+		if (drawId != -1)
+		{
+			auto drawInfo = m_sceneManager->get_draw_data_by_id(drawId);
+			ImGui::Text(fmt::format("Mesh Id : {}",drawInfo->mesh).c_str());
+			ImGui::Text(fmt::format("Material Id : {}", drawInfo->material).c_str());
+		}
+
+		auto isLight = m_sceneManager->is_node_light(selectedNode);
+		if (isLight)
+		{
+			auto currProps = *m_sceneManager->get_point_light(selectedNode);
+			bool isChanged = false;
+			if (ImGui::InputFloat3("color : ", glm::value_ptr(currProps.color)))
+			{
+				isChanged = true;
+			}
+			if (ImGui::InputFloat("intensity : ",&currProps.intensity))
+			{
+				isChanged = true;
+			}
+			if (ImGui::InputFloat("radius : ", &currProps.radius))
+			{
+				isChanged = true;
+			}
+			if (ImGui::InputFloat("linearFalloff : ", &currProps.linearFalloff))
+			{
+				isChanged = true;
+			}
+			if (ImGui::InputFloat("quadraticFalloff : ", &currProps.quadraticFalloff))
+			{
+				isChanged = true;
+			}
+
+			if (isChanged)
+			{
+				m_sceneManager->set_point_light(&currProps, selectedNode);
+			}
+			
+		}
 	}
 	else
 	{
 		m_currentSelectedNode = -1;
 	}
+	bool sunLightChanged = false;
 
 	if (ImGui::CollapsingHeader("Scene Settings"))
 	{
@@ -91,14 +137,61 @@ void GImGuiPropertiesWindow::render()
 
 		bool f = true;
 		bool ft = false;
-
+		
 		ImGui::Checkbox("Convert Textures With KTX Optimizer", &f);
 		ImGui::Checkbox("Scale Down Material Textures", &f);
 		ImGui::Checkbox("Automized LODs", &f);
 		ImGui::Checkbox("Sloppy LODs Enabled", &f);
+
+
+		if (ImGui::InputFloat3("Sun Direction", sunProps.sunLightDirection))
+		{
+			sunLightChanged = true;
+		}
+		if (ImGui::InputFloat("Sun Intensity", &sunProps.sunIntensity))
+		{
+			sunLightChanged = true;
+		}
+
+		
 		if (ImGui::Button("Add Default Light"))
 		{
 			m_sceneManager->add_point_light_node();
+		}
+		auto mode = renderer->get_current_material_mode();
+		static uint32_t selectedMode = 0;
+		uint32_t prev = selectedMode;
+		switch (mode)
+		{
+		case MATERIAL_MODE_BLINN_PHONG:
+			ImGui::Text("Current material mode is BLINN PHONG");
+			selectedMode = 0;
+			break;
+		case MATERIAL_MODE_PBR:
+			ImGui::Text("Current material mode is PBR");
+			selectedMode = 1;
+			break;
+		default:
+			ImGui::Text("UNKNOWN MATERIAL MODE ASSERT");
+			break;
+		}
+		const char* items[] = {"BLINN PHONG","PBR"};
+		if (ImGui::BeginCombo("##MATERIAL_MODE_SELECTION", items[selectedMode]))
+		{
+			for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+			{
+				bool isSelected = (selectedMode == n); // You can store your selection however you want, outside or inside your objects
+				if (ImGui::Selectable(items[n], isSelected))
+					selectedMode = n;
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		if (prev != selectedMode)
+		{
+			renderer->set_material_mode((MATERIAL_MODE)selectedMode);
 		}
 		/*ImGui::Checkbox("Wireframe Pipeline", &f);
 		ImGui::SliderFloat("Wireframe Thickness", &wireframeSpec->thickness, 0.01f, 1.f, "%.2f");
@@ -118,6 +211,11 @@ void GImGuiPropertiesWindow::render()
 	if(ImGui::Checkbox("Cull Enabled", &cullEnabled))
 	{
 		m_sceneManager->set_cull_enabled(cullEnabled);
+	}
+
+	if (sunLightChanged)
+	{
+		m_sceneManager->update_sun_properties(&sunProps);
 	}
 }
 

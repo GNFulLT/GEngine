@@ -271,9 +271,9 @@ std::expected<IVulkanImage*, int> TransferOpTransferQueue::init_image_to_the_gpu
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = image->get_vk_image();
 	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.baseMipLevel = viewInfo->subresourceRange.baseMipLevel;
+	barrier.subresourceRange.levelCount = viewInfo->subresourceRange.levelCount;
+	barrier.subresourceRange.baseArrayLayer = viewInfo->subresourceRange.baseArrayLayer;
 	barrier.subresourceRange.layerCount = inf->arrayLayers;
 	barrier.srcAccessMask = 0;
 	barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;

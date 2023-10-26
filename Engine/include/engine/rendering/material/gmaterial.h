@@ -42,6 +42,8 @@ struct PACKED_STRUCT MaterialDescription final
 	uint32_t metallicRoughnessMap_ = GPUTypes::INVALID_TEXTURE;
 	uint32_t normalMap_ = GPUTypes::INVALID_TEXTURE;
 	uint32_t opacityMap_ = GPUTypes::INVALID_TEXTURE;
+	uint32_t metallicyMap_ = GPUTypes::INVALID_TEXTURE;
+	uint32_t roughnessMap_ = GPUTypes::INVALID_TEXTURE;
 
 
 	ENGINE_API static bool save_materials(const std::vector<MaterialDescription>& materials,const std::vector<std::string>& textureFileNames,const char* path);

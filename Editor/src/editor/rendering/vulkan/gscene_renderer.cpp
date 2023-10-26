@@ -65,7 +65,7 @@ void GSceneRenderer::render_the_scene()
 
 	frameCmd->begin();
 	deferredRenderer->fill_compute_cmd(frameCmd, currIndex);
-
+	deferredRenderer->begin_and_end_fill_cmd_for_shadow(frameCmd, currIndex);
 	vp->begin_draw_cmd(frameCmd);
 	deferredRenderer->fill_deferred_cmd(frameCmd, currIndex);
 

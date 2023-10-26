@@ -20,6 +20,7 @@
 struct VkDescriptorPool_T;
 struct VkPipelineLayout_T;
 enum VkFormat;
+struct VkSampler_T;
 
 class GSceneRenderer2 : public IGVulkanDeferredRenderer
 {
@@ -44,6 +45,8 @@ public:
 	virtual void fill_composition_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
 	virtual void fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame) override;
 	virtual void fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t frame,uint32_t drawId) override;
+	virtual void begin_and_end_fill_cmd_for_shadow(GVulkanCommandBuffer* cmd, uint32_t frame);
+	virtual const DrawData* get_draw_data_by_id(uint32_t drawId) const noexcept;
 
 	virtual VkFormat get_composition_format() const noexcept override;
 
@@ -75,11 +78,21 @@ public:
 		return enoughSize / perSize;
 	}
 private:
+	IVulkanImage* m_jitterImage;
+	bool load_shadow_resources();
+	void generate_offsets_for_shadow_texture(int windowSize,int filterSize,std::vector<float>& data);
+	IVulkanImage* m_shadowAttachment;
+	IGVulkanNamedRenderPass* m_shadowPass;
+	VkFramebuffer_T* m_shadowFrameBuffer;
+private:
+	VkSampler_T* m_depthSampler;
 	VkDescriptorSet_T* m_drawDataSet;
 	VkDescriptorSet_T* m_lightDataSet;
 	VkDescriptorSet_T* m_cullDataSet;
-
+	VkDescriptorSet_T* m_sunShadowSet;
 private:
+	IGVulkanNamedSetLayout* m_sunShadowSetLayout;
+
 	uint32_t MAX_BINDLESS_TEXTURE = 16536;
 	IGVulkanLogicalDevice* p_boundedDevice;
 	IGPipelineObjectManager* p_pipelineManager;
@@ -87,7 +100,7 @@ private:
 	IGShaderManager* p_shaderManager;
 
 	GPUMeshStreamResources* m_meshStreamResources;
-
+	MATERIAL_MODE m_materialMode = MATERIAL_MODE_BLINN_PHONG;
 	
 	IGVulkanNamedPipelineLayout* m_computePipelineLayout;
 
@@ -98,6 +111,8 @@ private:
 	VkDescriptorSet_T* m_bindlessSet;
 
 	IGVulkanNamedPipelineLayout* m_deferredLayout;
+	IGVulkanNamedPipelineLayout* m_sunShadowLayout;
+
 	IGVulkanNamedPipelineLayout* m_aabbDrawLayout;
 
 	IGVulkanDescriptorPool* m_compositionPool;
@@ -111,6 +126,7 @@ private:
 
 	IGShaderResource* m_deferredVertexShaderRes;
 	IGShaderResource* m_deferredFragmentShaderRes;
+	IGShaderResource* m_deferredFragmentPBRShaderRes;
 
 
 	IGShaderResource* m_compositionVertexShaderRes;
@@ -120,11 +136,16 @@ private:
 
 	IGShaderResource* m_boundingBoxVertexShaderRes;
 	IGShaderResource* m_boundingBoxFragmentShaderRes;
-
+	IGShaderResource* m_sunShadowVertexShaderRes;
+	IGShaderResource* m_sunShadowFragmentShaderRes;
 	VkFormat m_compositionFormat;
 
-
+	GVulkanNamedGraphicPipeline* m_selectedCompositionPipeline;
 	GVulkanNamedGraphicPipeline* m_deferredPipeline;
+	GVulkanNamedGraphicPipeline* m_compositionPBRPipeline;
+
+	GVulkanNamedGraphicPipeline* m_sunShadowPipeline;
+
 	GVulkanNamedGraphicPipeline* m_compositionPipeline;
 	GVulkanNamedGraphicPipeline* m_aabbPipeline;
 
@@ -135,6 +156,13 @@ private:
 	IGSceneManager* p_sceneManager;
 	
 	uint32_t m_framesInFlight;
+
+	// Inherited via IGVulkanDeferredRenderer
+	virtual MATERIAL_MODE get_current_material_mode() const noexcept override;
+	virtual void set_material_mode(MATERIAL_MODE mode) noexcept override;
+
+	// Inherited via IGVulkanDeferredRenderer
+	virtual IVulkanImage* get_sun_shadow_attachment() override;
 };
 
 #endif // GSCENE_RENDERER_2_H

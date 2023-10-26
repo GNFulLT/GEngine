@@ -19,6 +19,7 @@
 #include <glm/ext.hpp>
 #include "engine/rendering/scene/scene.h"
 #include <glm/glm.hpp>
+#include "engine/rendering/renderer/igvulkan_deferred_renderer.h"
 
 GImGuiCompositionPortWindow::GImGuiCompositionPortWindow()
 {
@@ -87,13 +88,16 @@ void GImGuiCompositionPortWindow::render()
 void GImGuiCompositionPortWindow::on_resize()
 {
 	EditorApplicationImpl::get_instance()->m_engine->add_recreation([&, posPort = EditorApplicationImpl::get_instance()->positionPortSet,
-		albedoPort = EditorApplicationImpl::get_instance()->albedoPortSet, normalPort = EditorApplicationImpl::get_instance()->normalPortSet, composSet = EditorApplicationImpl::get_instance()->compositionPortSet]() {
+		albedoPort = EditorApplicationImpl::get_instance()->albedoPortSet, normalPort = EditorApplicationImpl::get_instance()->normalPortSet, composSet = EditorApplicationImpl::get_instance()->compositionPortSet,
+		pbrSet = EditorApplicationImpl::get_instance()->pbrPortSet, sunShadowSet = EditorApplicationImpl::get_instance()->sunShadowPortSet]() {
 			assert(m_storage->width > 0 && m_storage->height > 0);
 			////X Destroy Sets
 			EditorApplicationImpl::get_instance()->get_descriptor_creator()->destroy_descriptor_set_dtor(posPort);
 			EditorApplicationImpl::get_instance()->get_descriptor_creator()->destroy_descriptor_set_dtor(normalPort);
 			EditorApplicationImpl::get_instance()->get_descriptor_creator()->destroy_descriptor_set_dtor(albedoPort);
 			EditorApplicationImpl::get_instance()->get_descriptor_creator()->destroy_descriptor_set_dtor(composSet);
+			EditorApplicationImpl::get_instance()->get_descriptor_creator()->destroy_descriptor_set_dtor(pbrSet);
+			EditorApplicationImpl::get_instance()->get_descriptor_creator()->destroy_descriptor_set_dtor(sunShadowSet);
 
 			auto deferredVp = EditorApplicationImpl::get_instance()->m_renderViewport;
 			deferredVp->resize(m_storage->width, m_storage->height);
@@ -107,15 +111,26 @@ void GImGuiCompositionPortWindow::on_resize()
 				deferredVp->get_sampler_for_named_attachment("albedo_attachment")).value();
 			EditorApplicationImpl::get_instance()->compositionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_composition_attachment(),
 				deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
+
+			EditorApplicationImpl::get_instance()->pbrPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_pbr_attachment(),
+				deferredVp->get_sampler_for_named_attachment("pbr_attachment")).value();
+			
+
 			auto sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
 			sceneManager->init_deferred_renderer(deferredVp);
+			auto sunShadowAttachment = sceneManager->get_deferred_renderer()->get_sun_shadow_attachment();
 
+			EditorApplicationImpl::get_instance()->sunShadowPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_depth_texture(sunShadowAttachment,
+				deferredVp->get_sampler_for_named_attachment("pbr_attachment")).value();
 		});
 
 	EditorApplicationImpl::get_instance()->albedoPortSet = nullptr;
 	EditorApplicationImpl::get_instance()->normalPortSet = nullptr;
 	EditorApplicationImpl::get_instance()->positionPortSet = nullptr;
 	EditorApplicationImpl::get_instance()->compositionPortSet = nullptr;
+	EditorApplicationImpl::get_instance()->pbrPortSet = nullptr;
+	EditorApplicationImpl::get_instance()->sunShadowPortSet = nullptr;
+
 }
 
 void GImGuiCompositionPortWindow::on_data_update()

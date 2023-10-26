@@ -31,3 +31,11 @@ IGVulkanLogicalDevice* GImGuiDescriptorCreator::get_bounded_device()
 {
 	return m_boundedDevice;
 }
+
+std::expected<IGVulkanDescriptorSet*, std::string> GImGuiDescriptorCreator::create_descriptor_set_for_depth_texture(IVulkanImage* image, VkSampler_T* sampler)
+{
+	VkDescriptorSet set = ImGui_ImplVulkan_AddTexture(sampler, image->get_vk_image_view(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+
+	//X TODO GDNEWDA
+	return new GImGuiDescriptorSet(set, this);
+}

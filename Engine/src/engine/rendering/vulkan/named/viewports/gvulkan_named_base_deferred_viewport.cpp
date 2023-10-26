@@ -32,7 +32,7 @@ GVulkanNamedBaseDeferredViewport::GVulkanNamedBaseDeferredViewport(IGVulkanLogic
 	clearValues[0].color = { { 0.0f, 1.0f, 0.0f, 1.0f } };
 	clearValues[1].color = { { 1.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[2].color = { { 0.0f, 0.0f, 1.0f, 1.0f } };
-	clearValues[3].color = { { 0.0f, 0.0f, 1.0f, 1.0f } };
+	clearValues[3].color = { { 1.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[4].depthStencil = { 1.0f, 0 };
 
 	secondClearValues[0] = { { 0.0f, 1.0f, 0.0f, 1.0f } };
@@ -246,7 +246,7 @@ bool GVulkanNamedBaseDeferredViewport::init(uint32_t width, uint32_t height)
 		sampler.magFilter = VK_FILTER_LINEAR;
 		sampler.minFilter = VK_FILTER_LINEAR;
 		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler.addressModeV = sampler.addressModeU;
 		sampler.addressModeW = sampler.addressModeU;
 		sampler.mipLodBias = 0.0f;

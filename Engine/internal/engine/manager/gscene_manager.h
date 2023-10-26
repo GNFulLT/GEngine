@@ -7,9 +7,12 @@
 #include "engine/rendering/scene/scene.h"
 #include "engine/rendering/material/gmaterial.h"
 #include "engine/rendering/point_light.h"
+#include "public/core/templates/unordered_dense.h"
+#include "engine/rendering/vulkan/ivulkan_image.h"
 
 struct VkDescriptorSet_T;
-
+struct VkFramebuffer_T;
+struct VkRenderPass_T;
 class IGCameraManager;
 class IGVulkanLogicalDevice;
 class IGVulkanUniformBuffer;
@@ -17,21 +20,17 @@ class IGVulkanUniformBuffer;
 class GSceneManager : public IGSceneManager
 {
 public:
+	GSceneManager();
 	struct GlobalCullBuffer
 	{
 		DrawCullData cullData;
 		bool cullEnabled = true;
 	};
-	struct GlobalUniformBuffer
+	
+	
+	struct GPUCPUData
 	{
-		float viewProj[16];
-		float pos[3];
-		float view[16];
-		float resolution[2];
-		uint32_t pointLightCount = 0;
-		uint32_t activePointLightCount = 0;
-		float zNear;
-		float zFar;
+		uint32_t selectedDraw = -1;
 	};
 	// Inherited via IGSceneManager
 	virtual IGVulkanUniformBuffer* get_global_buffer_for_frame(uint32_t frame) const noexcept override;
@@ -62,6 +61,8 @@ private:
 	uint32_t add_default_transform();
 	void set_transform_by_index(const glm::mat4* transform, uint32_t gpuIndex);
 private:
+
+private:
 	//X Global Draw Data
 	GPUMeshStreamResources::RCPUGPUData<glm::mat4> m_globalTransformData;
 	GPUMeshStreamResources::CPUGPUData<MaterialDescription> m_globalMaterialData;
@@ -70,6 +71,9 @@ private:
 	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightIndices;
 	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightBins;
 	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightTiles;
+	
+	std::vector<std::unique_ptr<IVulkanBuffer>> m_gpuCpuDataBuffers;
+	std::vector<void*> m_gpuCpuDataBufferMappedMems;
 
 	GlobalCullBuffer m_globalCullData;
 	IGVulkanNamedSetLayout* m_cullDataLayout;
@@ -83,13 +87,15 @@ private:
 	std::vector<IVulkanBuffer*> m_globalCullBuffers;
 	std::vector<void*> m_globalCullBufferMappedMems;
 
-
+	ankerl::unordered_dense::segmented_map<uint32_t, IGTextureResource*> m_registeredTextureMap;
 	IGVulkanNamedDeferredViewport* m_deferredTargetedViewport = nullptr;
 	
 	IGVulkanNamedSetLayout* m_globalDataSetLayout;
 	IGVulkanNamedSetLayout* m_drawDataSetLayout;
 	IGVulkanNamedSetLayout* m_globalLightSetLayout;
 	IGVulkanDescriptorPool* m_globalPool;
+
+	IGVulkanNamedSetLayout* m_gpuCpuDataSetLayout;
 
 	uint32_t m_inUsageTextures = 0;
 
@@ -132,6 +138,32 @@ private:
 
 	// Inherited via IGSceneManager
 	virtual uint32_t get_gpu_transform_index(uint32_t nodeId) const noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual const DrawData* get_draw_data_by_id(uint32_t drawId) const noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual IGTextureResource* get_saved_texture_by_id(uint32_t textureId) const noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual bool is_node_light(uint32_t nodeId) const noexcept override;
+
+	virtual const GPointLight* get_point_light(uint32_t nodeId) const noexcept override;
+
+	virtual void set_point_light(const GPointLight* data,uint32_t nodeId) noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual const SunProperties* get_sun_properties() const noexcept override;
+
+	virtual void update_sun_properties(const SunProperties* sunProps) override;
+
+
+	// Inherited via IGSceneManager
+	virtual const GlobalUniformBuffer* get_global_data() const noexcept override;
 
 };
 

@@ -309,7 +309,7 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 	{
 		const aiVector3D v = m->mVertices[i];
 		const aiVector3D n = m->mNormals[i];
-		const aiVector3D t = hasTexCoords ? m->mTextureCoords[0][i] : aiVector3D();
+		aiVector3D t = hasTexCoords ? m->mTextureCoords[0][i] : aiVector3D();
 
 		if (loadLods)
 		{
@@ -321,11 +321,13 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 		vertices.push_back(v.x * scale);
 		vertices.push_back(v.y * scale);
 		vertices.push_back(v.z * scale);
-
 		vertices.push_back(t.x);
 		vertices.push_back(1.0f - t.y);
 
-
+		if (n.x > 1.f || n.x < -1.f || n.y > 1.f || n.y < -1.f || n.z > 1.f || n.z < -1.f)
+		{
+			assert(false);
+		}
 		glm::vec2 och = octahedral_encode(glm::vec3(n.x, n.y, n.z));
 		vertices.push_back(och.x);
 		vertices.push_back(och.y);

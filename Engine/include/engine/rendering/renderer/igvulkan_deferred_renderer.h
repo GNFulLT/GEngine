@@ -5,6 +5,15 @@
 #include "engine/rendering/vulkan/named/igvulkan_named_renderpass.h"
 #include <vector>
 #include "engine/rendering/renderer/igvulkan_deferred_renderer.h"
+
+class IVulkanImage;
+
+enum MATERIAL_MODE
+{
+	MATERIAL_MODE_BLINN_PHONG,
+	MATERIAL_MODE_PBR
+};
+
 enum VkFormat;
 
 class IGVulkanDeferredRenderer
@@ -25,6 +34,14 @@ public:
 	virtual VkFormat get_composition_format() const noexcept = 0;
 
 	virtual void fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t frame, uint32_t drawId) = 0;
+
+	virtual MATERIAL_MODE get_current_material_mode() const noexcept = 0;
+
+	virtual void set_material_mode(MATERIAL_MODE mode) noexcept = 0;
+
+	virtual void begin_and_end_fill_cmd_for_shadow(GVulkanCommandBuffer* cmd, uint32_t frame) = 0;
+
+	virtual IVulkanImage* get_sun_shadow_attachment() = 0;
 private:
 };
 

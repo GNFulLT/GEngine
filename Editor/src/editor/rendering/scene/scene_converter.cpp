@@ -186,7 +186,12 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 	for (unsigned int i = 0; i != scene->mNumMeshes; i++)
 	{
 		printf("\nConverting meshes %u/%u...", i + 1, scene->mNumMeshes);
-		GMesh mesh = GMeshEncoder::ai_mesh_to_gmesh(scene->mMeshes[i], true, 1, *meshData, indexOffset, vertexOffset);
+		auto aimsh = scene->mMeshes[i];
+		if (i == 102)
+		{
+			int a = 5;
+		}
+		GMesh mesh = GMeshEncoder::ai_mesh_to_gmesh(aimsh, false, 1, *meshData, indexOffset, vertexOffset);
 		meshData->meshes_.push_back(mesh);
 	}
 	

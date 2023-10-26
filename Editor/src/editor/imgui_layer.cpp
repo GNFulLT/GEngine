@@ -29,8 +29,13 @@
 #include "internal/window/gimgui_position_port.h"
 #include "internal/window/gimgui_normal_port.h"
 #include "internal/window/gimgui_composition_window.h"
+#include "internal/window/gimgui_pbr_window.h"
+#include "internal/window/gimgui_sunshadow_window.h"
 
 #include "engine/gengine.h"
+#include "engine/imanager_table.h"
+#include "engine/manager/igscene_manager.h"
+#include "engine/rendering/renderer/igvulkan_deferred_renderer.h"
 
 ImGuiLayer::ImGuiLayer(IGVulkanViewport* viewport,Window* window, IGVulkanApp* app, IGVulkanDevice* dev)
 {
@@ -196,7 +201,20 @@ bool ImGuiLayer::init()
 	{
 		delete albedo;
 	}
-	
+	GImGuiPBRPortWindow* pbr = new GImGuiPBRPortWindow();
+	created = m_windowManager->create_imgui_window(pbr, GIMGUIWINDOWDIR_MIDDLE);
+	if (!created)
+	{
+		delete pbr;
+	}
+
+	GImGuiSunShadowPortWindow* sunShadow = new GImGuiSunShadowPortWindow();
+	created = m_windowManager->create_imgui_window(sunShadow, GIMGUIWINDOWDIR_MIDDLE);
+	if (!created)
+	{
+		delete sunShadow;
+	}
+
 	GImGuiCompositionPortWindow* comp = new GImGuiCompositionPortWindow();
 	created = m_windowManager->create_imgui_window(comp, GIMGUIWINDOWDIR_MIDDLE);
 	if (!created)
@@ -250,6 +268,8 @@ void ImGuiLayer::render(GVulkanCommandBuffer* cmd)
 
 void ImGuiLayer::set_viewport(IGVulkanNamedDeferredViewport* viewport, IGSceneManager* sceneManager)
 {
+	auto deferredRenderer = sceneManager->get_deferred_renderer();
+
 	auto deferredVp = viewport;
 	deferredVp->init(640, 320);
 
@@ -261,7 +281,9 @@ void ImGuiLayer::set_viewport(IGVulkanNamedDeferredViewport* viewport, IGSceneMa
 		deferredVp->get_sampler_for_named_attachment("albedo_attachment")).value();
 	EditorApplicationImpl::get_instance()->compositionPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_composition_attachment(),
 		deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
-	
+	EditorApplicationImpl::get_instance()->pbrPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_texture(deferredVp->get_pbr_attachment(),
+		deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
+
 	sceneManager->init_deferred_renderer(deferredVp);
 	
 	//m_renderViewportWindow->set_the_viewport(viewport);
@@ -269,6 +291,9 @@ void ImGuiLayer::set_viewport(IGVulkanNamedDeferredViewport* viewport, IGSceneMa
 	m_sceneRenderer->init();
 	
 	m_sceneRenderer->set_the_viewport(viewport);
+
+	EditorApplicationImpl::get_instance()->sunShadowPortSet = EditorApplicationImpl::get_instance()->get_descriptor_creator()->create_descriptor_set_for_depth_texture(deferredRenderer->get_sun_shadow_attachment(),
+		deferredVp->get_sampler_for_named_attachment("composition_attachment")).value();
 }
 
 ImGuiWindowManager* ImGuiLayer::get_window_manager()

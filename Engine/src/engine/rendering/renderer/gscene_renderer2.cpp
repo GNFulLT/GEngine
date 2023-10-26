@@ -13,6 +13,21 @@
 #include "internal/engine/manager/glogger_manager.h"
 #include <spdlog/fmt/fmt.h>
 #include "engine/rendering/scene/scene.h"
+#include "engine/rendering/vulkan/ivulkan_queue.h"
+#include "engine/imanager_table.h"
+#include "engine/rendering/vulkan/transfer/itransfer_op.h"
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <random>
+
+#define SHADOWMAP_DIM 2048
+#define SHADOWMAP_FORMAT VK_FORMAT_D32_SFLOAT
+#define JITTER_WINDOW_SIZE 16
+#define JITTER_FILTER_SIZE 8
+
 #define POSITION_TARGET_COLOR_FORMAT VK_FORMAT_R32G32B32A32_SFLOAT
 #define EMISSION_TARGET_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 #define ALBEDO_TARGET_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
@@ -156,12 +171,12 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			{
 				//X First create necessary pool
 				std::unordered_map<VkDescriptorType, int> map;
-				map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4);
+				map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6);
 				map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2);
 				map.emplace(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
 
 				//X We allocate three set
-				m_compositionPool = p_boundedDevice->create_and_init_vector_pool(map, 3);
+				m_compositionPool = p_boundedDevice->create_and_init_vector_pool(map, 4);
 
 				std::array<VkDescriptorSetLayoutBinding, 4> bindings;
 				//X Pos Buff
@@ -218,7 +233,30 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 
 		}
 	}
+	{
+		//X Sun Shadow Buffer
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings;
+		bindings[0].binding = 0;
+		bindings[0].descriptorCount = 1;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings[0].pImmutableSamplers = nullptr;
 
+		bindings[1].binding = 1;
+		bindings[1].descriptorCount = 1;
+		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings[1].pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo setinfo = {};
+		setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		setinfo.pNext = nullptr;
+		setinfo.bindingCount = bindings.size();
+		setinfo.flags = 0;
+		setinfo.pBindings = bindings.data();
+
+		m_sunShadowSetLayout = p_pipelineManager->create_or_get_named_set_layout("SunShadowSetLayout", &setinfo);
+	}
 	//X Create pipeline layouts
 	{
 		//X Deferred Layout
@@ -239,14 +277,27 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 
 			m_deferredLayout = p_pipelineManager->create_or_get_named_pipeline_layout("DeferredPipelineLayout",&inf);
 			assert(m_deferredLayout != nullptr);
+
+			VkPushConstantRange range = {};
+			range.offset = 0;
+			range.size = sizeof(glm::mat4);
+			range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+			inf.pushConstantRangeCount = 1;
+			inf.pPushConstantRanges = &range;
+
+			m_sunShadowLayout = p_pipelineManager->create_or_get_named_pipeline_layout("SunShadowPipelineLayout", &inf);
+			assert(m_sunShadowLayout != nullptr);
+
 		}
 
 		//X Composition layout
 		{
-			std::array<VkDescriptorSetLayout, 3> setLayouts;
+			std::array<VkDescriptorSetLayout, 4> setLayouts;
 			setLayouts[0] = m_compositionSetLayout;
 			setLayouts[1] = lightDataSetLayout->get_layout();
 			setLayouts[2] = globalUniformSet;
+			setLayouts[3] = m_sunShadowSetLayout->get_layout();
 
 			VkPipelineLayoutCreateInfo inf = {};
 			inf.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -279,6 +330,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			m_computePipelineLayout = p_pipelineManager->create_or_get_named_pipeline_layout("ComputePipelineLayout", &inf);
 			assert(m_computePipelineLayout != nullptr);
 		}
+
 		//X AABB Draw Layout
 		{
 			std::array<VkDescriptorSetLayout, 3> setLayouts;
@@ -456,22 +508,30 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 	{
 		m_deferredVertexShaderRes = p_resourceManager->create_shader_resource("deferredVertex", "SceneRenderer", "./data/shader/deferred.glsl_vert").value();
 		m_deferredFragmentShaderRes = p_resourceManager->create_shader_resource("deferredFragment", "SceneRenderer", "./data/shader/deferred.glsl_frag").value();
+		m_deferredFragmentPBRShaderRes = p_resourceManager->create_shader_resource("deferredFragment", "SceneRenderer", "./data/shader/composition_pbr.glsl_frag").value();
+
 		m_compositionVertexShaderRes = p_resourceManager->create_shader_resource("compositionVertex", "SceneRenderer", "./data/shader/composition.glsl_vert").value();
 		m_compositionFragmentShaderRes = p_resourceManager->create_shader_resource("compositionFrag", "SceneRenderer", "./data/shader/composition.glsl_frag").value();
 		m_cullComputeShaderRes = p_resourceManager->create_shader_resource("cullCompute", "SceneRenderer", "./data/shader/cull.glsl_comp").value();
 		m_boundingBoxVertexShaderRes = p_resourceManager->create_shader_resource("boundingBoxVertex", "SceneRenderer", "./data/shader/bounding_box.glsl_vert").value();
 		m_boundingBoxFragmentShaderRes = p_resourceManager->create_shader_resource("boundingBoxFrag", "SceneRenderer", "./data/shader/bounding_box.glsl_frag").value();
+		
+		m_sunShadowVertexShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_vert").value();
+		m_sunShadowFragmentShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_frag").value();
 
 		assert(m_deferredVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_deferredFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
+		assert(m_deferredFragmentPBRShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_compositionVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_compositionFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_cullComputeShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_boundingBoxVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_boundingBoxFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
+		assert(m_sunShadowVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
+		assert(m_sunShadowFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 
 	}
-
+	assert(load_shadow_resources());
 	//X Create the pipeline
 	{
 		//X First deferred pipeline
@@ -507,6 +567,8 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			attachmentStates[1] = {};
 			attachmentStates[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 			attachmentStates[1].blendEnable = VK_FALSE;
+			
+
 
 			attachmentStates[2] = {};
 			attachmentStates[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -534,6 +596,21 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			dsInfo.minDepthBounds = 0;
 			dsInfo.maxDepthBounds = 1;
 
+			VkPipelineRasterizationStateCreateInfo	rasterInfo = {};
+			rasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+			rasterInfo.depthClampEnable = VK_FALSE;
+			rasterInfo.rasterizerDiscardEnable = VK_FALSE;
+
+			rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
+			rasterInfo.lineWidth = 1.0f;
+			// Cull front face
+			rasterInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
+			rasterInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+			//no depth bias
+			rasterInfo.depthBiasEnable = VK_TRUE;
+			rasterInfo.depthBiasConstantFactor = 1.25f;
+			rasterInfo.depthBiasClamp = 0.0f;
+			rasterInfo.depthBiasSlopeFactor = 1.75f;
 
 			states.push_back(p_boundedDevice->create_vertex_input_state(&bindingDescriptions, &attributeDescriptions));
 			states.push_back(p_boundedDevice->create_default_input_assembly_state());
@@ -551,18 +628,48 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 
 			m_deferredPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_deferredPass, "deferred_pipeline");
 			m_deferredPipeline->init(m_deferredLayout,stages,states);
+		
 
 			delete stages[0];
 			delete stages[1];
 
+			delete states[3];
+			delete states[6];
+
+			stages[0] = p_shaderManager->create_shader_stage_from_shader_res(m_sunShadowVertexShaderRes).value();
+			stages[1] = p_shaderManager->create_shader_stage_from_shader_res(m_sunShadowFragmentShaderRes).value();
+
+			bcreateInfo.attachmentCount = 0;
+			bcreateInfo.pAttachments = nullptr;
+			states[6] = p_boundedDevice->create_custom_rasterization_state(&rasterInfo);
+
+			states[3] = p_boundedDevice->create_custom_color_blend_state(attachmentStates.data(), &bcreateInfo);
+
+
+			m_sunShadowPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_shadowPass, "sun_shadow_pipeline");
+			m_sunShadowPipeline->init(m_sunShadowLayout, stages, states);
+
+			delete stages[0];
+			delete stages[1];
+			delete states[6];
+
+			states[6] = p_boundedDevice->create_default_rasterization_state();
 			stages[0] = p_shaderManager->create_shader_stage_from_shader_res(m_compositionVertexShaderRes).value();
 			stages[1] = p_shaderManager->create_shader_stage_from_shader_res(m_compositionFragmentShaderRes).value();
 			delete states[3];
 			delete states[5];
 			states[3] = p_boundedDevice->create_default_color_blend_state();
 			states[5] = p_boundedDevice->create_custom_depth_stencil_state(&dsInfo);
+
 			m_compositionPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_compositionPass, "composition_pipeline");
 			m_compositionPipeline->init(m_compositionLayout, stages, states);
+
+			m_selectedCompositionPipeline = m_compositionPipeline;
+			delete stages[1];
+			stages[1] = p_shaderManager->create_shader_stage_from_shader_res(m_deferredFragmentPBRShaderRes).value();
+
+			m_compositionPBRPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_compositionPass, "composition_pbr_pipeline");
+			m_compositionPBRPipeline->init(m_compositionLayout, stages, states);
 
 			delete stages[0];
 			delete stages[1];
@@ -583,9 +690,9 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			rasterizationAABB.frontFace = VK_FRONT_FACE_CLOCKWISE;
 			//no depth bias
 			rasterizationAABB.depthBiasEnable = VK_FALSE;
-			rasterizationAABB.depthBiasConstantFactor = 0.0f;
+			rasterizationAABB.depthBiasConstantFactor = 1.25f;
 			rasterizationAABB.depthBiasClamp = 0.0f;
-			rasterizationAABB.depthBiasSlopeFactor = 0.0f;
+			rasterizationAABB.depthBiasSlopeFactor = 1.75f;
 			dsInfo.depthTestEnable = false;
 
 
@@ -664,6 +771,18 @@ void GSceneRenderer2::destroy()
 			delete m_deferredPipeline;
 			m_deferredPipeline = nullptr;
 		}
+		if (m_compositionPBRPipeline != nullptr)
+		{
+			m_compositionPBRPipeline->destroy();
+			delete m_compositionPBRPipeline;
+			m_compositionPBRPipeline = nullptr;
+		}
+		if (m_aabbPipeline != nullptr)
+		{
+			m_aabbPipeline->destroy();
+			delete m_aabbPipeline;
+			m_aabbPipeline = nullptr;
+		}
 	}
 	//X Destroy shader resources
 	{
@@ -684,6 +803,12 @@ void GSceneRenderer2::destroy()
 			m_deferredFragmentShaderRes->destroy();
 			delete m_deferredFragmentShaderRes;
 			m_deferredFragmentShaderRes = nullptr;
+		}
+		if (m_deferredFragmentPBRShaderRes != nullptr)
+		{
+			m_deferredFragmentPBRShaderRes->destroy();
+			delete m_deferredFragmentPBRShaderRes;
+			m_deferredFragmentPBRShaderRes = nullptr;
 		}
 		if (m_deferredVertexShaderRes != nullptr)
 		{
@@ -720,6 +845,277 @@ void GSceneRenderer2::destroy()
 uint32_t GSceneRenderer2::get_max_count_of_draw_data()
 {
 	return m_meshStreamResources->get_count_of_draw_data();
+}
+
+bool GSceneRenderer2::load_shadow_resources()
+{
+	VkExtent3D extent = {
+		.width = uint32_t(SHADOWMAP_DIM),
+		.height = uint32_t(SHADOWMAP_DIM),
+		.depth = 1
+	};
+	uint32_t renderingFamilyIndex = p_boundedDevice->get_render_queue()->get_queue_index();
+	//X Shadow  Attachment
+	{
+		VkImageCreateInfo inf = {};
+		inf.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		inf.pNext = nullptr;
+		inf.flags = 0;
+		inf.imageType = VK_IMAGE_TYPE_2D;
+		inf.format = SHADOWMAP_FORMAT;
+		inf.mipLevels = 1;
+		inf.arrayLayers = 1;
+		inf.samples = VK_SAMPLE_COUNT_1_BIT;
+		inf.tiling = VK_IMAGE_TILING_OPTIMAL;
+		inf.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		inf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		inf.queueFamilyIndexCount = 1;
+		inf.pQueueFamilyIndices = &renderingFamilyIndex;
+		inf.extent = extent;
+		inf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+
+		auto res = p_boundedDevice->create_image(&inf, VMA_MEMORY_USAGE_GPU_ONLY);
+
+		if (!res.has_value())
+		{
+			// X TODO : LOGGER
+			return false;
+		}
+
+		m_shadowAttachment = res.value();
+
+		VkImageSubresourceRange range = {};
+		range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		range.layerCount = 1;
+		range.baseMipLevel = 0;
+		range.baseArrayLayer = 0;
+		range.levelCount = 1;
+
+		VkImageViewCreateInfo viewInfo = {};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.pNext = nullptr;
+		viewInfo.format = SHADOWMAP_FORMAT;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.flags = 0;
+		viewInfo.subresourceRange = range;
+
+		m_shadowAttachment->create_image_view(&viewInfo);
+
+
+
+
+		VkRenderPassCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+
+		std::array<VkAttachmentDescription, 1> attachmentDescs;
+		attachmentDescs[0] = {};
+		attachmentDescs[0].format = SHADOWMAP_FORMAT;
+		attachmentDescs[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachmentDescs[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachmentDescs[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachmentDescs[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachmentDescs[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachmentDescs[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachmentDescs[0].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+		VkAttachmentReference depthReference = {};
+		depthReference.attachment = 0;
+		depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.pColorAttachments = nullptr;
+		subpass.colorAttachmentCount = 0;
+		subpass.pDepthStencilAttachment = &depthReference;
+		std::array<VkSubpassDependency, 2> dependencies;
+		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[0].dstSubpass = 0;
+		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dependencyFlags = 0;
+
+		dependencies[1].srcSubpass = 0;
+		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[1].dependencyFlags = 0;
+
+
+		// Create render pass
+		VkRenderPassCreateInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.pAttachments = attachmentDescs.data();
+		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescs.size());
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpass;
+		renderPassInfo.dependencyCount = dependencies.size();
+		renderPassInfo.pDependencies = dependencies.data();
+
+		m_shadowPass = p_pipelineManager->create_or_get_named_renderpass("SunShadowRenderPass", &renderPassInfo);
+		assert(m_shadowPass != nullptr);
+
+		auto attachmentView = m_shadowAttachment->get_vk_image_view();
+
+		VkFramebufferCreateInfo framebufferInfo = {};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = m_shadowPass->get_vk_renderpass();
+		framebufferInfo.pAttachments = &attachmentView;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.width = SHADOWMAP_DIM;
+		framebufferInfo.height = SHADOWMAP_DIM;
+		framebufferInfo.layers = 1;
+
+		assert(VK_SUCCESS == vkCreateFramebuffer(p_boundedDevice->get_vk_device(), &framebufferInfo, nullptr, &m_shadowFrameBuffer));
+
+	}
+
+	{
+		
+
+
+		//X Create Set From Layout
+		auto vkLayout = m_sunShadowSetLayout->get_layout();
+		VkDescriptorSetAllocateInfo allocInfo = {};
+		allocInfo.pNext = nullptr;
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_compositionPool->get_vk_descriptor_pool();
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &vkLayout;
+
+		assert(VK_SUCCESS == vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, &m_sunShadowSet));
+
+	}
+	{
+		VkSamplerCreateInfo sampler = {};
+		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		sampler.magFilter = VK_FILTER_LINEAR;
+		sampler.minFilter = VK_FILTER_LINEAR;
+		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.mipLodBias = 0.0f;
+		sampler.maxAnisotropy = 1.0f;
+		sampler.minLod = 0.0f;
+		sampler.maxLod = 1.0f;
+		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+		vkCreateSampler(p_boundedDevice->get_vk_device(), &sampler, nullptr, &m_depthSampler);
+
+	}
+	//X Create Offset texture
+	{
+		std::vector<float> jitterData;
+		generate_offsets_for_shadow_texture(JITTER_WINDOW_SIZE, JITTER_FILTER_SIZE, jitterData);
+		VkImageCreateInfo inf = {};
+		inf.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		inf.pNext = nullptr;
+		inf.flags = 0;
+		inf.imageType = VK_IMAGE_TYPE_3D;
+		inf.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		inf.mipLevels = 1;
+		inf.arrayLayers = 1;
+		inf.samples = VK_SAMPLE_COUNT_1_BIT;
+		inf.tiling = VK_IMAGE_TILING_OPTIMAL;
+		inf.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		inf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		inf.queueFamilyIndexCount = 1;
+		inf.pQueueFamilyIndices = &renderingFamilyIndex;
+		inf.extent.width = (JITTER_FILTER_SIZE * JITTER_FILTER_SIZE)/2;
+		inf.extent.height = JITTER_WINDOW_SIZE;
+		inf.extent.depth = JITTER_WINDOW_SIZE;
+		inf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VkImageSubresourceRange range = {};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.layerCount = 1;
+		range.baseMipLevel = 0;
+		range.baseArrayLayer = 0;
+		range.levelCount = 1;
+
+		VkImageViewCreateInfo viewInfo = {};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.pNext = nullptr;
+		viewInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_3D;
+		viewInfo.flags = 0;
+		viewInfo.subresourceRange = range;
+
+
+
+
+
+		auto transferOp = p_boundedDevice->get_transfer_operation();
+		m_jitterImage = transferOp->init_image_to_the_gpu_from_cpu_sleep(&inf, &viewInfo, sizeof(float)* jitterData.size(), jitterData.data()).value();
+	}
+	return true;
+}
+
+float generate_random()
+{
+	static std::default_random_engine generator;
+	static std::uniform_real_distribution<float> distrib(-0.5f,0.5f);
+	return distrib(generator);
+}
+#define PI 3.141592653589793
+
+void GSceneRenderer2::generate_offsets_for_shadow_texture(int windowSize, int filterSize, std::vector<float>& data)
+{
+	int bufferSize = pow(windowSize, 2) * pow(filterSize, 2) * 2;
+	data.resize(bufferSize);
+	int index = 0;
+	for (int y = 0; y < windowSize; y++)
+	{
+		for (int x = 0; x < windowSize; x++)
+		{
+			for (int v = 0; v < filterSize; v++)
+			{
+				for (int u = 0; u < filterSize; u++)
+				{
+					float currentX = (float(u)+0.5f+ generate_random())/(filterSize);
+					float currentY = (float(v) + 0.5f + generate_random()) / (filterSize);
+
+					data[index] = sqrtf(currentY) * cosf(2 * PI * currentX);
+					data[index + 1] = sqrtf(currentY) * sinf(2 * PI * currentX);
+
+					index += 2;
+				}
+			}
+		}
+	}
+}
+
+MATERIAL_MODE GSceneRenderer2::get_current_material_mode() const noexcept
+{
+	return m_materialMode;
+}
+
+void GSceneRenderer2::set_material_mode(MATERIAL_MODE mode) noexcept
+{
+	m_materialMode = mode;
+	switch (m_materialMode)
+	{
+	case MATERIAL_MODE_BLINN_PHONG:
+		m_selectedCompositionPipeline = m_compositionPipeline;
+		break;
+	case MATERIAL_MODE_PBR:
+		m_selectedCompositionPipeline = m_compositionPBRPipeline;
+		break;
+	default:
+		m_selectedCompositionPipeline = m_compositionPipeline;
+		break;
+	}
+}
+
+IVulkanImage* GSceneRenderer2::get_sun_shadow_attachment()
+{
+	return m_shadowAttachment;
 }
 
 void GSceneRenderer2::fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame)
@@ -778,6 +1174,78 @@ void GSceneRenderer2::fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t fram
 	vkCmdDraw(cmd->get_handle(), 36, 1, 0, 0);
 }
 
+void GSceneRenderer2::begin_and_end_fill_cmd_for_shadow(GVulkanCommandBuffer* cmd, uint32_t frame)
+{
+	auto globalData = p_sceneManager->get_global_data();
+	//X Calculate LP
+	auto lightPos = glm::normalize(glm::make_vec3(globalData->sunProperties.sunLightDirection))*40.f;
+	//glm::mat4 depthProjectionMatrix = glm::ortho(-35.f, 15.f, -15.f, 15.f, globalData->zNear, 46.f);
+	glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(45.f), 1.f, globalData->zNear,96.f);
+
+	glm::mat4 depthViewMatrix = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+
+	auto lp = depthProjectionMatrix* depthViewMatrix* glm::mat4(1.f);
+	VkRenderPassBeginInfo inf = {};
+	VkViewport port = {};
+	port.maxDepth = 1.f;
+	port.height = SHADOWMAP_DIM;
+	port.width = SHADOWMAP_DIM;
+	port.y = 0;
+
+	VkRect2D rect = {};
+	rect.offset = {};
+	rect.extent.height = SHADOWMAP_DIM;
+	rect.extent.width = SHADOWMAP_DIM;
+
+	VkClearValue clearVal = {};
+	clearVal.depthStencil.depth = 1.f;
+	clearVal.depthStencil.stencil = 0.f;
+
+	inf.clearValueCount = 1;
+	inf.framebuffer = m_shadowFrameBuffer;
+	inf.pNext = nullptr;
+	inf.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	inf.renderArea = rect;
+	inf.renderPass = m_shadowPass->get_vk_renderpass();
+	inf.pClearValues = &clearVal;
+
+	float depthBiasConstant = 1.25f;
+	float depthBiasSlope = 1.75f;
+	
+	vkCmdSetDepthBias(
+		cmd->get_handle(),
+		depthBiasConstant,
+		0.0f,
+		depthBiasSlope);
+
+	vkCmdBeginRenderPass(cmd->get_handle(), &inf, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_sunShadowPipeline->get_vk_pipeline());
+	std::array<VkDescriptorSet, 4> descriptorSets;
+	descriptorSets[0] = p_sceneManager->get_global_set_for_frame(frame);
+	descriptorSets[1] = this->m_meshStreamResources->get_draw_set_by_index(frame);
+	descriptorSets[2] = m_drawDataSet;
+	descriptorSets[3] = m_bindlessSet;
+	vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_sunShadowLayout->get_vk_pipeline_layout(), 0, descriptorSets.size(), descriptorSets.data(), 0, 0);
+	
+
+	vkCmdSetViewport(cmd->get_handle(), 0, 1, &port);
+	vkCmdSetScissor(cmd->get_handle(), 0, 1, &rect);
+
+	vkCmdPushConstants(cmd->get_handle(), m_sunShadowLayout->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),&lp);
+
+	m_meshStreamResources->bind_vertex_index_stream(cmd, frame);
+
+	m_meshStreamResources->cmd_draw_indirect_data(cmd, frame);
+
+	vkCmdEndRenderPass(cmd->get_handle());
+}
+
+const DrawData* GSceneRenderer2::get_draw_data_by_id(uint32_t drawId) const noexcept
+{
+	return &m_meshStreamResources->m_globalDrawData.cpuVector[drawId];
+}
+
 IGVulkanNamedRenderPass* GSceneRenderer2::get_deferred_pass() const noexcept
 {
 	return m_deferredPass;
@@ -819,15 +1287,17 @@ void GSceneRenderer2::fill_deferred_cmd(GVulkanCommandBuffer* cmd,uint32_t frame
 
 void GSceneRenderer2::fill_composition_cmd(GVulkanCommandBuffer* cmd, uint32_t frame)
 {
-	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_compositionPipeline->get_vk_pipeline());
-	std::array<VkDescriptorSet_T*, 3> compositionSets;
+	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_selectedCompositionPipeline->get_vk_pipeline());
+	std::array<VkDescriptorSet_T*, 4> compositionSets;
 	compositionSets[0] = m_compositionSet;
 	compositionSets[1] = m_lightDataSet;
 	compositionSets[2] = p_sceneManager->get_global_set_for_frame(frame);
-
+	compositionSets[3] = m_sunShadowSet;
 	vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_compositionLayout->get_vk_pipeline_layout(), 0, compositionSets.size(), compositionSets.data(), 0, 0);
-
-	vkCmdSetViewport(cmd->get_handle(), 0, 1, m_compositionVp->get_viewport_area());
+	auto vp = *m_compositionVp->get_viewport_area();
+	vp.height *= -1;
+	vp.y = 0;
+	vkCmdSetViewport(cmd->get_handle(), 0, 1, &vp);
 	vkCmdSetScissor(cmd->get_handle(), 0, 1, m_compositionVp->get_scissor_area());
 
 	vkCmdDraw(cmd->get_handle(), 3, 1, 0, 0);
@@ -884,6 +1354,34 @@ void GSceneRenderer2::set_composition_views(IVulkanImage* position, IVulkanImage
 
 	m_deferredVp = deferredVp;
 	m_compositionVp = compositionVp;
+
+	{
+
+		auto attach = m_deferredVp->get_sampler_for_named_attachment("cartcurt");
+		// position // albedo // emission // pbr
+		std::array<VkDescriptorImageInfo, 4> infos;
+		infos[0] = { .sampler = m_depthSampler,.imageView = m_shadowAttachment->get_vk_image_view(),.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
+		infos[1] = { .sampler = attach,.imageView = m_jitterImage->get_vk_image_view(),.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+
+		std::array<VkWriteDescriptorSet, 2> writeSets;
+		writeSets[0] = {};
+		writeSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeSets[0].descriptorCount = 1;
+		writeSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeSets[0].dstSet = m_sunShadowSet;
+		writeSets[0].pImageInfo = &infos[0];
+		writeSets[0].dstBinding = 0;
+
+		writeSets[1] = {};
+		writeSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeSets[1].descriptorCount = 1;
+		writeSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeSets[1].dstSet = m_sunShadowSet;
+		writeSets[1].pImageInfo = &infos[1];
+		writeSets[1].dstBinding = 1;
+
+		vkUpdateDescriptorSets(p_boundedDevice->get_vk_device(), writeSets.size(), writeSets.data(), 0, 0);
+	}
 }
 
 uint32_t GSceneRenderer2::add_mesh_to_scene(const MeshData* meshData, uint32_t rendererID)

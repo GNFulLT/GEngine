@@ -3,6 +3,8 @@
 
 #include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
 
+enum VkFormat;
+
 class IGVulkanNamedDeferredViewport : public IGVulkanNamedViewport
 {
 public:

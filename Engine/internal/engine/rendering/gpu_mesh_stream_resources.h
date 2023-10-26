@@ -13,6 +13,8 @@
 #include "engine/rendering/vulkan/vulkan_command_buffer.h"
 #include <queue>
 #include <functional>
+#include "engine/manager/igscene_manager.h"
+
 struct VkDescriptorSet_T;
 class GSceneRenderer2;
 

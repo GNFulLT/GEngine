@@ -6,7 +6,7 @@
 #include "engine/imanager_table.h"
 #include "engine/manager/igscene_manager.h"
 #include <algorithm>
-
+#include "internal/manager/geditor_texture_debug_manager.h"
 GImGuiMaterialsWindow::GImGuiMaterialsWindow()
 {
 	m_name = "Materials";
@@ -31,6 +31,8 @@ void GImGuiMaterialsWindow::render()
 {
 	MaterialDescription d;
 	auto materials = m_sceneManager->get_current_scene_materials();
+	auto textureDebugManager = EditorApplicationImpl::get_instance()->get_texture_debug_manager();
+
 	int i = 0;
 	for (auto& material : materials)
 	{
@@ -50,7 +52,15 @@ void GImGuiMaterialsWindow::render()
 			
 			if (ImGui::CollapsingHeader("Albedo Map"))
 			{
-
+				if (material.albedoMap_ != UINT32_MAX)
+				{
+					auto texture = m_sceneManager->get_saved_texture_by_id(material.albedoMap_);
+					if (texture != nullptr)
+					{
+						auto set = textureDebugManager->get_or_save_texture(texture);
+						ImGui::Image(set, { 128,128 });
+					}
+				}
 			}
 			if (ImGui::CollapsingHeader("Normal Map"))
 			{
@@ -58,17 +68,50 @@ void GImGuiMaterialsWindow::render()
 			}
 			if (ImGui::CollapsingHeader("Ambient Occlusion Map"))
 			{
-
+				auto texture = m_sceneManager->get_saved_texture_by_id(material.ambientOcclusionMap_);
+				if (texture != nullptr)
+				{
+					auto set = textureDebugManager->get_or_save_texture(texture);
+					ImGui::Image(set, { 128,128 });
+				}
 			}
 			if (ImGui::CollapsingHeader("Emmisive Map"))
+			{
+				auto texture = m_sceneManager->get_saved_texture_by_id(material.emissiveMap_);
+				if (texture != nullptr)
+				{
+					auto set = textureDebugManager->get_or_save_texture(texture);
+					ImGui::Image(set, { 128,128 });
+				}
+			}
+			if (ImGui::CollapsingHeader("MetallicRoughness Map"))
 			{
 
 			}
 			if (ImGui::CollapsingHeader("Metallic Map"))
 			{
-
+				if (material.metallicyMap_ != UINT32_MAX)
+				{
+					auto texture = m_sceneManager->get_saved_texture_by_id(material.metallicyMap_);
+					if (texture != nullptr)
+					{
+						auto set = textureDebugManager->get_or_save_texture(texture);
+						ImGui::Image(set, { 128,128 });
+					}
+				}
 			}
-			
+			if (ImGui::CollapsingHeader("Roughness Map"))
+			{
+				if (material.roughnessMap_ != UINT32_MAX)
+				{
+					auto texture = m_sceneManager->get_saved_texture_by_id(material.roughnessMap_);
+					if (texture != nullptr)
+					{
+						auto set = textureDebugManager->get_or_save_texture(texture);
+						ImGui::Image(set, { 128,128 });
+					}
+				}
+			}
 			if (ImGui::Button("Update Material"))
 			{
 				auto updatedMtr = material;

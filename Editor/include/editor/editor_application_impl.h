@@ -20,6 +20,7 @@ class IVulkanShaderStage;
 class IGVulkanGraphicPipeline;
 class IGVulkanChainedViewport;
 class GEditorFPSCameraPositioner;
+class GEditorTextureDebugManager;
 
 class EditorApplicationImpl : public GApplicationImpl
 {
@@ -44,6 +45,8 @@ public:
 
 	virtual bool init(GEngine* engine) override;
 
+	GEditorTextureDebugManager* get_texture_debug_manager();
+
 	GEngine* m_engine;
 
 	GSharedPtr<IOwningGLogger> get_editor_logger();
@@ -59,11 +62,12 @@ public:
 	uint32_t get_total_frame();
 
 
-
+	IGVulkanDescriptorSet* pbrPortSet = nullptr;
 	IGVulkanDescriptorSet* normalPortSet = nullptr;
 	IGVulkanDescriptorSet* positionPortSet = nullptr;
 	IGVulkanDescriptorSet* albedoPortSet = nullptr;
 	IGVulkanDescriptorSet* compositionPortSet = nullptr;
+	IGVulkanDescriptorSet* sunShadowPortSet = nullptr;
 	IGVulkanNamedDeferredViewport* m_renderViewport;
 
 private:
@@ -72,7 +76,7 @@ private:
 	GSharedPtr<IOwningGLogger> m_logger;
 	GSharedPtr<IOwningGLogger> m_logWindwLogger;
 	inline static EditorApplicationImpl* s_instance;
-
+	GEditorTextureDebugManager* m_textureDebugManager = nullptr;
 	uint32_t m_currentFrame;
 	uint32_t m_totalFrame;
 
