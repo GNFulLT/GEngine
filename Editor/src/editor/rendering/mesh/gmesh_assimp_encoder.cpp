@@ -285,8 +285,27 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m,bool loadLods,int scale)
 
 GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, MeshData& mesh, uint32_t& vertexOffset, uint32_t& indexOffset)
 {
+	uint32_t numElementsToStore = 3;
+	uint64_t meshFlag = 0;
+
 	const bool hasTexCoords = m->HasTextureCoords(0);
-	const uint32_t streamElementSize = static_cast<uint32_t>(g_numElementsToStore * sizeof(float));
+	if (hasTexCoords)
+	{
+		meshFlag |= GMESH_COMPONENT_HAS_UV;
+		numElementsToStore += 2;
+	}
+	if (m->HasNormals())
+	{
+		meshFlag |= GMESH_COMPONENT_HAS_NORMAL;
+		numElementsToStore += 2;
+		if (m->HasTangentsAndBitangents())
+		{
+			meshFlag |= GMESH_COMPONENT_HAS_TANGENTS_BITANGENTS;
+			numElementsToStore += 6;
+		}
+	}
+	
+	const uint32_t streamElementSize = static_cast<uint32_t>(numElementsToStore * sizeof(float));
 
 	GMesh result = {
 		.streamCount = 1,
@@ -296,6 +315,7 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 		.streamOffset = { vertexOffset * streamElementSize },
 		.streamElementSize = { streamElementSize }
 	};
+
 
 	// Original data for LOD calculation
 	std::vector<float> srcVertices;
@@ -309,6 +329,8 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 	{
 		const aiVector3D v = m->mVertices[i];
 		const aiVector3D n = m->mNormals[i];
+		const aiVector3D tangent = m->mTangents[i];
+		const aiVector3D bitangent = m->mBitangents[i];
 		aiVector3D t = hasTexCoords ? m->mTextureCoords[0][i] : aiVector3D();
 
 		if (loadLods)
@@ -331,6 +353,15 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 		glm::vec2 och = octahedral_encode(glm::vec3(n.x, n.y, n.z));
 		vertices.push_back(och.x);
 		vertices.push_back(och.y);
+		if(m->HasTangentsAndBitangents())
+		{ 
+			vertices.push_back(tangent.x);
+			vertices.push_back(tangent.y);
+			vertices.push_back(tangent.z);
+			vertices.push_back(bitangent.x);
+			vertices.push_back(bitangent.y);
+			vertices.push_back(bitangent.z);
+		}
 	}
 
 	for (size_t i = 0; i != m->mNumFaces; i++)
@@ -363,7 +394,7 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 	result.lodCount = (uint32_t)outLods.size();
 
 	indexOffset += numIndices;
-	vertexOffset += m->mNumVertices;
-
+	vertexOffset += m->mNumVertices*numElementsToStore;
+	result.meshFlag = meshFlag;
 	return result;
 }

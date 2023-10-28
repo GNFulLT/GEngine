@@ -64,7 +64,12 @@ void GImGuiMaterialsWindow::render()
 			}
 			if (ImGui::CollapsingHeader("Normal Map"))
 			{
-
+				auto texture = m_sceneManager->get_saved_texture_by_id(material.normalMap_);
+				if (texture != nullptr)
+				{
+					auto set = textureDebugManager->get_or_save_texture(texture);
+					ImGui::Image(set, { 128,128 });
+				}
 			}
 			if (ImGui::CollapsingHeader("Ambient Occlusion Map"))
 			{

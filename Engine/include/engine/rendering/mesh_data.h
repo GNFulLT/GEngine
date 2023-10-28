@@ -16,7 +16,7 @@ struct MeshData
 };
 ENGINE_API std::expected<MeshData*, GMESH_DECODE_ERROR> decode_file(const char* filePath);
 ENGINE_API void recalculateBoundingBoxes(MeshData& m);
-
+ENGINE_API uint32_t calculateVertexElementCount(uint64_t meshFlag);
 
 struct GMeshData
 {
@@ -32,6 +32,8 @@ struct GMeshData
 	/* Offsets to LOD data. Last offset is used as a marker to calculate the size */
 	/* Calculating global index for this lod should be like : GMeshData::indexOffset */
 	uint32_t lodOffset[MeshConstants::MAX_LOD_COUNT] = { 0 };
+
+	uint64_t meshFlag = 0;
 	inline uint32_t getLODIndicesCount(uint32_t lod) const { return lodOffset[lod + 1] - lodOffset[lod]; }
 
 };

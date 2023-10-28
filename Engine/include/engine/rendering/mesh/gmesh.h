@@ -14,6 +14,14 @@ enum GMESH_DECODE_ERROR
 	GMESH_DECODE_ERROR_FILE_CORRUPTED
 };
 
+enum GMESH_COMPONENT
+{
+	GMESH_COMPONENT_HAS_UV = 1 << 0,
+	GMESH_COMPONENT_HAS_NORMAL = 1 << 1,
+	GMESH_COMPONENT_HAS_TANGENTS_BITANGENTS = 1 << 2
+
+};
+
 
 struct GMesh final
 {
@@ -37,7 +45,7 @@ struct GMesh final
 
 
 	//X TODO : Stream Data Type will be added
-
+	uint64_t meshFlag = 0;
 	inline uint32_t getLODIndicesCount(uint32_t lod) const { return lodOffset[lod + 1] - lodOffset[lod]; }
 
 };

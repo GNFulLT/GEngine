@@ -77,6 +77,20 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 						auto albedoTextureID = m_sceneManager->register_texture_to_scene(textureRes);
 						materials[i].albedoMap_ = albedoTextureID;
 					}
+					//X Normal
+					itr = paths->second.find(TEXTURE_MAP_TYPE_NORMAL);
+					if (itr != paths->second.end())
+					{
+						auto normal = itr->second;
+						std::string normalTexturePath = "./";
+						normalTexturePath += normal;
+						auto resource = ((GSharedPtr<IGResourceManager>*)(EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE)))->get();
+						auto textureRes = resource->create_texture_resource(normal, "editor", normalTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
+						assert(RESOURCE_INIT_CODE_OK == textureRes->load());
+						//X Save the texture to the scene
+						auto normalTextureId = m_sceneManager->register_texture_to_scene(textureRes);
+						materials[i].normalMap_ = normalTextureId;
+					}
 					//X AO
 					itr = paths->second.find(TEXTURE_MAP_TYPE_AMBIENT_OCCLUSION);
 					if (itr != paths->second.end())

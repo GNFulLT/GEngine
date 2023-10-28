@@ -19,10 +19,11 @@ GPUMeshStreamResources::GPUMeshStreamResources(IGVulkanLogicalDevice* dev,uint32
 
 bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndexCount, uint32_t beginMeshCount, uint32_t beginDrawDataAndIdCount)
 {
-	m_mergedVertex.gpuBuffer.reset(p_boundedDevice->create_buffer(uint64_t(beginVertexCount) * m_floatPerVertex * sizeof(float),VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
-	m_mergedVertex.create_internals(&m_copyQueue,&m_deleteQueue,p_boundedDevice,VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+	auto f = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_SHADER_READ_BIT;
+	m_mergedVertex.gpuBuffer.reset(p_boundedDevice->create_buffer(uint64_t(beginVertexCount) * m_floatPerVertex * sizeof(float),VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY).value());
+	m_mergedVertex.create_internals(&m_copyQueue,&m_deleteQueue,p_boundedDevice,VkAccessFlagBits(f),VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 	
-	m_mergedIndex.gpuBuffer.reset(p_boundedDevice->create_buffer(beginIndexCount * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_mergedIndex.gpuBuffer.reset(p_boundedDevice->create_buffer(beginIndexCount * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 	m_mergedIndex.create_internals(&m_copyQueue, &m_deleteQueue, p_boundedDevice, VK_ACCESS_INDEX_READ_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 	
 	m_mergedMesh.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
@@ -56,7 +57,7 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 	//X First create the DrawStreamSet
 	{
 		//X Mesh Buffer
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings;
+		std::array<VkDescriptorSetLayoutBinding, 5> bindings;
 		bindings[0].binding = 0;
 		bindings[0].descriptorCount = 1;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -76,6 +77,20 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 		bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		bindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[2].pImmutableSamplers = nullptr;
+
+		//X Vertex Buffer
+		bindings[3].binding = 3;
+		bindings[3].descriptorCount = 1;
+		bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		bindings[3].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings[3].pImmutableSamplers = nullptr;
+
+		//X Index Buffer
+		bindings[4].binding = 4;
+		bindings[4].descriptorCount = 1;
+		bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		bindings[4].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings[4].pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutCreateInfo setinfo = {};
 		setinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -115,7 +130,7 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 	//X Allocate sets
 	{
 		std::unordered_map<VkDescriptorType, int> types;
-		types.emplace(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,8);
+		types.emplace(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,9);
 		m_generalPool = p_boundedDevice->create_and_init_vector_pool(types,m_framesInFlight*2);
 		assert(m_generalPool != nullptr);
 		//X Compute Set
@@ -171,10 +186,11 @@ uint32_t GPUMeshStreamResources::add_mesh_data(const MeshData* meshData)
 		GMeshData* gmesh = &gmeshes[i];
 		gmesh->boundingBox = meshData->boxes_[i];
 		gmesh->extent = glm::vec4(0,0,0,0);
-		gmesh->vertexOffset += (beginVertexFloat/ this->m_floatPerVertex) + meshData->meshes_[i].vertexOffset;
+		gmesh->vertexOffset += (beginVertexFloat) + meshData->meshes_[i].vertexOffset;
 		gmesh->indexOffset += beginIndex + meshData->meshes_[i].indexOffset; 
 		gmesh->vertexCount = meshData->meshes_[i].vertexCount;
 		gmesh->lodCount = meshData->meshes_[i].lodCount;
+		gmesh->meshFlag = meshData->meshes_[i].meshFlag;
 		memcpy(&gmeshes[i].lodOffset[0], &meshData->meshes_[i].lodOffset[0], sizeof(uint32_t) * MeshConstants::MAX_LOD_COUNT);
 	}
 	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
@@ -260,7 +276,7 @@ void GPUMeshStreamResources::bind_vertex_index_stream(GVulkanCommandBuffer* cmd,
 	VkBuffer vertBuff = m_mergedVertex.gpuBuffer->get_vk_buffer();
 	VkDeviceSize deviceOffset = 0;
 
-	vkCmdBindVertexBuffers(cmd->get_handle(), 0, 1, &vertBuff, &deviceOffset);
+	//vkCmdBindVertexBuffers(cmd->get_handle(), 0, 1, &vertBuff, &deviceOffset);
 	vkCmdBindIndexBuffer(cmd->get_handle(), m_mergedIndex.gpuBuffer->get_vk_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
 }
@@ -355,7 +371,7 @@ VkDescriptorSet_T* GPUMeshStreamResources::get_compute_set_by_index(uint32_t cur
 
 void GPUMeshStreamResources::update_draw_data_sets()
 {
-	std::array<VkDescriptorBufferInfo, 3> bufferInfos;
+	std::array<VkDescriptorBufferInfo, 5> bufferInfos;
 	//X Mesh
 	bufferInfos[0].buffer = m_mergedMesh.gpuBuffer->get_vk_buffer();
 	bufferInfos[0].offset = 0;
@@ -368,8 +384,16 @@ void GPUMeshStreamResources::update_draw_data_sets()
 	bufferInfos[2].buffer = m_globalDrawIdBuffer->get_vk_buffer();
 	bufferInfos[2].offset = 0;
 	bufferInfos[2].range = m_globalDrawIdBuffer->get_size();
+	//X Vertex
+	bufferInfos[3].buffer = m_mergedVertex.gpuBuffer->get_vk_buffer();
+	bufferInfos[3].offset = 0;
+	bufferInfos[3].range = m_mergedVertex.gpuBuffer->get_size();
+	//X Index
+	bufferInfos[4].buffer = m_mergedIndex.gpuBuffer->get_vk_buffer();
+	bufferInfos[4].offset = 0;
+	bufferInfos[4].range = m_mergedIndex.gpuBuffer->get_size();
 
-	std::array< VkWriteDescriptorSet, 3> setWrites;
+	std::array< VkWriteDescriptorSet, 5> setWrites;
 	setWrites[0] = {};
 	setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	setWrites[0].pNext = nullptr;
@@ -394,12 +418,29 @@ void GPUMeshStreamResources::update_draw_data_sets()
 	setWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	setWrites[2].pBufferInfo = bufferInfos.data() + 2;
 
+	setWrites[3] = {};
+	setWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	setWrites[3].pNext = nullptr;
+	setWrites[3].dstBinding = 3;
+	setWrites[3].descriptorCount = 1;
+	setWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	setWrites[3].pBufferInfo = bufferInfos.data() + 3;
+
+	setWrites[4] = {};
+	setWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	setWrites[4].pNext = nullptr;
+	setWrites[4].dstBinding = 4;
+	setWrites[4].descriptorCount = 1;
+	setWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	setWrites[4].pBufferInfo = bufferInfos.data() + 4;
 
 	for (int i = 0; i < m_framesInFlight; i++)
 	{
 		setWrites[0].dstSet = m_drawStreamSets[i];
 		setWrites[1].dstSet = m_drawStreamSets[i];
 		setWrites[2].dstSet = m_drawStreamSets[i];
+		setWrites[3].dstSet = m_drawStreamSets[i];
+		setWrites[4].dstSet = m_drawStreamSets[i];
 
 		vkUpdateDescriptorSets(p_boundedDevice->get_vk_device(), setWrites.size(), setWrites.data(), 0, nullptr);
 	}

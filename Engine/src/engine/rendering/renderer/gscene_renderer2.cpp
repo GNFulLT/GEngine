@@ -612,7 +612,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			rasterInfo.depthBiasClamp = 0.0f;
 			rasterInfo.depthBiasSlopeFactor = 1.75f;
 
-			states.push_back(p_boundedDevice->create_vertex_input_state(&bindingDescriptions, &attributeDescriptions));
+			states.push_back(p_boundedDevice->create_vertex_input_state(nullptr, nullptr));
 			states.push_back(p_boundedDevice->create_default_input_assembly_state());
 			states.push_back(p_boundedDevice->create_default_none_multisample_state());
 			states.push_back(p_boundedDevice->create_custom_color_blend_state(attachmentStates.data(), &bcreateInfo));

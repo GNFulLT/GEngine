@@ -163,6 +163,7 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 		aiProcess_GenSmoothNormals |
 		aiProcess_LimitBoneWeights |
 		aiProcess_SplitLargeMeshes |
+		aiProcess_CalcTangentSpace |
 		aiProcess_ImproveCacheLocality |
 		aiProcess_RemoveRedundantMaterials |
 		aiProcess_FindDegenerates |
@@ -266,5 +267,6 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 		level++;
 	}
 	*virtualScene = gscene;
+	delete scene;
 	return meshData;
 }
