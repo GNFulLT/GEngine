@@ -1,49 +1,32 @@
 #version 460
 
-#extension GL_EXT_shader_explicit_arithmetic_types_int64: enable
 #extension GL_EXT_scalar_block_layout : require
 
+#include <./data/shader/mesh_def.h>
 
-layout (location = 0) in vec3 vPosition;
-layout (location = 1) in vec2 vTexCoord;
-layout (location = 2) in vec2 vNormal;
-
-#define MAX_LOD_COUNT 8
-
-struct BoundingBox
+struct ImDraw
 {
-	vec4 min;
-	vec4 max;
-};
-
-struct MeshData{
-	BoundingBox boundingBox;
-	vec4 extents;
-	uint lodCount;
-	uint indexOffset;
-	uint vertexOffset;
-	uint vertexCount;
-	uint lodOffset[MAX_LOD_COUNT];
-}; 
-
-struct DrawData
-{
-	uint meshIndex;
-	uint materialIndex;
-	uint transformIndex;
+	vec3 pos;
+	vec2 uv;
+	vec2 norm;
 };
 
 layout(set = 0,binding = 0,scalar) uniform  UniformBuffer { mat4   inMtx; vec3 camPos;} ubo;
 
-layout(set = 1,binding = 1,scalar) readonly buffer MeshDatas { MeshData data[]; } meshDatas;
-layout(set = 1,binding = 2,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
-layout(set = 1,binding = 3,scalar) readonly buffer DrawID { uint data[]; } drawIDs;
-layout(set = 2,binding = 5,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
+layout(set = 1,binding = 0,scalar) readonly buffer MeshDatas { MeshData data[]; } meshDatas;
+layout(set = 1,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
+layout(set = 1,binding = 2,scalar) readonly buffer DrawID { uint data[]; } drawIDs;
+layout(set = 1,binding = 3,scalar) readonly buffer Vertex { float data[]; } vertexDatas;
+layout(set = 1,binding = 4,scalar) readonly buffer Index { uint data[]; } indexDatas;
+
+layout(set = 2,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
 
 layout(location = 0) out vec2 uv;
 layout(location = 1) out vec3 v_worldNormal;
 layout(location = 2) out vec4 v_worldPos;
 layout(location = 3) out flat uint matIdx;
+layout(location = 4) out flat uint hasTBN;
+layout(location = 5) out mat3 oTBN;
 
 
 vec3 octahedral_decode(vec2 f) {
@@ -58,21 +41,46 @@ vec3 octahedral_decode(vec2 f) {
 
 void main()
 {
+	hasTBN = 0;
 	uint drawDataId = drawIDs.data[gl_InstanceIndex];
 	uint meshIndex = drawDatas.data[drawDataId].meshIndex;
 	uint transformIndex = drawDatas.data[drawDataId].transformIndex;
 	mat3 inModel = transpose(inverse(mat3(transformDatas.data[transformIndex])));
+	mat4 model = transformDatas.data[transformIndex];
+	uint vertOffset = gl_VertexIndex;
+	MeshData meshData = meshDatas.data[meshIndex];
+	uint vertexElementCount = calculateVertexElementCount(meshData);	
+
+	uint index = gl_VertexIndex;
+	uint stride = index * vertexElementCount;	
 	
+	uint currentVertexBeginFloat = (stride + meshData.vertexOffset);
+	
+	vec2 vuv = vec2(vertexDatas.data[currentVertexBeginFloat+3],vertexDatas.data[currentVertexBeginFloat+4]);
+	vec3 pos = vec3(vertexDatas.data[currentVertexBeginFloat],vertexDatas.data[currentVertexBeginFloat+1],vertexDatas.data[currentVertexBeginFloat+2]);
+	vec2 norm = vec2(vertexDatas.data[currentVertexBeginFloat+5],vertexDatas.data[currentVertexBeginFloat+6]);
 	// Proj position
-	vec4 tempPos = vec4(vPosition.x,-vPosition.y,vPosition.z, 1.0f);
-
-	gl_Position = ubo.inMtx *  transformDatas.data[transformIndex]  * tempPos;
-
+	vec4 tempPos = vec4(pos.x,pos.y,pos.z, 1.0f);
+	
+	gl_Position = (ubo.inMtx *  transformDatas.data[transformIndex]  * tempPos);
+	vec3 aNormal = octahedral_decode(norm);
 	//X Unpack the normal data and calcul
-	v_worldNormal = inModel * octahedral_decode(vNormal);
+	if((meshData.meshFlag & MESH_TYPE_HAS_TANGENT_BITANGENT) != 0)
+	{	
+		// 7 8 9 Tangent
+		vec3 aTangent = vec3(vertexDatas.data[currentVertexBeginFloat+7],vertexDatas.data[currentVertexBeginFloat+8],vertexDatas.data[currentVertexBeginFloat+9]);
+		// 10 11 12 Bitangent
+		vec3 aBitangent = vec3(vertexDatas.data[currentVertexBeginFloat+10],vertexDatas.data[currentVertexBeginFloat+11],vertexDatas.data[currentVertexBeginFloat+12]);
+		vec3 T = normalize(vec3(model * vec4(aTangent,   0.0)));
+   		vec3 B = normalize(vec3(model * vec4(aBitangent, 0.0)));
+   		vec3 N = normalize(vec3(model * vec4(aNormal,    0.0)));
+		oTBN = mat3(T, B, N);
+		hasTBN = 1;
+	}
+	v_worldNormal = inModel * aNormal;
 	//X World Position
-	v_worldPos = transformDatas.data[0-transformIndex] * tempPos;
-	uv = vTexCoord;
+	v_worldPos = transformDatas.data[transformIndex] * tempPos;
+	uv = vuv;
 	matIdx = drawDatas.data[drawDataId].materialIndex;
-
+	
 }

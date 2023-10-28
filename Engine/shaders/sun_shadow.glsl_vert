@@ -1,0 +1,60 @@
+#version 460
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: enable
+#extension GL_EXT_scalar_block_layout : require
+
+layout(set = 0,binding = 0,scalar) uniform  UniformBuffer 
+{ 
+	mat4   inMtx;
+ 	vec3 camPos;
+	mat4 view;
+	float resolutionWidth;
+	float resolutionHeight;
+	uint lightCount;
+	uint activeLightCount;
+	float zNear;
+	float zFar;
+	vec3 sunLightDirection;
+	vec3 sunLightColor;
+	float sunLightIntensity;
+	mat4 sunLP;
+} ubo;
+
+#include <./data/shader/mesh_def.h>
+
+
+layout(set = 1,binding = 0,scalar) readonly buffer MeshDatas { MeshData data[]; } meshDatas;
+layout(set = 1,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
+layout(set = 1,binding = 2,scalar) readonly buffer DrawID { uint data[]; } drawIDs;
+layout(set = 1,binding = 3,scalar) readonly buffer Vertex { float data[]; } vertexDatas;
+layout(set = 1,binding = 4,scalar) readonly buffer Index { uint data[]; } indexDatas;
+
+layout(set = 2,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
+
+layout(push_constant,scalar) uniform constants
+{
+	mat4 LP;
+} pushConstants;
+
+void main()
+{
+	uint drawDataId = drawIDs.data[gl_InstanceIndex];
+	uint meshIndex = drawDatas.data[drawDataId].meshIndex;
+	uint transformIndex = drawDatas.data[drawDataId].transformIndex;
+	
+	MeshData meshData = meshDatas.data[meshIndex];
+	uint vertexElementCount = calculateVertexElementCount(meshData);	
+
+	uint index = gl_VertexIndex;
+	uint stride = index * vertexElementCount;	
+	
+	uint currentVertexBeginFloat = (stride + meshData.vertexOffset);
+	
+	vec3 pos = vec3(vertexDatas.data[currentVertexBeginFloat],vertexDatas.data[currentVertexBeginFloat+1],vertexDatas.data[currentVertexBeginFloat+2]);
+	
+
+	vec4 tempPos = vec4(pos.x,pos.y,pos.z, 1.0f);
+	vec4 worldPos = transformDatas.data[transformIndex] * tempPos;
+
+	gl_Position = (ubo.sunLP * worldPos);
+}

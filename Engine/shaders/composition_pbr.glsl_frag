@@ -25,6 +25,8 @@ layout(set = 1,binding = 0,scalar) readonly buffer PointLightData { PointLight d
 layout(set = 1,binding = 1,scalar) readonly buffer PointLightIndices { uint data[]; } pointLightIndices;
 layout(set = 1,binding = 2,scalar) readonly buffer PointLightTiles { uint data[]; } pointLightTiles;
 layout(set = 1,binding = 3,scalar) readonly buffer PointLightBins { uint data[]; } pointLightBins;
+layout (set = 3,binding = 0) uniform sampler2D samplerSHD;
+layout (set = 3,binding = 1) uniform sampler3D samplerOffset;
 
 layout(set = 2,binding = 0,scalar) uniform  UniformBuffer 
 { 
@@ -37,7 +39,12 @@ layout(set = 2,binding = 0,scalar) uniform  UniformBuffer
 	uint activeLightCount;
 	float zNear;
 	float zFar;
+	vec3 sunLightDirection;
+	vec3 sunLightColor;
+	float sunLightIntensity;
+	mat4 sunLP;
 } ubo;
+
 
 
 layout (location = 0) in vec2 inUV;
@@ -46,15 +53,25 @@ layout (location = 0) out vec4 outColor;
 #define PI 3.1415926535897932384626433832795
 #define EPSILON 0.000001
 
-struct PBRInfo
+vec3 SRGBtoLINEAR(vec3 srgbIn)
 {
-	float alpha;
-	vec3 N;
-	vec3 V;
-	vec3 L;
-	vec3 H;
-	vec3 albedoColor;
-	float metallic;	
+	return pow(srgbIn,vec3(1.0/2.2));
+}
+
+struct PBRInfo2
+{
+	float NdotL;                  
+	float NdotV;                  
+	float NdotH;                  
+	float LdotH;                  
+	float VdotH;                  
+	float roughness;    
+	float metalness;              
+	vec3 reflectance0;            
+	vec3 reflectance90;           
+	float alphaRoughness;       
+	vec3 diffuseColor;            
+	vec3 specularColor;           
 };
 
 vec3 octahedral_decode(vec2 f) {
@@ -65,55 +82,132 @@ vec3 octahedral_decode(vec2 f) {
     return normalize(n);
 }
 
-// GGX/Trowbridge-reitz Normal distribution function
-float D(float alpha, vec3 N, vec3 H)
+float geometryOcclusion(PBRInfo2 info2)
 {
-	float numerator = pow(alpha,2.f);
-	float NdotH = max(0.0,dot(N,H));
-	float denominator = PI * pow(pow(NdotH,2.0)* (numerator -1.0) + 1.0,2.0);
-	denominator = max(denominator,EPSILON);
-	return numerator / denominator;
+	float NdotL = info2.NdotL;
+	float NdotV = info2.NdotV;
+	float r = info2.alphaRoughness;
+	
+	float attenuationL = 2.0 * NdotL / (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));
+	float attenuationV = 2.0 * NdotV / (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));
+	return attenuationL * attenuationV;
 }
 
-// Schlikck-Beckmann Geometry Shadowing Function
-float G1(float alpha,vec3 N,vec3 X)
+vec3 specularReflectionContrib(PBRInfo2 info2)
 {
-	float numerator = max(0.0,dot(N,X));
-	float k = alpha / 2.0;
-	float denominator = (numerator * (1.0 - k)) + k;
-	denominator = max(denominator,EPSILON);
-	return numerator / denominator;
+	return info2.reflectance0 + (info2.reflectance90 - info2.reflectance0) * pow(clamp(1.0-info2.VdotH,0.0,1.0),5.0);
 }
 
-// Smith Model
-float G(float alpha,vec3 N,vec3 V, vec3 L)
+float microfacetDistribution(PBRInfo2 pbrInputs)
 {
-	return G1(alpha,N,V) * G1(alpha,N,L);
+	float roughnessSq = pbrInputs.alphaRoughness * pbrInputs.alphaRoughness;
+	float f = (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH + 1.0;
+	return roughnessSq / (PI * f * f);
 }
 
-vec3 F(vec3 F0,vec3 V,vec3 H)
+vec3 diffuse(PBRInfo2 pbrInputs)
 {
-	return F0 + (vec3(1.0)-F0) * pow(1 - max(0.0,dot(V,H) ),5.0);
+	return pbrInputs.diffuseColor / PI;
 }
 
-vec3 BRDF(PBRInfo info)
+vec3 BRDF(PBRInfo2 info2,vec3 lightColor)
 {
-	vec3 f0 = vec3(0.04);
-	vec3 specularColor = mix(f0, info.albedoColor, info.metallic);
-	vec3 ks = F(specularColor,info.V,info.H);	
-	vec3 kd = (1.0 - ks);
+	//X Calculate diffuse contrib
+	vec3 F = specularReflectionContrib(info2);
+	float G = geometryOcclusion(info2);
+	float D = microfacetDistribution(info2);
 	
-	 
-	vec3 diffuseContrib = kd*(info.albedoColor / PI);
+	vec3 diffuseContrib = (1.0 - F) * diffuse(info2);
+	vec3 specContrib = F * G * D / (4.0 * info2.NdotL * info2.NdotV);
 	
-	// Cook Torrance Function
-	vec3 cookTorranceNumerator = D(info.alpha,info.N,info.H) * G(info.alpha,info.N,info.V,info.L) * ks;
-	float cookTorranceDenominator = max(0.0,dot(info.N,info.V)) * max(0.0,dot(info.N,info.L)) * 4.0;
-	cookTorranceDenominator = max(cookTorranceDenominator,EPSILON);
+	vec3 color = info2.NdotL * lightColor * (diffuseContrib + specContrib);
+	return color;
+}
+
+
+
+const mat4 biasMat = mat4( 
+	0.5, 0.0, 0.0, 0.0,
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.5, 0.5, 0.0, 1.0 );
+
+#define SHADOW_FACTOR 0.5
+float textureProj(vec4 P,vec2 offset)
+{
+	float shadow = 1.0;
+	vec4 shadowCoord = P / P.w;
+	if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
+	{
+		float depth = texture(samplerSHD,shadowCoord.st+offset).r;
+		float bias = 0.0000005;
+
+		if (shadowCoord.w > 0.0 && depth < shadowCoord.z - bias) 
+		{
+			shadow = SHADOW_FACTOR;
+		}
+	}
+	return shadow;
+}
+
+float filterPCF(vec4 sc)
+{
+	ivec2 texDim = textureSize(samplerSHD, 0);
+	float scale = 1.5;
+	float dx = scale * 1.0 / float(texDim.x);
+	float dy = scale * 1.0 / float(texDim.y);
+
+	float shadowFactor = 0.0;
+	int count = 0;
+	int range = 1;
 	
-	vec3 specContrib = cookTorranceNumerator / cookTorranceDenominator;
+	for (int x = -range; x <= range; x++)
+	{
+		for (int y = -range; y <= range; y++)
+		{
+			shadowFactor += textureProj(sc, vec2(dx*x, dy*y));
+			count++;
+		}
 	
-	return specContrib + diffuseContrib;
+	}
+	return shadowFactor / count;
+}
+
+float filterRandom(vec4 P)
+{
+	ivec3 offsetCoord;
+	vec2 f = mod(gl_FragCoord.xy,vec2(8.0));
+	offsetCoord.yz = ivec2(f);
+	float sum = 0.0;
+	int samplesDiv2 = int(4.0*4.0/2.0);
+	vec4 shadowCoord = P / P.w;
+	ivec3 texDim = textureSize(samplerOffset, 0);
+	vec2 texelSize = vec2(1.0/texDim.x,1.0/texDim.y);
+	vec4 iter = shadowCoord;
+	float depth = 0.0;
+	for (int i = 0 ; i < 4 ; i++) {
+		offsetCoord.x = i;
+        	vec4 Offsets = texelFetch(samplerOffset, offsetCoord, 0) * 5;
+		iter.xy = shadowCoord.xy + Offsets.xy * texelSize;
+		depth = textureProj(shadowCoord,Offsets.xy * texelSize);
+		sum += depth;
+		
+	}
+   	float shadow = sum / 8.0;
+	if (shadow != 0.0 && shadow != 1.0) {
+		for (int i = 4 ; i < samplesDiv2 ; i++) {
+			 offsetCoord.x = i;
+        		vec4 Offsets = texelFetch(samplerOffset, offsetCoord, 0) * 5;
+			iter.xy = shadowCoord.xy + Offsets.xy * texelSize;
+			depth = textureProj(shadowCoord,Offsets.xy * texelSize);
+			sum += depth;
+			depth = textureProj(shadowCoord,Offsets.zw * texelSize);
+			sum += depth;
+		}
+		shadow = sum / float(samplesDiv2 * 2.0);
+	}
+	return shadow;
+
 }
 
 void main() 
@@ -134,23 +228,15 @@ void main()
 	vec3 n = worldNormal;
 	n = normalize(n);
 	
-	float ambient = 0.4;
+
+	float ambient = 0.1;
 
 	vec3 fragColor = albedo * ambient;
 	// Viewer to fragment
 	vec3 V = ubo.camPos - fragPos;
 	V = normalize(V);
 	
-	PBRInfo pbrInfo = PBRInfo(
-	1.0,
-	n,
-	V,
-	vec3(0,0,0),
-	vec3(0,0,0),
-	albedo,
-	aoMetallicRoughness.g
-	);
-
+		
 	vec4 posCamera = ubo.view * vec4(fragPos,1.f);
 	float zFar = ubo.zFar;
 	float linearD = ( ubo.zNear - posCamera.z) / ( zFar - ubo.zNear );
@@ -169,40 +255,86 @@ void main()
 	 
 	uint stride = uint( numWords ) * ( uint( ubo.resolutionWidth ) / uint( TILE_SIZE ) );
     	uint address = tile.y * stride + tile.x;
+	float roughness = aoMetallicRoughness.g;
+	float metallic = aoMetallicRoughness.b;
 
-	if ( minLightIndex != ubo.lightCount + 1 ) {
-		for(uint i = minLightIndex;i<maxLightIndex;i++)
-		{
-			uint wordId = i / 32;
-            		uint bitId = i % 32;
-			uint tileData = pointLightTiles.data[address + wordId];
-			if(true)
-			{
-				uint globalLightIndex = pointLightIndices.data[i];
-				PointLight light = pointLights.data[globalLightIndex];
-
-				// Vector to the light
-				vec3 L = light.position - fragPos;
-				L = normalize(L);
-				vec3 H = normalize(L+V);
+	float NdotV = clamp(abs(dot(n, V)),0.001,1.0);
+	
+	vec3 f0 = vec3(0.04);
+	vec3 specularColor = mix(f0, albedo, metallic);
+	
+	float reflectance = max(max(specularColor.r,specularColor.g),specularColor.b);
+	float reflectance90 = clamp(reflectance * 25.0,0.0,1.0);
+	vec3 specularColor90 = vec3(1.0,1.0,1.0) * reflectance90;
+	
+	vec3 diffuseColor = albedo * (vec3(1.0) - f0);
+	diffuseColor *= 1.0 - metallic;
+	 
+	PBRInfo2 info2 = PBRInfo2(
+		0.0,
+		NdotV,
+		0.0,
+		0.0,
+		0.0,
+		roughness,
+		metallic,
+		specularColor,
+		specularColor90,
+		roughness*roughness,
+		diffuseColor,
+		specularColor
 		
-				pbrInfo.L = L;
-				pbrInfo.H = H;
+	);
+	for(uint i = 0;i<ubo.lightCount;i++)
+	{
+		uint globalLightIndex = pointLightIndices.data[i];
+		PointLight light = pointLights.data[globalLightIndex];
+		// Vector to the light
+		vec3 L = light.position - fragPos;
+		float dist = length(L);
+
+		L = normalize(L);
+
+		vec3 H = normalize(L+V);
 		
-				// Distance
-				float dist = length(L);
-				// Attenuation
-				float atten = light.radius / (pow(dist, 2.0) + 1.0);
-				float NdotL = max(0.0,dot(n, L));
-
-				fragColor += NdotL * BRDF(pbrInfo) * atten * light.color;	
-			}
-
-		}
+		float NdotL = clamp(dot(n, L), 0.001, 1.0);
+		float NdotH = clamp(dot(n, H), 0.0, 1.0);
+		float LdotH = clamp(dot(L, H), 0.0, 1.0);
+		float VdotH = clamp(dot(V, H), 0.0, 1.0);
+		
+		info2.NdotL = NdotL;
+		info2.NdotH = NdotH;
+		info2.LdotH = LdotH;
+		info2.VdotH = VdotH;
+		
+		vec3 brdfContrib = BRDF(info2,light.color);
+		
+		// Attenuation of point light quadratic fall off		
+		float atten = light.radius / (pow(dist, 2.0)*light.quadraticFalloff + dist * light.linearFalloff);
+		fragColor += brdfContrib * light.intensity * atten;
 	}
-		
+	
+	vec4 shadowClip	= biasMat * ubo.sunLP * vec4(fragPos, 1.0);
+	float shadowFactor = filterPCF(shadowClip);
+	
 	//X Sun Light directional
-	vec3 lightDir = normalize(vec3(-1.0, -1.0, 0.1));
-  	float NdotLS = clamp( dot(n, lightDir), 0.3, 1.0 );
-  	outColor = vec4(fragColor,1.f);
+	{
+	    vec3 L = normalize(ubo.sunLightDirection);
+	    vec3 H = normalize(L+V);
+  	    float NdotL = clamp( dot(n, L), 0.2, 1.0 );
+	    float NdotH = clamp(dot(n, H), 0.0, 1.0);
+	    float LdotH = clamp(dot(L, H), 0.0, 1.0);
+	    float VdotH = clamp(dot(V, H), 0.0, 1.0);
+		
+	    info2.NdotL = NdotL;
+	    info2.NdotH = NdotH;
+	    info2.LdotH = LdotH;
+	    info2.VdotH = VdotH;
+		
+	    vec3 brdfContrib = BRDF(info2, ubo.sunLightColor);
+	    fragColor += brdfContrib * ubo.sunLightIntensity * 0.1*shadowFactor; 
+	}
+
+	fragColor = mix(fragColor,fragColor * aoMetallicRoughness.r,1.f);
+  	outColor = vec4(fragColor+emission,1.f);
 }

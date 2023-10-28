@@ -9,6 +9,7 @@ struct DrawCullData
 	vec4 frustumCorners[8];
 	float lodBase, lodStep; // lod distance i = base * pow(step, i)
 	uint maxDrawCount;
+	bool cullEnabled;
 };
 
 struct GlobalData
@@ -25,30 +26,8 @@ struct IndirectCommand
     uint    firstInstance;
 };
 
-#define MAX_LOD_COUNT 8
+#include <./data/shader/mesh_def.h>
 
-struct BoundingBox
-{
-	vec3 min;
-	vec3 max;
-};
-
-struct MeshData{
-	BoundingBox boundingBox;
-	vec4 extents;
-	uint lodCount;
-	uint indexOffset;
-	uint vertexOffset;
-	uint vertexCount;
-	uint lodOffset[MAX_LOD_COUNT];
-}; 
-
-struct DrawData
-{
-	uint meshIndex;
-	uint materialIndex;
-	uint transformIndex;
-};
 
 struct AABBVec
 {
@@ -74,6 +53,8 @@ layout(set = 2,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; 
 
 layout(set = 2,binding = 2,scalar) writeonly buffer DrawID { uint data[]; } drawIDs;
 	
+layout(set = 2,binding = 3,scalar) readonly buffer VertexData { float data[]; } vertexData;
+
 layout(set = 3,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
 
 //X Cull Data
@@ -123,8 +104,9 @@ uint transformId = drawDatas.data[idx].transformIndex;
         AABBVec boxVec;
         boxVec.min = transformDatas.data[transformId] * vec4(meshDatas.data[meshId].boundingBox.min.x,meshDatas.data[meshId].boundingBox.min.y,meshDatas.data[meshId].boundingBox.min.z,1);
         boxVec.max = transformDatas.data[transformId] * vec4(meshDatas.data[meshId].boundingBox.max.x,meshDatas.data[meshId].boundingBox.max.y,meshDatas.data[meshId].boundingBox.max.z,1);
-
-        uint numInstances = isAABBinFrustumX(boxVec) ? 1 : 0;
+	
+	uint numInstances = 1; 
+	
         if(numInstances == 1)
         {
             uint commandIndex = atomicAdd(globalData.data.count,1);
@@ -137,7 +119,7 @@ uint transformId = drawDatas.data[idx].transformIndex;
 	    uint lodIndex = min(uint(max(lodIndexF + 1, 0)), meshDatas.data[meshId].lodCount - 1);
 drawCommands.data[commandIndex].firstIndex = meshDatas.data[meshId].indexOffset + meshDatas.data[meshId].lodOffset[lodIndex] -  meshDatas.data[meshId].lodOffset[0];
             drawCommands.data[commandIndex].indexCount = meshDatas.data[meshId].lodOffset[lodIndex+1] -  meshDatas.data[meshId].lodOffset[lodIndex];
-	    drawCommands.data[commandIndex].vertexOffset = meshDatas.data[meshId].vertexOffset;
+	    drawCommands.data[commandIndex].vertexOffset = 0;
             drawIDs.data[commandIndex] = idx;
 	    
         }

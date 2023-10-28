@@ -1,0 +1,68 @@
+#version 460
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: enable
+#extension GL_EXT_scalar_block_layout : require
+
+#include <./data/shader/mesh_def.h>
+
+
+layout(set = 0,binding = 0,scalar) uniform  UniformBuffer { mat4   inMtx; vec3 camPos;} ubo;
+
+layout(set = 1,binding = 0,scalar) readonly buffer MeshDatas { MeshData data[]; } meshDatas;
+layout(set = 1,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
+layout(set = 1,binding = 2,scalar) readonly buffer DrawID { uint data[]; } drawIDs;
+layout(set = 2,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
+
+layout(push_constant,scalar) uniform constants
+{
+	uint drawId;
+	mat4 transform;
+} pushConstants;
+
+const int indices[36] = int[36](
+	// front
+	0, 1, 2, 2, 3, 0,
+	// right
+	1, 5, 6, 6, 2, 1,
+	// back
+	7, 6, 5, 5, 4, 7,
+	// left
+	4, 0, 3, 3, 7, 4,
+	// bottom
+	4, 5, 1, 1, 0, 4,
+	// top
+	3, 2, 6, 6, 7, 3
+);
+
+const vec3 pos[8] = vec3[8](
+	vec3(-0.5,-0.5, 0.5),
+	vec3( 0.5,-0.5, 0.5),
+	vec3( 0.5, 0.5, 0.5),
+	vec3(-0.5, 0.5, 0.5),
+
+	vec3(-0.5,-0.5,-0.5),
+	vec3( 0.5,-0.5,-0.5),
+	vec3( 0.5, 0.5,-0.5),
+	vec3(-0.5, 0.5,-0.5)
+);
+
+void main()
+{
+	uint meshIndex = drawDatas.data[pushConstants.drawId].meshIndex;
+	uint transformIndex = drawDatas.data[pushConstants.drawId].transformIndex;
+	mat4 model = transformDatas.data[transformIndex];
+	BoundingBox box = meshDatas.data[meshIndex].boundingBox;
+	
+	vec3 size = (box.max.xyz-box.min.xyz);
+	vec3 center = (box.max.xyz+box.min.xyz)/2;
+	
+	int indexId = gl_VertexIndex % 36;
+	int vertexId = indices[indexId];
+	vec3 basePos = pos[vertexId];
+	//basePos = (basePos - center) * size + center;
+	vec4 transformedPos = model * pushConstants.transform * vec4(basePos,1.f);
+
+	vec4 camPos = ubo.inMtx * transformedPos;
+	gl_Position = camPos;
+	
+}

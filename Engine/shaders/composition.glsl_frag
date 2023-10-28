@@ -18,7 +18,26 @@ struct PointLight
       float linearFalloff;	
 };
 
+vec4 SRGBtoLINEAR(vec4 srgbIn)
+{
+	#define MANUAL_SRGB 1
+	#ifdef MANUAL_SRGB
+	#ifdef SRGB_FAST_APPROXIMATION
+	vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
+	#else //SRGB_FAST_APPROXIMATION
+	vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
+	vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
+	#endif //SRGB_FAST_APPROXIMATION
+	return vec4(linOut,srgbIn.w);
+	#else //MANUAL_SRGB
+	return srgbIn;
+	#endif //MANUAL_SRGB
+}
+
 layout(set = 1,binding = 0,scalar) readonly buffer PointLightData { PointLight data[]; } pointLights;
+layout(set = 1,binding = 1,scalar) readonly buffer PointLightIndices { uint data[]; } pointLightIndices;
+layout(set = 1,binding = 2,scalar) readonly buffer PointLightTiles { uint data[]; } pointLightTiles;
+layout(set = 1,binding = 3,scalar) readonly buffer PointLightBins { uint data[]; } pointLightBins;
 layout(set = 2,binding = 0,scalar) uniform  UniformBuffer 
 { 
 	mat4   inMtx;
@@ -27,7 +46,17 @@ layout(set = 2,binding = 0,scalar) uniform  UniformBuffer
 	float resolutionWidth;
 	float resolutionHeight;
 	uint lightCount;
+	uint activeLightCount;
+	float zNear;
+	float zFar;
+	vec3 sunLightDirection;
+	vec3 sunLightColor;
+	float sunLightIntensity;
+	mat4 sunLP;
 } ubo;
+
+layout (set = 3,binding = 0) uniform sampler2D samplerSHD;
+
 
 layout (location = 0) in vec2 inUV;
 layout (location = 0) out vec4 outColor;
@@ -40,15 +69,48 @@ vec3 octahedral_decode(vec2 f) {
     return normalize(n);
 }
 
+float textureProj(vec4 P)
+{
+	float shadow = 1.0;
+	vec4 shadowCoord = P / P.w;
+	if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
+	{
+		float depth = texture(samplerSHD,shadowCoord.st).r;
+		float bias = 0.0000005;
+
+		if (shadowCoord.w > 0.0 && depth < shadowCoord.z - bias) 
+		{
+			shadow = 0.25;
+		}
+	}
+	return shadow;
+}
+
+float LinearizeDepth(float depth,float zNear,float zFar)
+{
+  float n = zNear; // camera z near
+  float f = zFar; // camera z far
+  float z = depth;
+  return (2.0 * n) / (f + n - z * (f - n));	
+}
+
+const mat4 biasMat = mat4( 
+	0.5, 0.0, 0.0, 0.0,
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.5, 0.5, 0.0, 1.0 );
+
 void main() 
 {
 	vec4 emisUOcta = texture(samplerEmission,inUV).rgba;
 	vec3 emission = emisUOcta.rgb;
 	vec4 albedoUOcta = texture(samplerAlbedo,inUV).rgba;
+	vec4 aoMetallicRoughness = texture(samplerPBR,inUV).rgba; 
+
 	vec3 albedo = albedoUOcta.rgb;
 
   	vec3 normalSample = vec3(0.0, 0.0, 1.0);
-	vec2 uoctaNormal = vec2(albedoUOcta.a,emisUOcta.a);
+	vec2 uoctaNormal = vec2(aoMetallicRoughness.a,emisUOcta.a);
 	vec2 octaNormal = (uoctaNormal *2.f) -1.f;
 	vec3 worldNormal = octahedral_decode(octaNormal) ;
 	
@@ -90,9 +152,16 @@ void main()
 
 		fragColor += diff + spec;	
 	}
-		
+	
+	vec4 shadowClip	= biasMat * ubo.sunLP * vec4(fragPos, 1.0);
+	float shadowFactor = textureProj(shadowClip);
+	
 	//X Sun Light directional
-	vec3 lightDir = normalize(vec3(-1.0, -1.0, 0.1));
-  	float NdotLS = clamp( dot(n, lightDir), 0.3, 1.0 );
-  	outColor = vec4(fragColor,1.f);
+	vec3 lightDir = normalize(ubo.sunLightDirection);
+  	float NdotLS = clamp( dot(n, lightDir), 0.2, 1.0 );
+	fragColor += NdotLS * vec3(1.0,1.0,1.0) * ubo.sunLightIntensity * 0.1 * shadowFactor;
+  	outColor = vec4(fragColor+emission.rgb,1.f);
+	float depthValue = texture(samplerSHD,inUV).r;
+	float linearized = LinearizeDepth(depthValue,ubo.zNear,ubo.zFar);
+	outColor = vec4(vec3(linearized),1.f);
 }
