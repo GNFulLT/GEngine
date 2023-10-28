@@ -148,6 +148,10 @@ void GImGuiPropertiesWindow::render()
 		{
 			sunLightChanged = true;
 		}
+		if (ImGui::InputFloat3("Sun Color", sunProps.sunLightColor))
+		{
+			sunLightChanged = true;
+		}
 		if (ImGui::InputFloat("Sun Intensity", &sunProps.sunIntensity))
 		{
 			sunLightChanged = true;

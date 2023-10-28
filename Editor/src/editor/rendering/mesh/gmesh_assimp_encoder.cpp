@@ -88,10 +88,13 @@ void GMeshEncoder::reset()
 	g_vertexOffset = 0;
 	
 }
-
-void GMeshEncoder::process_lods(std::vector<uint32_t>& indices, std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods)
+//X TODO MAKE GENERIC HERE
+#define MESHLET_VERTEX_COUNT 64
+#define MESHLET_TRIANGLE_COUNT 124
+#define CONE_WEIGHT 0.0
+void GMeshEncoder::process_lods(std::vector<uint32_t>& indices, std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods,uint32_t elementPerVertex)
 {
-	size_t verticesCountIn = vertices.size() / 3;
+	size_t verticesCountIn = vertices.size() / elementPerVertex;
 	size_t targetIndicesCount = indices.size();
 
 	uint8_t LOD = 4;
@@ -110,7 +113,7 @@ void GMeshEncoder::process_lods(std::vector<uint32_t>& indices, std::vector<floa
 			indices.data(),
 			indices.data(), (uint32_t)indices.size(),
 			vertices.data(), verticesCountIn,
-			sizeof(float) * 3,
+			sizeof(float) * elementPerVertex,
 			targetIndicesCount, 0.02f);
 
 		// cannot simplify further
@@ -142,8 +145,16 @@ void GMeshEncoder::process_lods(std::vector<uint32_t>& indices, std::vector<floa
 
 		outLods.push_back(indices);
 	}
-}
 
+	//X Get Meshlet opt
+	uint32_t maxMeshlet = meshopt_buildMeshletsBound(indices.size(), MESHLET_VERTEX_COUNT, MESHLET_TRIANGLE_COUNT);
+	std::vector<meshopt_Meshlet> localMeshlet(maxMeshlet);
+	std::vector<uint32_t> meshletVertices(maxMeshlet * MESHLET_VERTEX_COUNT);
+	std::vector<unsigned char> meshletTriangles(maxMeshlet * MESHLET_TRIANGLE_COUNT);
+	
+	uint32_t meshletCount = meshopt_buildMeshlets(localMeshlet.data(), meshletVertices.data(), meshletTriangles.data(),indices.data(),indices.size(),vertices.data(),vertices.size(),
+		sizeof(float) * elementPerVertex, MESHLET_VERTEX_COUNT, MESHLET_TRIANGLE_COUNT,CONE_WEIGHT);
+}
 std::expected<int, GMESH_ENCODER_SAVE_ERROR> GMeshEncoder::save_to_file_and_reset(const char* path, const MeshData& m)
 {
 	const GMeshFileHeader header = { .magicValue = MeshConstants::MESH_FILE_HEADER_MAGIC_VALUE,    .meshCount = (uint32_t)m.meshes_.size(),    .dataBlockStartOffset = (uint32_t)(sizeof(GMeshFileHeader) + m.meshes_.size() * sizeof(GMesh)),
@@ -258,7 +269,7 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m,bool loadLods,int scale)
 	if (!loadLods)
 		outLods.push_back(srcIndices);
 	else
-		process_lods(srcIndices, srcVertices, outLods);
+		process_lods(srcIndices, srcVertices, outLods,7);
 
 	printf("\nCalculated LOD count: %u\n", (unsigned)outLods.size());
 
@@ -375,7 +386,7 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 	if (!loadLods)
 		outLods.push_back(srcIndices);
 	else
-		process_lods(srcIndices, srcVertices, outLods);
+		process_lods(srcIndices, srcVertices, outLods, numElementsToStore);
 
 	printf("\nCalculated LOD count: %u\n", (unsigned)outLods.size());
 
