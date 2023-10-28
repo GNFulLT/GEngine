@@ -1,6 +1,7 @@
 Necessary fixes :
 - Current Cull algorithms doesn't work with lights. There should be an AABB box for light views and two command buffers for lights and the camera.
 - Sort based cluster system may be replaced.
+  
 High Level Abstraction of Rendering Engine
 
 ![image](https://github.com/GNFulLT/GEngine/assets/73427021/684bdc9f-47ad-4f95-a166-5fec522d0887)
