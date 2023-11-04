@@ -19,6 +19,9 @@ GBuffers : ( There is only sunlight for now. I am working on the point lights an
 
 4-) R8G8B8A8_UNORM -> PBR Material / Ambient Occlusion, Roughness, Metallic  
 
+Auto Meshlet Support
+
+![image](https://github.com/GNFulLT/GEngine/assets/73427021/8e99cc57-adc4-4584-9780-21334e2ae189)
 
 ![image](https://github.com/GNFulLT/GEngine/assets/73427021/47aa853a-d24d-4a9d-ba90-c61fc7126c89)
 
