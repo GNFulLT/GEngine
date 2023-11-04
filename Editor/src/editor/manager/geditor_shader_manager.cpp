@@ -101,6 +101,8 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GEditorShaderManager::compile
 
 	if (!glslang_shader_preprocess(shader, &input))
 	{
+		auto log = glslang_shader_get_info_log(shader);
+		auto dlog = glslang_shader_get_info_debug_log(shader);
 		//X TODO CONSOLE SINK
 		if (logger.is_valid())
 		{

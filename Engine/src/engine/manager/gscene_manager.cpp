@@ -337,7 +337,7 @@ bool GSceneManager::init(uint32_t framesInFlight)
 		bindings[0].binding = 0;
 		bindings[0].descriptorCount = 1;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TASK_BIT_EXT | VK_SHADER_STAGE_MESH_BIT_EXT;
 		bindings[0].pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutCreateInfo setinfo = {};
@@ -391,14 +391,14 @@ bool GSceneManager::init(uint32_t framesInFlight)
 			bindings[0].binding = 0;
 			bindings[0].descriptorCount = 1;
 			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TASK_BIT_EXT | VK_SHADER_STAGE_MESH_BIT_EXT;
 			bindings[0].pImmutableSamplers = nullptr;
 
 			//X Material Buffer
 			bindings[1].binding = 1;
 			bindings[1].descriptorCount = 1;
 			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+			bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TASK_BIT_EXT | VK_SHADER_STAGE_MESH_BIT_EXT;
 			bindings[1].pImmutableSamplers = nullptr;
 
 
@@ -722,6 +722,11 @@ uint32_t GSceneManager::add_node_to_root()
 uint32_t GSceneManager::add_mesh_to_scene(const MeshData* mesh)
 {
 	return this->m_deferredRenderer->add_mesh_to_scene(mesh);
+}
+
+uint32_t GSceneManager::add_meshlet_to_scene(const GMeshletData* meshlet)
+{
+	return this->m_deferredRenderer->add_meshlet_to_scene(meshlet);
 }
 
 uint32_t GSceneManager::add_node_with_mesh_and_defaults(uint32_t meshIndex)

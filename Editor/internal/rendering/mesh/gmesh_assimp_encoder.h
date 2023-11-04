@@ -33,8 +33,10 @@ public:
 
 	static GMesh ai_mesh_to_gmesh(const aiMesh* aiMesh,bool loadLODS,int scale);
 	static GMesh ai_mesh_to_gmesh(const aiMesh* aiMesh, bool loadLODS, int scale, MeshData& mesh,uint32_t& vertexOffset,uint32_t& indexOffset);
+	static GMeshMeshlet ai_mesh_to_gmesh_meshlet(const aiMesh* aiMesh, bool loadLODS, int scale, GMeshletData& meshlet,uint32_t& vertexOffset, uint32_t& indexOffset,uint32_t& meshletOffset,uint32_t& meshletVertexOffset,uint32_t& meshletTriagleOffset);
 
 	static void process_lods(std::vector<uint32_t>& indices, std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods, uint32_t elementPerVertex);
+	static void process_meshlets(std::vector<uint32_t>& indices, std::vector<float>& vertices, std::vector<GMeshlet>& outMeshlets,std::vector<uint32_t>& outMeshletVert,std::vector<uint8_t>& outMeshletTriangles,uint32_t elementPerVertex,uint32_t meshletVertexOffset,uint32_t meshletTriangleOffset);
 
 
 	void reset();

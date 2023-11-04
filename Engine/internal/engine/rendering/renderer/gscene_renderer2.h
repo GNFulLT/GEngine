@@ -53,6 +53,8 @@ public:
 	virtual void set_composition_views(IVulkanImage* position, IVulkanImage* albedo, IVulkanImage* emission, IVulkanImage* pbr,VkSampler_T* sampler,IGVulkanNamedViewport* deferredVp, IGVulkanNamedViewport* compositionVp);
 
 	uint32_t add_mesh_to_scene(const MeshData* meshData, uint32_t shapeID = 0);
+	uint32_t add_meshlet_to_scene(const GMeshletData* meshlet);
+
 	uint32_t create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex);
 
 	VkDescriptorSet_T* get_bindless_set();
@@ -91,6 +93,17 @@ private:
 	VkDescriptorSet_T* m_cullDataSet;
 	VkDescriptorSet_T* m_sunShadowSet;
 private:
+	bool m_useMeshlet = false;
+	IGVulkanNamedPipelineLayout* m_deferredletLayout;
+	IGShaderResource* m_deferredletVertexShaderRes;
+	IGShaderResource* m_deferredTaskShaderRes;
+	IGShaderResource* m_deferredMeshShaderRes;
+	IGShaderResource* m_deferredMeshFragmentShaderRes;
+
+	VkPipeline_T* m_compMeshletPipeline;
+	IGVulkanNamedPipelineLayout* m_computeMeshletPipelineLayout;
+
+	//--------
 	IGVulkanNamedSetLayout* m_sunShadowSetLayout;
 
 	uint32_t MAX_BINDLESS_TEXTURE = 16536;
@@ -125,6 +138,7 @@ private:
 	IGVulkanNamedRenderPass* m_compositionPass;
 
 	IGShaderResource* m_deferredVertexShaderRes;
+
 	IGShaderResource* m_deferredFragmentShaderRes;
 	IGShaderResource* m_deferredFragmentPBRShaderRes;
 
@@ -133,6 +147,7 @@ private:
 	IGShaderResource* m_compositionFragmentShaderRes;
 
 	IGShaderResource* m_cullComputeShaderRes;
+	IGShaderResource* m_cullComputeMeshletShaderRes;
 
 	IGShaderResource* m_boundingBoxVertexShaderRes;
 	IGShaderResource* m_boundingBoxFragmentShaderRes;
@@ -142,6 +157,8 @@ private:
 
 	GVulkanNamedGraphicPipeline* m_selectedCompositionPipeline;
 	GVulkanNamedGraphicPipeline* m_deferredPipeline;
+	GVulkanNamedGraphicPipeline* m_deferredMeshletPipeline;
+
 	GVulkanNamedGraphicPipeline* m_compositionPBRPipeline;
 
 	GVulkanNamedGraphicPipeline* m_sunShadowPipeline;

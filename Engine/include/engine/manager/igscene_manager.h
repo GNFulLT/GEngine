@@ -48,6 +48,7 @@ struct GlobalUniformBuffer
 
 };
 struct GPointLight;
+struct GMeshletData;
 
 class ENGINE_API IGSceneManager
 {
@@ -77,7 +78,7 @@ public:
 	virtual uint32_t add_node_with_mesh_and_material(uint32_t meshIndex,uint32_t materialIndex) = 0;
 	virtual uint32_t add_node_with_mesh_and_material_and_transform(uint32_t meshIndex, uint32_t materialIndex,const glm::mat4* transform) = 0;
 	virtual uint32_t add_child_node_with_mesh_and_material_and_transform(uint32_t parentNode,uint32_t meshIndex, uint32_t materialIndex, const glm::mat4* transform) = 0;
-
+	virtual uint32_t add_meshlet_to_scene(const GMeshletData* meshlet) = 0;
 	virtual uint32_t add_material_to_scene(const MaterialDescription* material) = 0;
 	virtual Scene* get_current_scene() const noexcept = 0;
 

@@ -20,6 +20,10 @@ VkShaderStageFlagBits spirv_stage_to_vk_stage(SPIRV_SHADER_STAGE stage)
 		return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 	case SPIRV_SHADER_STAGE_TESSEVALUATION:
 		return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	case SPIRV_SHADER_STAGE_TASK:
+		return VK_SHADER_STAGE_TASK_BIT_EXT;
+	case SPIRV_SHADER_STAGE_MESH:
+		return VK_SHADER_STAGE_MESH_BIT_EXT;
 	default:
 		return VkShaderStageFlagBits::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
 	}
@@ -59,7 +63,7 @@ SPIRV_SHADER_STAGE get_stage_from_spirv_file_name(const char* fileName)
 	// 7 - 2 = 5
 	int len = secondDot - firstDot;
 	std::string ex(fileName, firstDot, len);
-
+	
 	if (strcmp(ex.data(), ".frag") == 0)
 		return SPIRV_SHADER_STAGE_FRAGMENT;
 	if (strcmp(ex.data(), ".vert") == 0)
@@ -180,7 +184,10 @@ std::pair<SPIRV_SHADER_STAGE, SPIRV_SOURCE_TYPE> shader_stage_from_file_name(con
 		return { SPIRV_SHADER_STAGE_TESSEVALUATION,SPIRV_SOURCE_TYPE_HLSL };
 	if (endsWith(fileName, ".glsl_tese"))
 		return { SPIRV_SHADER_STAGE_TESSEVALUATION,SPIRV_SOURCE_TYPE_GLSL };
-
+	if (endsWith(fileName, ".glsl_task"))
+		return { SPIRV_SHADER_STAGE_TASK,SPIRV_SOURCE_TYPE_GLSL };
+	if (endsWith(fileName, ".glsl_mesh"))
+		return { SPIRV_SHADER_STAGE_MESH,SPIRV_SOURCE_TYPE_GLSL };
 	return { SPIRV_SHADER_STAGE_UNKNOWN,SPIRV_SOURCE_TYPE_UNKNOWN };
 }
 
@@ -202,6 +209,10 @@ glslang_stage_t spirv_shader_stage_to_glslang_stage(SPIRV_SHADER_STAGE stage)
 		return GLSLANG_STAGE_TESSCONTROL;
 	case SPIRV_SHADER_STAGE_TESSEVALUATION:
 		return GLSLANG_STAGE_TESSEVALUATION;
+	case SPIRV_SHADER_STAGE_TASK:
+		return GLSLANG_STAGE_TASK;
+	case SPIRV_SHADER_STAGE_MESH:
+		return GLSLANG_STAGE_MESH;
 	default:
 		return GLSLANG_STAGE_VERTEX;
 	}
@@ -238,6 +249,10 @@ SPIRV_SHADER_STAGE glslang_stage_to_spirv_shader_stage(glslang_stage_t stage)
 		return SPIRV_SHADER_STAGE_TESSCONTROL;
 	case GLSLANG_STAGE_TESSEVALUATION:
 		return SPIRV_SHADER_STAGE_TESSEVALUATION;
+	case GLSLANG_STAGE_TASK:
+		return SPIRV_SHADER_STAGE_TASK;
+	case GLSLANG_STAGE_MESH:
+		return SPIRV_SHADER_STAGE_MESH;
 	default:
 		return SPIRV_SHADER_STAGE_UNKNOWN;
 	}

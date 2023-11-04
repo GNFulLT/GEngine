@@ -45,6 +45,8 @@ public:
 	
 	virtual uint32_t add_node_to_root();
 	virtual uint32_t add_mesh_to_scene(const MeshData* mesh);
+	virtual uint32_t add_meshlet_to_scene(const GMeshletData* meshlet) override;
+
 	virtual uint32_t add_node_with_mesh_and_defaults(uint32_t meshIndex);
 
 

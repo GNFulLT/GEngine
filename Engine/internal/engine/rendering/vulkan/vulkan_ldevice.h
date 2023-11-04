@@ -146,7 +146,7 @@ private:
 	VkDevice m_logicalDevice;
 	VmaAllocator allocator;
 
-
+	bool m_meshletsEnabled = false;
 
 
 

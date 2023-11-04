@@ -270,3 +270,126 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 	delete scene;
 	return meshData;
 }
+
+GMeshletData* SceneConverter::load_all_meshes_meshlet(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** virtualScene)
+{
+	GMeshletData* meshletData = new GMeshletData();
+	uint32_t indexOffset = 0;
+	uint32_t vertexOffset = 0;
+
+	const unsigned int flags = 0 |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_Triangulate |
+		aiProcess_GenSmoothNormals |
+		aiProcess_LimitBoneWeights |
+		aiProcess_SplitLargeMeshes |
+		aiProcess_CalcTangentSpace |
+		aiProcess_ImproveCacheLocality |
+		aiProcess_RemoveRedundantMaterials |
+		aiProcess_FindDegenerates |
+		aiProcess_FindInvalidData |
+		aiProcess_GenUVCoords;
+
+	printf("Loading meshes from '%s'...\n", path);
+
+	const aiScene* scene = aiImportFile(path, flags);
+
+	if (!scene || !scene->HasMeshes())
+	{
+		printf("Unable to load '%s'\n", path);
+		delete meshletData;
+		return nullptr;
+	}
+
+	meshletData->gmeshMeshlets_.reserve(scene->mNumMeshes);
+	uint32_t meshletOffset = 0;
+	uint32_t meshletVertexOffset = 0;
+	uint32_t meshletTriangleOffset = 0;
+	for (unsigned int i = 0; i != scene->mNumMeshes; i++)
+	{
+		printf("\nConverting meshes %u/%u...", i + 1, scene->mNumMeshes);
+		auto aimsh = scene->mMeshes[i];
+		if (i == 102)
+		{
+			int a = 5;
+		}
+		auto meshlet = GMeshEncoder::ai_mesh_to_gmesh_meshlet(aimsh, false, 1, *meshletData,  vertexOffset, indexOffset, meshletOffset, meshletVertexOffset,
+			meshletTriangleOffset);
+		meshletData->gmeshMeshlets_.push_back(meshlet);
+	}
+
+	for (unsigned int m = 0; m < scene->mNumMaterials; m++)
+	{
+		aiMaterial* mm = scene->mMaterials[m];
+		std::unordered_map<TEXTURE_MAP_TYPE, std::string> textures;
+		MaterialDescription D = MaterialAssimpConvert::aimaterial_to_gmaterial(mm, textures);
+		desc.push_back(D);
+		textureFiles.emplace(m, textures);
+	}
+
+	//recalculateBoundingBoxes(*meshData);
+	std::vector<MaterialDescription> materialDescs;
+	Scene* gscene = Scene::create_scene_with_default_material(materialDescs);
+
+	std::queue<aiNode*> queue;
+	if (auto meshCount = scene->mRootNode->mNumMeshes; meshCount != 0)
+	{
+		assert(scene->mRootNode->mChildren == 0);
+		uint32_t parent = 0;
+
+		for (int i = 0; i < meshCount; i++)
+		{
+			auto glmT = glm::transpose(glm::make_mat4(&scene->mRootNode->mTransformation.a1));
+			uint32_t nodeIndex = gscene->add_node(*gscene, parent, 1);
+			gscene->localTransform_[nodeIndex] = glmT;
+			gscene->meshes_.emplace(nodeIndex, i);
+			gscene->materialForNode_.emplace(nodeIndex, scene->mMeshes[i]->mMaterialIndex);
+		}
+	}
+	queue.push(scene->mRootNode);
+	int level = 1;
+	std::unordered_map<aiNode*, uint32_t> ai_to_scene;
+	while (!queue.empty())
+	{
+		auto iter = queue.front();
+		queue.pop();
+
+		//X Iterate childrens
+		for (int i = 0; i < iter->mNumChildren; i++)
+		{
+			int meshCount = iter->mChildren[i]->mNumMeshes;
+			queue.push(iter->mChildren[i]);
+
+
+			uint32_t parent = 0;
+			if (auto parentItr = ai_to_scene.find(iter->mChildren[i]); parentItr != ai_to_scene.end())
+			{
+				parent = parentItr->second;
+			}
+			auto glmT = glm::transpose(glm::make_mat4(&iter->mChildren[i]->mTransformation.a1));
+
+			uint32_t nodeIndex = gscene->add_node(*gscene, parent, level);
+
+			ai_to_scene.emplace(iter->mChildren[i], nodeIndex);
+
+			gscene->localTransform_[nodeIndex] = glmT;
+			if (meshCount != 0)
+			{
+				auto meshIndex = iter->mChildren[i]->mMeshes[0];
+				gscene->meshes_.emplace(nodeIndex, meshIndex);
+				gscene->materialForNode_.emplace(nodeIndex, scene->mMeshes[meshIndex]->mMaterialIndex);
+			}
+
+			for (int j = 0; j < iter->mChildren[i]->mNumChildren; j++)
+			{
+				queue.push(iter->mChildren[i]->mChildren[j]);
+				ai_to_scene.emplace(iter->mChildren[i]->mChildren[j], nodeIndex);
+			}
+		}
+		level++;
+	}
+	*virtualScene = gscene;
+	delete scene;
+	return meshletData;
+
+}

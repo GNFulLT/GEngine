@@ -125,11 +125,20 @@ bool GVulkanLogicalDevice::init()
 		{
 			m_logger->log_d("Swapchain extension added");
 			swapchainExsIndex = i;
-			break;
 		}
 		else if (strcmp(implicitExs[i].extensionName, VK_KHR_MAINTENANCE1_EXTENSION_NAME) == 0)
 		{
 			m_deviceExtensions[IMPLICIT_EXTENSIONS_NAME].push_back(implicitExs[i]);
+		}
+		else if (strcmp(implicitExs[i].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME) == 0)
+		{
+			m_deviceExtensions[IMPLICIT_EXTENSIONS_NAME].push_back(implicitExs[i]);
+			m_meshletsEnabled = true;
+		}
+		else if (strcmp(implicitExs[i].extensionName, VK_NV_MESH_SHADER_EXTENSION_NAME) == 0)
+		{
+			m_deviceExtensions[IMPLICIT_EXTENSIONS_NAME].push_back(implicitExs[i]);
+			m_meshletsEnabled = true;
 		}
 	}
 
@@ -224,11 +233,21 @@ bool GVulkanLogicalDevice::init()
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
 	const VkPhysicalDeviceFeatures2 deviceFeatures2 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,  .pNext = &barycentric,  .features = deviceFeatures };
 	VkPhysicalDeviceVulkan11Features deviceFeatures11 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, .pNext = (void*)&deviceFeatures2 ,.shaderDrawParameters = VK_TRUE};
-	
+	VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderEXT = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,.meshShader = VK_TRUE};
+	meshShaderEXT.taskShader = VK_TRUE;
+	meshShaderEXT.multiviewMeshShader = VK_TRUE;
+	meshShaderEXT.meshShaderQueries = VK_TRUE;
+	meshShaderEXT.pNext = &deviceFeatures11;
+	VkPhysicalDeviceMeshShaderFeaturesNV meshShaderNV = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV,.meshShader = VK_TRUE };
+	meshShaderNV.taskShader = VK_TRUE;
+	meshShaderNV.pNext = &meshShaderEXT;
+
 	VkPhysicalDeviceVulkan12Features ftrs = {};
 	ftrs.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 	ftrs.scalarBlockLayout = VK_TRUE;
-	ftrs.pNext = (void*)&deviceFeatures11;
+	ftrs.pNext = (void*)&meshShaderNV;
+	ftrs.storageBuffer8BitAccess = VK_TRUE;
+	ftrs.shaderInt8 = VK_TRUE;
 	ftrs.descriptorIndexing = VK_TRUE;
 	ftrs.descriptorBindingVariableDescriptorCount = VK_TRUE;
 	ftrs.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;

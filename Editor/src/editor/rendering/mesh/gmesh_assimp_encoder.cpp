@@ -7,6 +7,7 @@
 #include <fstream>
 #include <meshoptimizer.h>
 #include <filesystem>
+#include <engine/rendering/mesh/gmeshlet.h>
 
 GMeshEncoder::GMeshEncoder(IOwningGLogger* logger)
 {
@@ -88,12 +89,14 @@ void GMeshEncoder::reset()
 	g_vertexOffset = 0;
 	
 }
+
 //X TODO MAKE GENERIC HERE
 #define MESHLET_VERTEX_COUNT 64
 #define MESHLET_TRIANGLE_COUNT 124
 #define CONE_WEIGHT 0.0
 void GMeshEncoder::process_lods(std::vector<uint32_t>& indices, std::vector<float>& vertices, std::vector<std::vector<uint32_t>>& outLods,uint32_t elementPerVertex)
 {
+	assert(vertices.size() % elementPerVertex == 0);
 	size_t verticesCountIn = vertices.size() / elementPerVertex;
 	size_t targetIndicesCount = indices.size();
 
@@ -146,15 +149,54 @@ void GMeshEncoder::process_lods(std::vector<uint32_t>& indices, std::vector<floa
 		outLods.push_back(indices);
 	}
 
+
+}
+void GMeshEncoder::process_meshlets(std::vector<uint32_t>& indices, std::vector<float>& vertices, std::vector<GMeshlet>& outMeshlet, std::vector<uint32_t>& outMeshletVer, std::vector<uint8_t>& outMeshletTriangle, uint32_t elementPerVertex, uint32_t meshletVertexOffset, uint32_t meshletTriangleOffset)
+{
+	size_t verticesCountIn = vertices.size() / elementPerVertex;
+
 	//X Get Meshlet opt
 	uint32_t maxMeshlet = meshopt_buildMeshletsBound(indices.size(), MESHLET_VERTEX_COUNT, MESHLET_TRIANGLE_COUNT);
 	std::vector<meshopt_Meshlet> localMeshlet(maxMeshlet);
-	std::vector<uint32_t> meshletVertices(maxMeshlet * MESHLET_VERTEX_COUNT);
-	std::vector<unsigned char> meshletTriangles(maxMeshlet * MESHLET_TRIANGLE_COUNT);
-	
-	uint32_t meshletCount = meshopt_buildMeshlets(localMeshlet.data(), meshletVertices.data(), meshletTriangles.data(),indices.data(),indices.size(),vertices.data(),vertices.size(),
-		sizeof(float) * elementPerVertex, MESHLET_VERTEX_COUNT, MESHLET_TRIANGLE_COUNT,CONE_WEIGHT);
+	std::vector<uint32_t> meshletVert(maxMeshlet * MESHLET_VERTEX_COUNT);
+	std::vector<uint8_t> meshletTriangle(maxMeshlet * MESHLET_TRIANGLE_COUNT);
+
+	uint32_t meshletCount = meshopt_buildMeshlets(localMeshlet.data(), meshletVert.data(), meshletTriangle.data(), indices.data(), indices.size(), vertices.data(), verticesCountIn,
+		sizeof(float) * elementPerVertex, MESHLET_VERTEX_COUNT, MESHLET_TRIANGLE_COUNT, CONE_WEIGHT);
+
+
+	std::vector<GMeshlet> gmeshlets(meshletCount);
+	auto last = localMeshlet[meshletCount - 1];
+	meshletTriangle.resize(localMeshlet[meshletCount-1].triangle_offset + ((last.triangle_count * 3 + 3) & ~3));
+	meshletVert.resize(localMeshlet[meshletCount - 1].vertex_offset + localMeshlet[meshletCount - 1].vertex_count);
+	for (int i = 0; i < meshletCount; i++)
+	{
+		auto& currentMeshlet = localMeshlet[i];
+		auto meshletBound = meshopt_computeMeshletBounds(&meshletVert[currentMeshlet.vertex_offset], &meshletTriangle[currentMeshlet.triangle_offset], currentMeshlet.triangle_count, vertices.data(), verticesCountIn, sizeof(float) * elementPerVertex);
+		GMeshlet& gmeshlet = gmeshlets[i];
+		memcpy(gmeshlet.center, meshletBound.center, sizeof(float) * 3);
+		memcpy(gmeshlet.coneAxis, meshletBound.cone_axis_s8, sizeof(char) * 3);
+		gmeshlet.coneCutoff = meshletBound.cone_cutoff_s8;
+		gmeshlet.radius = meshletBound.radius;
+		gmeshlet.triangleCount = currentMeshlet.triangle_count;
+		gmeshlet.triangleOffset = currentMeshlet.triangle_offset + meshletTriangleOffset;
+		gmeshlet.vertexCount = currentMeshlet.vertex_count ;
+		gmeshlet.vertexOffset = currentMeshlet.vertex_offset + meshletVertexOffset;
+	}
+	auto currentSize = outMeshlet.size();
+	outMeshlet.resize(currentSize + meshletCount);
+	memcpy(&outMeshlet[currentSize],gmeshlets.data(),sizeof(GMeshlet)* meshletCount);
+
+	currentSize = outMeshletVer.size();
+	outMeshletVer.resize(currentSize+ meshletVert.size());
+	memcpy(&outMeshletVer[currentSize], meshletVert.data(), meshletVert.size() * sizeof(uint32_t));
+
+	currentSize = outMeshletTriangle.size(); 
+	outMeshletTriangle.resize(currentSize + meshletTriangle.size());
+	memcpy(&outMeshletTriangle[currentSize], meshletTriangle.data(), meshletTriangle.size() * sizeof(uint8_t));
+
 }
+
 std::expected<int, GMESH_ENCODER_SAVE_ERROR> GMeshEncoder::save_to_file_and_reset(const char* path, const MeshData& m)
 {
 	const GMeshFileHeader header = { .magicValue = MeshConstants::MESH_FILE_HEADER_MAGIC_VALUE,    .meshCount = (uint32_t)m.meshes_.size(),    .dataBlockStartOffset = (uint32_t)(sizeof(GMeshFileHeader) + m.meshes_.size() * sizeof(GMesh)),
@@ -269,7 +311,7 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m,bool loadLods,int scale)
 	if (!loadLods)
 		outLods.push_back(srcIndices);
 	else
-		process_lods(srcIndices, srcVertices, outLods,7);
+		process_lods(srcIndices, srcVertices, outLods,3);
 
 	printf("\nCalculated LOD count: %u\n", (unsigned)outLods.size());
 
@@ -357,10 +399,7 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 		vertices.push_back(t.x);
 		vertices.push_back(1.0f - t.y);
 
-		if (n.x > 1.f || n.x < -1.f || n.y > 1.f || n.y < -1.f || n.z > 1.f || n.z < -1.f)
-		{
-			assert(false);
-		}
+		
 		glm::vec2 och = octahedral_encode(glm::vec3(n.x, n.y, n.z));
 		vertices.push_back(och.x);
 		vertices.push_back(och.y);
@@ -386,9 +425,11 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 	if (!loadLods)
 		outLods.push_back(srcIndices);
 	else
-		process_lods(srcIndices, srcVertices, outLods, numElementsToStore);
+		process_lods(srcIndices, srcVertices, outLods, 3);
 
 	printf("\nCalculated LOD count: %u\n", (unsigned)outLods.size());
+
+
 
 	uint32_t numIndices = 0;
 
@@ -403,9 +444,144 @@ GMesh GMeshEncoder::ai_mesh_to_gmesh(const aiMesh* m, bool loadLods, int scale, 
 
 	result.lodOffset[outLods.size()] = numIndices;
 	result.lodCount = (uint32_t)outLods.size();
-
+	
 	indexOffset += numIndices;
 	vertexOffset += m->mNumVertices*numElementsToStore;
+	result.meshFlag = meshFlag;
+	return result;
+}
+
+GMeshMeshlet GMeshEncoder::ai_mesh_to_gmesh_meshlet(const aiMesh* m, bool loadLods, int scale, GMeshletData& meshletData,uint32_t& vertexOffset, uint32_t& indexOffset, uint32_t& meshletOffset, uint32_t& meshletVertexOffset, uint32_t& meshletTriagleOffset)
+{
+	uint32_t numElementsToStore = 3;
+	uint64_t meshFlag = 0;
+
+	const bool hasTexCoords = m->HasTextureCoords(0);
+	if (hasTexCoords)
+	{
+		meshFlag |= GMESH_COMPONENT_HAS_UV;
+		numElementsToStore += 2;
+	}
+	if (m->HasNormals())
+	{
+		meshFlag |= GMESH_COMPONENT_HAS_NORMAL;
+		numElementsToStore += 2;
+		if (m->HasTangentsAndBitangents())
+		{
+			meshFlag |= GMESH_COMPONENT_HAS_TANGENTS_BITANGENTS;
+			numElementsToStore += 6;
+		}
+	}
+
+	const uint32_t streamElementSize = static_cast<uint32_t>(numElementsToStore * sizeof(float));
+
+	GMeshMeshlet result = {
+		.streamCount = 1,
+		.indexOffset = indexOffset,
+		.vertexOffset = vertexOffset,
+		.vertexCount = m->mNumVertices,
+		.streamOffset = { vertexOffset * streamElementSize },
+		.streamElementSize = { streamElementSize },
+		.meshletOffset = meshletOffset,
+		.meshletVerticesOffset = meshletVertexOffset,
+		.meshletTrianglesOffset = meshletTriagleOffset
+	};
+
+
+	// Original data for LOD calculation
+	std::vector<float> srcVertices;
+	std::vector<uint32_t> srcIndices;
+
+	std::vector<std::vector<uint32_t>> outLods;
+
+	auto& vertices = meshletData.vertexData_;
+
+	for (size_t i = 0; i != m->mNumVertices; i++)
+	{
+		const aiVector3D v = m->mVertices[i];
+		const aiVector3D n = m->mNormals[i];
+		const aiVector3D tangent = m->mTangents[i];
+		const aiVector3D bitangent = m->mBitangents[i];
+		aiVector3D t = hasTexCoords ? m->mTextureCoords[0][i] : aiVector3D();
+
+		
+		srcVertices.push_back(v.x);
+		srcVertices.push_back(v.y);
+		srcVertices.push_back(v.z);
+		
+
+		vertices.push_back(v.x * scale);
+		vertices.push_back(v.y * scale);
+		vertices.push_back(v.z * scale);
+		vertices.push_back(t.x);
+		vertices.push_back(1.0f - t.y);
+
+		
+		glm::vec2 och = octahedral_encode(glm::vec3(n.x, n.y, n.z));
+		vertices.push_back(och.x);
+		vertices.push_back(och.y);
+		if (m->HasTangentsAndBitangents())
+		{
+			vertices.push_back(tangent.x);
+			vertices.push_back(tangent.y);
+			vertices.push_back(tangent.z);
+			vertices.push_back(bitangent.x);
+			vertices.push_back(bitangent.y);
+			vertices.push_back(bitangent.z);
+		}
+	}
+
+	for (size_t i = 0; i != m->mNumFaces; i++)
+	{
+		if (m->mFaces[i].mNumIndices != 3)
+			continue;
+		for (unsigned j = 0; j != m->mFaces[i].mNumIndices; j++)
+			srcIndices.push_back(m->mFaces[i].mIndices[j]);
+	}
+	std::vector<GMeshlet>& meshlets = meshletData.gmeshlets_;
+	std::vector<uint32_t>& meshletVertOffset = meshletData.meshletVertexData_;
+	std::vector<uint8_t>& meshletTriangles = meshletData.meshletTriangleData_;
+
+	auto prevMeshletSize = meshlets.size();
+	auto prevMeshletVertSize = meshletVertOffset.size();
+	auto prevMeshletTriangleSize = meshletTriangles.size();
+
+	process_meshlets(srcIndices, srcVertices, meshlets, meshletVertOffset, meshletTriangles, 3,meshletVertexOffset,meshletTriagleOffset);
+
+	if (!loadLods)
+		outLods.push_back(srcIndices);
+	else
+		process_lods(srcIndices, srcVertices, outLods, 3);
+
+	printf("\nCalculated LOD count: %u\n", (unsigned)outLods.size());
+
+
+
+	uint32_t numIndices = 0;
+
+	for (size_t l = 0; l < outLods.size(); l++)
+	{
+		for (size_t i = 0; i < outLods[l].size(); i++)
+			meshletData.indexData_.push_back(outLods[l][i]);
+
+		result.lodOffset[l] = numIndices;
+		numIndices += (int)outLods[l].size();
+	}
+
+	result.lodOffset[outLods.size()] = numIndices;
+	result.lodCount = (uint32_t)outLods.size();
+
+	indexOffset += numIndices;
+	vertexOffset += m->mNumVertices * numElementsToStore;
+	result.meshletCount = (meshlets.size() - prevMeshletSize);
+	result.meshletVerticesCount = (meshletVertOffset.size() - prevMeshletVertSize);
+	result.meshletTrianglesCount = (meshletTriangles.size() - prevMeshletTriangleSize);
+	meshletOffset += result.meshletCount;
+	meshletVertexOffset += result.meshletVerticesCount;
+	meshletTriagleOffset += result.meshletTrianglesCount;
+
+
+
 	result.meshFlag = meshFlag;
 	return result;
 }

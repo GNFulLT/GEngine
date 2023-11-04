@@ -73,6 +73,7 @@ public:
 
 		//X Begin Index
 		uint32_t add_to_buffer(const std::vector<T>& buff);
+		uint32_t add_to_buffer(const T& buff);
 
 		void unload_gpu_buffer();
 
@@ -83,9 +84,11 @@ public:
 
 	GPUMeshStreamResources(IGVulkanLogicalDevice* dev,uint32_t floatCountPerVertex,uint32_t framesInFlight,IGPipelineObjectManager* manager);
 
-	bool init(uint32_t beginVertexCount, uint32_t beginIndexCount, uint32_t beginMeshCount, uint32_t beginDrawDataAndIdCount);
+	bool init(uint32_t beginVertexCount, uint32_t beginIndexCount, uint32_t beginMeshCount, uint32_t beginDrawDataAndIdCount,bool useMeshlet);
 
 	uint32_t add_mesh_data(const MeshData* meshData);
+	uint32_t add_meshlet_to_scene(const GMeshletData* meshlet);
+
 	uint32_t create_draw_data(uint32_t meshIndex,uint32_t materialIndex,uint32_t transformIndex);
 	uint32_t get_max_indirect_command_count();
 	IGVulkanNamedSetLayout* get_indirect_set_layout();
@@ -102,6 +105,7 @@ public:
 
 	IGVulkanNamedSetLayout* get_draw_set_layout();
 	IGVulkanNamedSetLayout* get_compute_set_layout();
+	IGVulkanNamedSetLayout* get_drawlet_set_layout();
 
 	VkDescriptorSet_T* get_draw_set_by_index(uint32_t currentFrame);
 	VkDescriptorSet_T* get_compute_set_by_index(uint32_t currentFrame);
@@ -110,6 +114,15 @@ private:
 	void update_draw_data_sets();
 	void update_compute_sets();
 private:
+	//X Should be in another class
+	bool m_meshletSupport = false;
+	CPUGPUData<GMeshMeshletData> m_mergedMeshlet;
+	CPUGPUData<GMeshlet> m_mergedGMeshlet;
+	CPUGPUData<uint32_t> m_mergedMeshletVertex;
+	CPUGPUData<uint8_t> m_mergedMeshletTriangles;
+	IGVulkanNamedSetLayout* m_drawletStreamSetLayout;
+
+	//--------------
 	std::queue<vkcmd_func> m_copyQueue;
 	std::queue<vkcmd_delete_func> m_deleteQueue;
 
@@ -121,6 +134,7 @@ private:
 	CPURGPUData<float> m_mergedVertex;
 	CPURGPUData<uint32_t> m_mergedIndex;
 	CPUGPUData<GMeshData> m_mergedMesh;
+
 	CPUGPUData<DrawData> m_globalDrawData;
 	friend class GSceneRenderer2;
 
@@ -175,6 +189,26 @@ inline uint32_t GPUMeshStreamResources::CPUGPUData<T>::add_to_buffer(const std::
 	//X Move the cursor
 	gpuCurrentPos += buff.size();
 	inUsage += buff.size();
+	return currentPosIndex;
+}
+
+template<typename T>
+inline uint32_t GPUMeshStreamResources::CPUGPUData<T>::add_to_buffer(const T& buff)
+{
+	//X First check there is space
+	uint32_t currentPosIndex = get_current_pos_as_index();
+	if ((cpuVector.size() - currentPosIndex) < 1)
+	{
+		//X No space resize
+		assert(false);
+	}
+	memcpy(&cpuVector[currentPosIndex], &buff, sizeof(T));
+	//X Now copy to gpu
+	memcpy(gpuCurrentPos, &buff,sizeof(T));
+
+	//X Move the cursor
+	gpuCurrentPos += 1;
+	inUsage += 1;
 	return currentPosIndex;
 }
 

@@ -191,6 +191,10 @@ std::pair<SPIRV_SHADER_STAGE, SPIRV_SOURCE_TYPE> shader_stage_from_file_name(con
 		return { SPIRV_SHADER_STAGE_TESSEVALUATION,SPIRV_SOURCE_TYPE_HLSL };
 	if (endsWith(fileName, ".glsl_tese"))
 		return { SPIRV_SHADER_STAGE_TESSEVALUATION,SPIRV_SOURCE_TYPE_GLSL };
+	if (endsWith(fileName, ".glsl_task"))
+		return { SPIRV_SHADER_STAGE_TASK,SPIRV_SOURCE_TYPE_GLSL };
+	if (endsWith(fileName, ".glsl_mesh"))
+		return { SPIRV_SHADER_STAGE_MESH,SPIRV_SOURCE_TYPE_GLSL };
 
 	return { SPIRV_SHADER_STAGE_UNKNOWN,SPIRV_SOURCE_TYPE_UNKNOWN };
 }
@@ -213,6 +217,10 @@ glslang_stage_t spirv_shader_stage_to_glslang_stage(SPIRV_SHADER_STAGE stage)
 		return GLSLANG_STAGE_TESSCONTROL;
 	case SPIRV_SHADER_STAGE_TESSEVALUATION:
 		return GLSLANG_STAGE_TESSEVALUATION;
+	case SPIRV_SHADER_STAGE_TASK:
+		return GLSLANG_STAGE_TASK;
+	case SPIRV_SHADER_STAGE_MESH:
+		return GLSLANG_STAGE_MESH;
 	default:
 		return GLSLANG_STAGE_VERTEX;
 	}
@@ -249,6 +257,10 @@ SPIRV_SHADER_STAGE glslang_stage_to_spirv_shader_stage(glslang_stage_t stage)
 		return SPIRV_SHADER_STAGE_TESSCONTROL;
 	case GLSLANG_STAGE_TESSEVALUATION:
 		return SPIRV_SHADER_STAGE_TESSEVALUATION;
+	case GLSLANG_STAGE_TASK:
+		return SPIRV_SHADER_STAGE_TASK;
+	case GLSLANG_STAGE_MESH:
+		return SPIRV_SHADER_STAGE_MESH;
 	default:
 		return SPIRV_SHADER_STAGE_UNKNOWN;
 	}

@@ -50,13 +50,30 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 		Scene* convertedScene;
 		std::vector<MaterialDescription> materials;
 		auto filePath = path.string();
-		auto mesh = con->load_all_meshes(filePath.c_str(), materials, texturePaths,&convertedScene);
+
+		auto mesh = con->load_all_meshes_meshlet(filePath.c_str(), materials, texturePaths, &convertedScene);
+		auto lastMeshlet = mesh->gmeshlets_[mesh->gmeshlets_.size() - 1];
+		//auto mesh = con->load_all_meshes(filePath.c_str(), materials, texturePaths,&convertedScene);
+
+		auto& lastgmeshlet = mesh->gmeshMeshlets_[mesh->gmeshMeshlets_.size() - 1];
+		
+		auto beginVertexFloat = lastgmeshlet.vertexOffset;
+		
+		auto currentMeshlet = lastgmeshlet.meshletCount - 1;
+		
+		auto currentGMeshlet = mesh->gmeshlets_[lastgmeshlet.meshletOffset + currentMeshlet];
+		auto currentIndex = mesh->meshletVertexData_[(currentGMeshlet.vertexOffset + currentGMeshlet.vertexCount - 1)];
+		auto stride = currentIndex * 13;
+
+		auto currentBeginFloat = beginVertexFloat + stride;
+
+		size_t count = mesh->vertexData_.size() - currentBeginFloat;
 
 		//m_sceneManager->add_node_with_mesh_and_defaults(meshIndex);
 		//X Generate draw datas for mesh
 		if (mesh != nullptr)
 		{
-			uint32_t meshIndex = m_sceneManager->add_mesh_to_scene(mesh);
+			uint32_t meshIndex = m_sceneManager->add_meshlet_to_scene(mesh);
 			std::unordered_map<uint32_t, uint32_t> aiMatToSceneMat;
 			for (int i = 0; i < materials.size(); i++)
 			{
