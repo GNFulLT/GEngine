@@ -15,6 +15,7 @@
 #include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
 #include "engine/manager/igcamera_manager.h"
 #include "engine/manager/igscene_manager.h"
+#include "internal/engine/rendering/gpu_meshlet_stream_resources.h"
 
 #include <span>
 struct VkDescriptorPool_T;
@@ -112,6 +113,7 @@ private:
 	IGResourceManager* p_resourceManager;
 	IGShaderManager* p_shaderManager;
 
+	GPUMeshletStreamResources* m_meshletStreamResources;
 	GPUMeshStreamResources* m_meshStreamResources;
 	MATERIAL_MODE m_materialMode = MATERIAL_MODE_BLINN_PHONG;
 	

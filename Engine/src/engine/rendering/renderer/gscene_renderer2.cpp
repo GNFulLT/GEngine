@@ -50,15 +50,21 @@ GSceneRenderer2::GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectMan
 	p_pipelineManager = pipelineManager;
 	m_framesInFlight = framesInFlight;
 	m_compositionFormat = compositionFormat;
+	m_meshletStreamResources = nullptr;
 }
 
 bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNamedSetLayout* drawDataSetLayout, IGVulkanNamedSetLayout* lightDataSetLayout, IGVulkanNamedSetLayout* cullSetLayout)
 {
 	m_meshStreamResources = new GPUMeshStreamResources(p_boundedDevice, 7, m_framesInFlight, p_pipelineManager);
 	m_useMeshlet = true;
-	assert(m_meshStreamResources->init(calculate_nearest_10mb<float>()*3, calculate_nearest_10mb<uint32_t>()*14, calculate_nearest_1mb<GMeshData>(),
+	uint32_t beginMesh = calculate_nearest_1mb<GMeshData>();
+	assert(m_meshStreamResources->init(calculate_nearest_10mb<float>()*3, calculate_nearest_10mb<uint32_t>()*14, beginMesh,
 		calculate_nearest_1mb<DrawData>(), m_useMeshlet));
-	
+	if (m_useMeshlet)
+	{
+		m_meshletStreamResources = new GPUMeshletStreamResources(p_boundedDevice, p_pipelineManager, m_framesInFlight);
+		m_meshletStreamResources->init(beginMesh, beginMesh * 50, beginMesh * 64, beginMesh * 126);
+	}
 	//X Create DrawDataSet
 	{
 		//X Bindless Texture 
@@ -260,6 +266,27 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 	}
 	//X Create pipeline layouts
 	{
+		//X DeferredLet Layout
+		{
+			VkPipelineLayoutCreateInfo inf = {};
+			std::array<VkDescriptorSetLayout, 5> setLayouts;
+			setLayouts[0] = globalUniformSet;
+			setLayouts[1] = m_meshStreamResources->get_draw_set_layout()->get_layout();
+			setLayouts[2] = drawDataSetLayout->get_layout();
+			setLayouts[3] = m_bindlessSetLayout;
+			setLayouts[4] = m_meshletStreamResources->get_meshlet_set_layout()->get_layout();
+
+			inf.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			inf.flags = 0;
+			inf.setLayoutCount = setLayouts.size();
+			inf.pSetLayouts = setLayouts.data();
+			inf.pushConstantRangeCount = 0;
+			inf.pPushConstantRanges = nullptr;
+
+			m_deferredletLayout = p_pipelineManager->create_or_get_named_pipeline_layout("DeferredletPipelineLayout", &inf);
+			assert(m_deferredletLayout != nullptr);
+			
+		}
 		//X Deferred Layout
 		{
 			VkPipelineLayoutCreateInfo inf = {};
@@ -276,11 +303,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			inf.pSetLayouts = setLayouts.data();
 			inf.pushConstantRangeCount = 0;
 			inf.pPushConstantRanges = nullptr;
-			{
-				setLayouts[1] = m_meshStreamResources->get_drawlet_set_layout()->get_layout();
-				m_deferredletLayout = p_pipelineManager->create_or_get_named_pipeline_layout("DeferredletPipelineLayout", &inf);
-				assert(m_deferredletLayout != nullptr);
-			}
+			
 			{
 				setLayouts[1] = m_meshStreamResources->get_draw_set_layout()->get_layout();
 				m_deferredLayout = p_pipelineManager->create_or_get_named_pipeline_layout("DeferredPipelineLayout", &inf);
@@ -341,12 +364,13 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			assert(m_computePipelineLayout != nullptr);
 		}
 		{
-			std::array<VkDescriptorSetLayout, 5> setLayouts;
+			std::array<VkDescriptorSetLayout, 6> setLayouts;
 			setLayouts[0] = globalUniformSet;
 			setLayouts[1] = m_meshStreamResources->get_indirect_set_layout()->get_layout();
-			setLayouts[2] = m_meshStreamResources->get_drawlet_set_layout()->get_layout();
+			setLayouts[2] = m_meshStreamResources->get_draw_set_layout()->get_layout();
 			setLayouts[3] = drawDataSetLayout->get_layout();
 			setLayouts[4] = cullSetLayout->get_layout();
+			setLayouts[5] = m_meshletStreamResources->get_meshlet_set_layout()->get_layout();
 
 			VkPipelineLayoutCreateInfo inf = {};
 			inf.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -556,7 +580,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 		m_sunShadowFragmentShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_frag").value();
 
 		assert(m_deferredVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
-		assert(m_deferredletVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
+		//assert(m_deferredletVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_deferredTaskShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_deferredMeshShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_deferredMeshFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
@@ -1188,12 +1212,13 @@ void GSceneRenderer2::fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame
 		m_meshStreamResources->cmd_reset_indirect_buffers(cmd, frame);
 
 		vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_COMPUTE, this->m_compMeshletPipeline);
-		std::array<VkDescriptorSet, 5> descriptorSets;
+		std::array<VkDescriptorSet, 6> descriptorSets;
 		descriptorSets[0] = p_sceneManager->get_global_set_for_frame(frame);
 		descriptorSets[1] = m_meshStreamResources->get_compute_set_by_index(frame);
 		descriptorSets[2] = this->m_meshStreamResources->get_draw_set_by_index(frame);
 		descriptorSets[3] = m_drawDataSet;
 		descriptorSets[4] = m_cullDataSet;
+		descriptorSets[5] = m_meshletStreamResources->get_set_by_index(frame);
 
 		vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_computeMeshletPipelineLayout->get_vk_pipeline_layout(), 0, descriptorSets.size(), descriptorSets.data(), 0, 0);
 
@@ -1359,22 +1384,24 @@ std::vector<VkFormat> GSceneRenderer2::get_deferred_formats() const noexcept
 static PFN_vkCmdDrawMeshTasksEXT vkCmdDrawMeshTaskExtMeth = nullptr;
 void GSceneRenderer2::fill_deferred_cmd(GVulkanCommandBuffer* cmd,uint32_t frame)
 {
+	m_meshStreamResources->handle_gpu_datas(cmd, frame);
 	if (m_useMeshlet)
 	{
 		vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_deferredMeshletPipeline->get_vk_pipeline());
-		std::array<VkDescriptorSet, 4> descriptorSets;
+		std::array<VkDescriptorSet, 5> descriptorSets;
 		descriptorSets[0] = p_sceneManager->get_global_set_for_frame(frame);
 		descriptorSets[1] = this->m_meshStreamResources->get_draw_set_by_index(frame);
 		descriptorSets[2] = m_drawDataSet;
 		descriptorSets[3] = m_bindlessSet;
+		descriptorSets[4] = m_meshletStreamResources->get_set_by_index(frame);
+
 		vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_deferredletLayout->get_vk_pipeline_layout(), 0, descriptorSets.size(), descriptorSets.data(), 0, 0);
 
 		vkCmdSetViewport(cmd->get_handle(), 0, 1, m_deferredVp->get_viewport_area());
 		vkCmdSetScissor(cmd->get_handle(), 0, 1, m_deferredVp->get_scissor_area());
-		
-		m_meshStreamResources->bind_vertex_index_stream(cmd, frame);
-
-		m_meshStreamResources->cmd_draw_indirect_data(cmd, frame);
+	
+		m_meshletStreamResources->cmd_draw_indirect_data(cmd, frame, m_meshStreamResources->m_maxIndirectDrawCommand,
+			m_meshStreamResources->m_globalIndirectCommandBuffers[frame].get(), m_meshStreamResources->m_globalIndirectCommandsBeginOffset);
 	}
 	else
 	{
@@ -1501,7 +1528,10 @@ uint32_t GSceneRenderer2::add_mesh_to_scene(const MeshData* meshData, uint32_t r
 
 uint32_t GSceneRenderer2::add_meshlet_to_scene(const GMeshletData* meshlet)
 {
-	return m_meshStreamResources->add_meshlet_to_scene(meshlet);
+	uint32_t meshId = m_meshStreamResources->add_mesh_data(meshlet);
+	uint32_t meshletId = m_meshletStreamResources->add_meshlet_data(meshlet);
+	assert(meshId == meshletId);
+	return meshId;
 }
 
 uint32_t GSceneRenderer2::create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex)

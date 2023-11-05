@@ -66,13 +66,13 @@ private:
 
 private:
 	//X Global Draw Data
-	GPUMeshStreamResources::RCPUGPUData<glm::mat4> m_globalTransformData;
-	GPUMeshStreamResources::CPUGPUData<MaterialDescription> m_globalMaterialData;
-	GPUMeshStreamResources::CPUGPUData<GPointLight> m_globalPointLights;
+	RCPUGPUData<glm::mat4> m_globalTransformData;
+	CPUGPUData<MaterialDescription> m_globalMaterialData;
+	CPUGPUData<GPointLight> m_globalPointLights;
 
-	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightIndices;
-	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightBins;
-	std::vector<GPUMeshStreamResources::CPUGPUData<uint32_t>> m_globalPointLightTiles;
+	std::vector<CPUGPUData<uint32_t>> m_globalPointLightIndices;
+	std::vector<CPUGPUData<uint32_t>> m_globalPointLightBins;
+	std::vector<CPUGPUData<uint32_t>> m_globalPointLightTiles;
 	
 	std::vector<std::unique_ptr<IVulkanBuffer>> m_gpuCpuDataBuffers;
 	std::vector<void*> m_gpuCpuDataBufferMappedMems;

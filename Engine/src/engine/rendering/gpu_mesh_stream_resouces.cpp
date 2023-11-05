@@ -28,27 +28,9 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 	m_mergedIndex.gpuBuffer.reset(p_boundedDevice->create_buffer(beginIndexCount * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 	m_mergedIndex.create_internals(&m_copyQueue, &m_deleteQueue, p_boundedDevice, VK_ACCESS_INDEX_READ_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 	
-	if (useMeshlet)
-	{
-		m_meshletSupport = true;
-		m_mergedMeshlet.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshMeshletData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-		m_mergedMeshlet.create_internals();
-
-		m_mergedGMeshlet.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshlet) * 10, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-		m_mergedGMeshlet.create_internals();
-
-		m_mergedMeshletTriangles.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(uint8_t) * 200, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-		m_mergedMeshletTriangles.create_internals();
-		
-
-		m_mergedMeshletVertex.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(uint32_t) * 200, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-		m_mergedMeshletVertex.create_internals();
-	}
-	else
-	{
-		m_mergedMesh.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
-		m_mergedMesh.create_internals();
-	}
+	m_mergedMesh.gpuBuffer.reset(p_boundedDevice->create_buffer(beginMeshCount * sizeof(GMeshData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_mergedMesh.create_internals();
+	
 
 	m_globalDrawData.gpuBuffer.reset(p_boundedDevice->create_buffer(beginDrawDataAndIdCount * sizeof(DrawData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 	m_globalDrawData.create_internals();
@@ -178,6 +160,7 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 			m_drawletStreamSetLayout = p_pipelineObjectMng->create_or_get_named_set_layout("DrawLetStreamSet", &setinfo);
 
 		}
+		
 	}
 	//X Compute Set
 	{		
@@ -232,39 +215,19 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 		}
 		//X DrawStreamSet
 		{
-			if (!useMeshlet)
-			{
-				std::vector<VkDescriptorSetLayout> layouts(m_framesInFlight, m_drawStreamSetLayout->get_layout());
+			std::vector<VkDescriptorSetLayout> layouts(m_framesInFlight, m_drawStreamSetLayout->get_layout());
 
-				//allocate one descriptor set for each frame
-				VkDescriptorSetAllocateInfo allocInfo = {};
-				allocInfo.pNext = nullptr;
-				allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-				allocInfo.descriptorPool = m_generalPool->get_vk_descriptor_pool();
-				allocInfo.descriptorSetCount = layouts.size();
-				allocInfo.pSetLayouts = layouts.data();
+			//allocate one descriptor set for each frame
+			VkDescriptorSetAllocateInfo allocInfo = {};
+			allocInfo.pNext = nullptr;
+			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocInfo.descriptorPool = m_generalPool->get_vk_descriptor_pool();
+			allocInfo.descriptorSetCount = layouts.size();
+			allocInfo.pSetLayouts = layouts.data();
 
-				m_drawStreamSets.resize(m_framesInFlight);
-				auto setAllocRes = vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, m_drawStreamSets.data());
-				assert(VK_SUCCESS == setAllocRes);
-			}
-			else
-			{
-				std::vector<VkDescriptorSetLayout> layouts(m_framesInFlight, m_drawletStreamSetLayout->get_layout());
-
-				//allocate one descriptor set for each frame
-				VkDescriptorSetAllocateInfo allocInfo = {};
-				allocInfo.pNext = nullptr;
-				allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-				allocInfo.descriptorPool = m_generalPool->get_vk_descriptor_pool();
-				allocInfo.descriptorSetCount = layouts.size();
-				allocInfo.pSetLayouts = layouts.data();
-
-				m_drawStreamSets.resize(m_framesInFlight);
-				auto setAllocRes = vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, m_drawStreamSets.data());
-				assert(VK_SUCCESS == setAllocRes);
-
-			}
+			m_drawStreamSets.resize(m_framesInFlight);
+			auto setAllocRes = vkAllocateDescriptorSets(p_boundedDevice->get_vk_device(), &allocInfo, m_drawStreamSets.data());
+			assert(VK_SUCCESS == setAllocRes);
 		
 		}
 
@@ -277,8 +240,6 @@ bool GPUMeshStreamResources::init(uint32_t beginVertexCount, uint32_t beginIndex
 
 uint32_t GPUMeshStreamResources::add_mesh_data(const MeshData* meshData)
 {
-	if (m_meshletSupport)
-		return -1;
 	//X Add the vertices and indices
 	uint32_t beginVertexFloat = m_mergedVertex.add_to_buffer(meshData->vertexData_);
 	uint32_t beginIndex = m_mergedIndex.add_to_buffer(meshData->indexData_);
@@ -299,41 +260,77 @@ uint32_t GPUMeshStreamResources::add_mesh_data(const MeshData* meshData)
 	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
 	return beginMeshIndex; 
 }
-
-uint32_t GPUMeshStreamResources::add_meshlet_to_scene(const GMeshletData* meshlet)
+uint32_t GPUMeshStreamResources::add_mesh_data(const GMeshletData* meshData)
 {
-	if (!m_meshletSupport)
-		return -1;
 	//X Add the vertices and indices
-	uint32_t beginVertexFloat = m_mergedVertex.add_to_buffer(meshlet->vertexData_);
-	uint32_t beginIndex = m_mergedIndex.add_to_buffer(meshlet->indexData_);
-	//X Add meshket bounded data
-	uint32_t beginGMeshlet = m_mergedGMeshlet.add_to_buffer(meshlet->gmeshlets_);
-	uint32_t beginMeshletVertex = m_mergedMeshletVertex.add_to_buffer(meshlet->meshletVertexData_);
-	uint32_t beginMeshletTriangle = m_mergedMeshletTriangles.add_to_buffer(meshlet->meshletTriangleData_);
+	uint32_t beginVertexFloat = m_mergedVertex.add_to_buffer(meshData->vertexData_);
+	uint32_t beginIndex = m_mergedIndex.add_to_buffer(meshData->indexData_);
 	//X Create gmesh data for per mesh
-	std::vector<GMeshMeshletData> gmeshes(meshlet->gmeshMeshlets_.size());
-	
-	for (int i = 0; i < gmeshes.size(); i++)
+	std::vector<GMeshData> gmeshes(meshData->gmeshMeshlets_.size());
+	for (int i = 0; i < meshData->gmeshMeshlets_.size(); i++)
 	{
-		auto& gmeshlet = gmeshes[i];
-		gmeshlet.vertexOffset += beginVertexFloat + meshlet->gmeshMeshlets_[i].vertexOffset;
-		gmeshlet.indexOffset += beginIndex + meshlet->gmeshMeshlets_[i].indexOffset;
-		gmeshlet.meshletOffset += beginGMeshlet + meshlet->gmeshMeshlets_[i].meshletOffset;
-		gmeshlet.meshletVerticesOffset += beginMeshletVertex + meshlet->gmeshMeshlets_[i].meshletVerticesOffset;
-		gmeshlet.meshletTrianglesOffset += beginMeshletTriangle + +meshlet->gmeshMeshlets_[i].meshletTrianglesOffset;
-
-		gmeshlet.lodCount = meshlet->gmeshMeshlets_[i].lodCount;
-		gmeshlet.meshFlag = meshlet->gmeshMeshlets_[i].meshFlag;
-		gmeshlet.meshletCount = meshlet->gmeshMeshlets_[i].meshletCount;
-		gmeshlet.meshletTrianglesCount = meshlet->gmeshMeshlets_[i].meshletTrianglesCount;
-		gmeshlet.meshletVerticesCount = meshlet->gmeshMeshlets_[i].meshletVerticesCount;
-		gmeshlet.vertexCount = meshlet->gmeshMeshlets_[i].vertexCount;
-		memcpy(&gmeshes[i].lodOffset[0], &meshlet->gmeshMeshlets_[i].lodOffset[0], sizeof(uint32_t) * MeshConstants::MAX_LOD_COUNT);
-
+		GMeshData* gmesh = &gmeshes[i];
+		gmesh->boundingBox;
+		gmesh->extent = glm::vec4(0, 0, 0, 0);
+		gmesh->vertexOffset += (beginVertexFloat)+meshData->gmeshMeshlets_[i].vertexOffset;
+		gmesh->indexOffset += beginIndex + meshData->gmeshMeshlets_[i].indexOffset;
+		gmesh->vertexCount = meshData->gmeshMeshlets_[i].vertexCount;
+		gmesh->lodCount = meshData->gmeshMeshlets_[i].lodCount;
+		gmesh->meshFlag = meshData->gmeshMeshlets_[i].meshFlag;
+		memcpy(&gmeshes[i].lodOffset[0], &meshData->gmeshMeshlets_[i].lodOffset[0], sizeof(uint32_t) * MeshConstants::MAX_LOD_COUNT);
 	}
-	return m_mergedMeshlet.add_to_buffer(gmeshes);
+	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
+	return beginMeshIndex;
+	
 }
+//
+//uint32_t GPUMeshStreamResources::add_meshlet_to_scene(const GMeshletData* meshlet)
+//{
+//	if (!m_meshletSupport)
+//		return -1;
+//	//X Add the vertices and indices
+//	uint32_t beginVertexFloat = m_mergedVertex.add_to_buffer(meshlet->vertexData_);
+//	uint32_t beginIndex = m_mergedIndex.add_to_buffer(meshlet->indexData_);
+//	//X Add meshket bounded data
+//	uint32_t beginGMeshlet = m_mergedGMeshlet.add_to_buffer(meshlet->gmeshlets_);
+//	uint32_t beginMeshletVertex = m_mergedMeshletVertex.add_to_buffer(meshlet->meshletVertexData_);
+//	uint32_t beginMeshletTriangle = m_mergedMeshletTriangles.add_to_buffer(meshlet->meshletTriangleData_);
+//	//X Create gmesh data for per mesh
+//	std::vector<GMeshMeshletData> gmeshes(meshlet->gmeshMeshlets_.size());
+//	std::vector<GMeshletExtra> gmeshExtra(meshlet->gmeshMeshlets_.size());
+//	for (int i = 0; i < gmeshes.size(); i++)
+//	{
+//		auto& gmeshlet = gmeshes[i];
+//		auto& gmeshExtraData = gmeshExtra[i];
+//
+//		gmeshlet.vertexOffset += beginVertexFloat + meshlet->gmeshMeshlets_[i].vertexOffset;
+//		gmeshlet.indexOffset += beginIndex + meshlet->gmeshMeshlets_[i].indexOffset;
+//		gmeshlet.meshletOffset += beginGMeshlet + meshlet->gmeshMeshlets_[i].meshletOffset;
+//		gmeshlet.meshletVerticesOffset += beginMeshletVertex + meshlet->gmeshMeshlets_[i].meshletVerticesOffset;
+//		gmeshlet.meshletTrianglesOffset += beginMeshletTriangle + +meshlet->gmeshMeshlets_[i].meshletTrianglesOffset;
+//
+//		gmeshExtraData.meshletTrianglesOffset = gmeshlet.meshletTrianglesOffset;
+//		gmeshExtraData.meshletVerticesOffset = gmeshlet.meshletVerticesOffset;
+//		gmeshExtraData.meshletOffset = gmeshlet.meshletOffset;
+//
+//
+//		gmeshlet.lodCount = meshlet->gmeshMeshlets_[i].lodCount;
+//		gmeshlet.meshFlag = meshlet->gmeshMeshlets_[i].meshFlag;
+//		gmeshlet.meshletCount = meshlet->gmeshMeshlets_[i].meshletCount;
+//		gmeshlet.meshletTrianglesCount = meshlet->gmeshMeshlets_[i].meshletTrianglesCount;
+//		gmeshlet.meshletVerticesCount = meshlet->gmeshMeshlets_[i].meshletVerticesCount;
+//		gmeshlet.vertexCount = meshlet->gmeshMeshlets_[i].vertexCount;
+//
+//		gmeshExtraData.meshletCount = gmeshlet.meshletCount;
+//		gmeshExtraData.meshletTrianglesCount = gmeshlet.meshletTrianglesCount;
+//		gmeshExtraData.meshletVerticesCount = gmeshlet.meshletVerticesCount;
+//
+//		memcpy(&gmeshes[i].lodOffset[0], &meshlet->gmeshMeshlets_[i].lodOffset[0], sizeof(uint32_t) * MeshConstants::MAX_LOD_COUNT);
+//
+//	}
+//	m_meshletExtraData.add_to_buffer(gmeshExtra);
+//	return m_mergedMeshlet.add_to_buffer(gmeshes);
+//}
 
 uint32_t GPUMeshStreamResources::create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex)
 {
@@ -406,39 +403,27 @@ void GPUMeshStreamResources::destroy()
 
 }
 
-void GPUMeshStreamResources::bind_vertex_index_stream(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+void GPUMeshStreamResources::handle_gpu_datas(GVulkanCommandBuffer* cmd,uint32_t frameIndex)
 {
 	cmd_delete_cmd(cmd);
 	cmd_copy_cmd(cmd);
 
-	if (!this->m_meshletSupport)
-	{
-		VkBuffer vertBuff = m_mergedVertex.gpuBuffer->get_vk_buffer();
-		VkDeviceSize deviceOffset = 0;
-
-		//vkCmdBindVertexBuffers(cmd->get_handle(), 0, 1, &vertBuff, &deviceOffset);
-		vkCmdBindIndexBuffer(cmd->get_handle(), m_mergedIndex.gpuBuffer->get_vk_buffer(), 0, VK_INDEX_TYPE_UINT32);
-	}
-	
-
 }
-static PFN_vkCmdDrawMeshTasksIndirectCountEXT vkCmdDrawMeshTasksIndirectCountEXTMethod = nullptr;
+
+void GPUMeshStreamResources::bind_vertex_index_stream(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+	VkBuffer vertBuff = m_mergedVertex.gpuBuffer->get_vk_buffer();
+	VkDeviceSize deviceOffset = 0;
+
+	//vkCmdBindVertexBuffers(cmd->get_handle(), 0, 1, &vertBuff, &deviceOffset);
+	vkCmdBindIndexBuffer(cmd->get_handle(), m_mergedIndex.gpuBuffer->get_vk_buffer(), 0, VK_INDEX_TYPE_UINT32);
+}
 void GPUMeshStreamResources::cmd_draw_indirect_data(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
 {
-	if (m_meshletSupport)
-	{
-		if (vkCmdDrawMeshTasksIndirectCountEXTMethod == nullptr)
-		{
-			vkCmdDrawMeshTasksIndirectCountEXTMethod = (PFN_vkCmdDrawMeshTasksIndirectCountEXT)vkGetInstanceProcAddr((VkInstance)p_boundedDevice->get_bounded_physical_device()->get_bounded_app()->get_vk_instance(), "vkCmdDrawMeshTasksIndirectCountEXT");
-		}
-		vkCmdDrawMeshTasksIndirectCountEXTMethod(cmd->get_handle(), m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), m_globalIndirectCommandsBeginOffset,
-			m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), 0, m_maxIndirectDrawCommand, sizeof(VkDrawMeshTasksIndirectCommandEXT));
-	}
-	else
-	{
-		vkCmdDrawIndexedIndirectCount(cmd->get_handle(), m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), m_globalIndirectCommandsBeginOffset,
-			m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), 0, m_maxIndirectDrawCommand, sizeof(VkDrawIndexedIndirectCommand));
-	}
+	
+	vkCmdDrawIndexedIndirectCount(cmd->get_handle(), m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), m_globalIndirectCommandsBeginOffset,
+		m_globalIndirectCommandBuffers[frameIndex]->get_vk_buffer(), 0, m_maxIndirectDrawCommand, sizeof(VkDrawIndexedIndirectCommand));
+	
 }
 
 void GPUMeshStreamResources::cmd_reset_indirect_buffers(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
@@ -530,174 +515,65 @@ VkDescriptorSet_T* GPUMeshStreamResources::get_compute_set_by_index(uint32_t cur
 
 void GPUMeshStreamResources::update_draw_data_sets()
 {
-	if (!this->m_meshletSupport)
-	{
-		std::array<VkDescriptorBufferInfo, 4> bufferInfos;
-		//X Mesh
-		bufferInfos[0].buffer = m_mergedMesh.gpuBuffer->get_vk_buffer();
-		bufferInfos[0].offset = 0;
-		bufferInfos[0].range = m_mergedMesh.gpuBuffer->get_size();
-		//X DrawData
-		bufferInfos[1].buffer = m_globalDrawData.gpuBuffer->get_vk_buffer();
-		bufferInfos[1].offset = 0;
-		bufferInfos[1].range = m_globalDrawData.gpuBuffer->get_size();
-		//X DrawID
-		bufferInfos[2].buffer = m_globalDrawIdBuffer->get_vk_buffer();
-		bufferInfos[2].offset = 0;
-		bufferInfos[2].range = m_globalDrawIdBuffer->get_size();
-		//X Vertex
-		bufferInfos[3].buffer = m_mergedVertex.gpuBuffer->get_vk_buffer();
-		bufferInfos[3].offset = 0;
-		bufferInfos[3].range = m_mergedVertex.gpuBuffer->get_size();
-
-
-		std::array< VkWriteDescriptorSet, 4> setWrites;
-		setWrites[0] = {};
-		setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[0].pNext = nullptr;
-		setWrites[0].dstBinding = 0;
-		setWrites[0].descriptorCount = 1;
-		setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[0].pBufferInfo = &(bufferInfos[0]);
-		//-------------------
-		setWrites[1] = {};
-		setWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[1].pNext = nullptr;
-		setWrites[1].dstBinding = 1;
-		setWrites[1].descriptorCount = 1;
-		setWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[1].pBufferInfo = &(bufferInfos[1]);
-
-		setWrites[2] = {};
-		setWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[2].pNext = nullptr;
-		setWrites[2].dstBinding = 2;
-		setWrites[2].descriptorCount = 1;
-		setWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[2].pBufferInfo = bufferInfos.data() + 2;
-
-		setWrites[3] = {};
-		setWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[3].pNext = nullptr;
-		setWrites[3].dstBinding = 3;
-		setWrites[3].descriptorCount = 1;
-		setWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[3].pBufferInfo = bufferInfos.data() + 3;
-
-
-		for (int i = 0; i < m_framesInFlight; i++)
-		{
-			setWrites[0].dstSet = m_drawStreamSets[i];
-			setWrites[1].dstSet = m_drawStreamSets[i];
-			setWrites[2].dstSet = m_drawStreamSets[i];
-			setWrites[3].dstSet = m_drawStreamSets[i];
-
-			vkUpdateDescriptorSets(p_boundedDevice->get_vk_device(), setWrites.size(), setWrites.data(), 0, nullptr);
-		}
-	}
-	else
-	{
-		std::array<VkDescriptorBufferInfo, 7> bufferInfos;
-		//X Mesh
-		bufferInfos[0].buffer = m_mergedMeshlet.gpuBuffer->get_vk_buffer();
-		bufferInfos[0].offset = 0;
-		bufferInfos[0].range = m_mergedMeshlet.gpuBuffer->get_size();
-		//X DrawData
-		bufferInfos[1].buffer = m_globalDrawData.gpuBuffer->get_vk_buffer();
-		bufferInfos[1].offset = 0;
-		bufferInfos[1].range = m_globalDrawData.gpuBuffer->get_size();
-		//X DrawID
-		bufferInfos[2].buffer = m_globalDrawIdBuffer->get_vk_buffer();
-		bufferInfos[2].offset = 0;
-		bufferInfos[2].range = m_globalDrawIdBuffer->get_size();
-		//X Vertex
-		bufferInfos[3].buffer = m_mergedVertex.gpuBuffer->get_vk_buffer();
-		bufferInfos[3].offset = 0;
-		bufferInfos[3].range = m_mergedVertex.gpuBuffer->get_size();
-		//X GMeshlet
-		bufferInfos[4].buffer = m_mergedGMeshlet.gpuBuffer->get_vk_buffer();
-		bufferInfos[4].offset = 0;
-		bufferInfos[4].range = m_mergedGMeshlet.gpuBuffer->get_size();
-		//X GMeshletVertex
-		bufferInfos[5].buffer = m_mergedMeshletVertex.gpuBuffer->get_vk_buffer();
-		bufferInfos[5].offset = 0;
-		bufferInfos[5].range = m_mergedMeshletVertex.gpuBuffer->get_size();
-		//X GMeshletTriangles
-		bufferInfos[6].buffer = m_mergedMeshletTriangles.gpuBuffer->get_vk_buffer();
-		bufferInfos[6].offset = 0;
-		bufferInfos[6].range = m_mergedMeshletTriangles.gpuBuffer->get_size();
-
-		std::array< VkWriteDescriptorSet, 7> setWrites;
-		setWrites[0] = {};
-		setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[0].pNext = nullptr;
-		setWrites[0].dstBinding = 0;
-		setWrites[0].descriptorCount = 1;
-		setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[0].pBufferInfo = &(bufferInfos[0]);
-		//-------------------
-		setWrites[1] = {};
-		setWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[1].pNext = nullptr;
-		setWrites[1].dstBinding = 1;
-		setWrites[1].descriptorCount = 1;
-		setWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[1].pBufferInfo = &(bufferInfos[1]);
-
-		setWrites[2] = {};
-		setWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[2].pNext = nullptr;
-		setWrites[2].dstBinding = 2;
-		setWrites[2].descriptorCount = 1;
-		setWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[2].pBufferInfo = bufferInfos.data() + 2;
-
-		setWrites[3] = {};
-		setWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[3].pNext = nullptr;
-		setWrites[3].dstBinding = 3;
-		setWrites[3].descriptorCount = 1;
-		setWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[3].pBufferInfo = bufferInfos.data() + 3;
-
-		setWrites[4] = {};
-		setWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[4].pNext = nullptr;
-		setWrites[4].dstBinding = 4;
-		setWrites[4].descriptorCount = 1;
-		setWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[4].pBufferInfo = bufferInfos.data() + 4;
-
-		setWrites[5] = {};
-		setWrites[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[5].pNext = nullptr;
-		setWrites[5].dstBinding = 5;
-		setWrites[5].descriptorCount = 1;
-		setWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[5].pBufferInfo = bufferInfos.data() + 5;
-
-		setWrites[6] = {};
-		setWrites[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		setWrites[6].pNext = nullptr;
-		setWrites[6].dstBinding = 6;
-		setWrites[6].descriptorCount = 1;
-		setWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		setWrites[6].pBufferInfo = bufferInfos.data() + 6;
 	
-		for (int i = 0; i < m_framesInFlight; i++)
-		{
-			setWrites[0].dstSet = m_drawStreamSets[i];
-			setWrites[1].dstSet = m_drawStreamSets[i];
-			setWrites[2].dstSet = m_drawStreamSets[i];
-			setWrites[3].dstSet = m_drawStreamSets[i];
-			setWrites[4].dstSet = m_drawStreamSets[i];
-			setWrites[5].dstSet = m_drawStreamSets[i];
-			setWrites[6].dstSet = m_drawStreamSets[i];
+	std::array<VkDescriptorBufferInfo, 4> bufferInfos;
+	//X Mesh
+	bufferInfos[0].buffer = m_mergedMesh.gpuBuffer->get_vk_buffer();
+	bufferInfos[0].offset = 0;
+	bufferInfos[0].range = m_mergedMesh.gpuBuffer->get_size();
+	//X DrawData
+	bufferInfos[1].buffer = m_globalDrawData.gpuBuffer->get_vk_buffer();
+	bufferInfos[1].offset = 0;
+	bufferInfos[1].range = m_globalDrawData.gpuBuffer->get_size();
+	//X DrawID
+	bufferInfos[2].buffer = m_globalDrawIdBuffer->get_vk_buffer();
+	bufferInfos[2].offset = 0;
+	bufferInfos[2].range = m_globalDrawIdBuffer->get_size();
+	//X Vertex
+	bufferInfos[3].buffer = m_mergedVertex.gpuBuffer->get_vk_buffer();
+	bufferInfos[3].offset = 0;
+	bufferInfos[3].range = m_mergedVertex.gpuBuffer->get_size();
 
-			vkUpdateDescriptorSets(p_boundedDevice->get_vk_device(), setWrites.size(), setWrites.data(), 0, nullptr);
-		}
+	std::array< VkWriteDescriptorSet, 4> setWrites;
+	setWrites[0] = {};
+	setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	setWrites[0].pNext = nullptr;
+	setWrites[0].dstBinding = 0;
+	setWrites[0].descriptorCount = 1;
+	setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	setWrites[0].pBufferInfo = &(bufferInfos[0]);
+	//-------------------
+	setWrites[1] = {};	
+	setWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	setWrites[1].pNext = nullptr;
+	setWrites[1].dstBinding = 1;
+	setWrites[1].descriptorCount = 1;
+	setWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	setWrites[1].pBufferInfo = &(bufferInfos[1]);
+	setWrites[2] = {};
+	setWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	setWrites[2].pNext = nullptr;
+	setWrites[2].dstBinding = 2;
+	setWrites[2].descriptorCount = 1;
+	setWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	setWrites[2].pBufferInfo = bufferInfos.data() + 2;
+	setWrites[3] = {};
+	setWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	setWrites[3].pNext = nullptr;
+	setWrites[3].dstBinding = 3;
+	setWrites[3].descriptorCount = 1;
+	setWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	setWrites[3].pBufferInfo = bufferInfos.data() + 3;
+
+
+	for (int i = 0; i < m_framesInFlight; i++)
+	{
+		setWrites[0].dstSet = m_drawStreamSets[i];
+		setWrites[1].dstSet = m_drawStreamSets[i];
+		setWrites[2].dstSet = m_drawStreamSets[i];
+		setWrites[3].dstSet = m_drawStreamSets[i];
+		vkUpdateDescriptorSets(p_boundedDevice->get_vk_device(), setWrites.size(), setWrites.data(), 0, nullptr);
 	}
-	
 }
 
 void GPUMeshStreamResources::update_compute_sets()

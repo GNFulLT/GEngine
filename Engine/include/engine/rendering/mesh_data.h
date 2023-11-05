@@ -26,6 +26,17 @@ struct GMeshletData
 	std::vector<GMeshMeshlet> gmeshMeshlets_;
 };
 
+struct GMeshletExtra
+{
+	uint32_t meshletOffset = 0;
+	uint32_t meshletVerticesOffset = 0;
+	uint32_t meshletTrianglesOffset = 0;
+
+	uint32_t meshletCount = 0;
+	uint32_t meshletVerticesCount = 0;
+	uint32_t meshletTrianglesCount = 0;
+};
+
 ENGINE_API std::expected<MeshData*, GMESH_DECODE_ERROR> decode_file(const char* filePath);
 ENGINE_API void recalculateBoundingBoxes(MeshData& m);
 ENGINE_API uint32_t calculateVertexElementCount(uint64_t meshFlag);
