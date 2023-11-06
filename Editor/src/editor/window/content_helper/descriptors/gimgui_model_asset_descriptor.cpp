@@ -50,8 +50,8 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 		Scene* convertedScene;
 		std::vector<MaterialDescription> materials;
 		auto filePath = path.string();
-
-		auto mesh = con->load_all_meshes_meshlet(filePath.c_str(), materials, texturePaths, &convertedScene);
+		std::unordered_map<uint32_t, glm::mat4> outTransforms;
+		auto mesh = con->load_all_meshes_meshlet(filePath.c_str(), materials, texturePaths, &convertedScene, outTransforms);
 		auto lastMeshlet = mesh->gmeshlets_[mesh->gmeshlets_.size() - 1];
 		//auto mesh = con->load_all_meshes(filePath.c_str(), materials, texturePaths,&convertedScene);
 
@@ -189,7 +189,7 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 					{
 						parent = parentIter->second;
 					}
-					nodeIndex = m_sceneManager->add_child_node_with_mesh_and_material_and_transform(parent,localMeshIndex + meshIndex, material, &convertedScene->localTransform_[iter]);
+					nodeIndex = m_sceneManager->add_child_node_with_mesh_and_material_and_transform(parent,localMeshIndex + meshIndex, material, &outTransforms.find(iter)->second);
 				}
 				// Enqueue children (if any)
 				uint32_t child = convertedScene->hierarchy[iter].firstChild;

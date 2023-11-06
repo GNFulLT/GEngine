@@ -4,6 +4,7 @@
 
 GOBJECT_ENABLE(First)
 	GOBJECT_DEFINE_MEMBER_METHOD("b",&First::b)
+	GOBJECT_DEFINE_PROPERTY("number",&First::number)
 }
 
 

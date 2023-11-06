@@ -71,7 +71,23 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
  "src/engine/rendering/anim/flipbook/flipbook.cpp" "internal/engine/rendering/renderer/gmulti_mesh_renderer_layout.h" "src/engine/rendering/renderer/gmulti_mesh_renderer_layout.cpp" 
  "include/engine/rendering/scene/scene_node.h" "include/engine/rendering/scene/scene.h" "src/engine/rendering/scene/scene.cpp" "include/engine/rendering/gputypes.h" 
  "include/engine/rendering/material/gmaterial.h" "src/engine/rendering/material/gmaterial.cpp" "include/engine/rendering/scene/scene_config.h" "include/engine/manager/igscene_manager.h" 
- "internal/engine/manager/gscene_manager.h" "src/engine/manager/gscene_manager.cpp" "src/engine/rendering/mesh_data.cpp" "include/engine/rendering/wireframe_spec.h" "internal/engine/rendering/renderer/gscene_renderer.h" "src/engine/rendering/renderer/gscene_renderer.cpp" "internal/engine/rendering/renderer/gscene_wireframe_renderer_layout.h" "src/engine/rendering/renderer/gscene_wireframe_renderer_layout.cpp"  "include/engine/scene/gscene_2.h" "src/engine/scene/gscene_2.cpp" "internal/engine/rendering/renderer/gscene_material_renderer_layout.h" "src/engine/rendering/renderer/gscene_material_renderer_layout.cpp" "internal/engine/rendering/vulkan/named/gvulkan_named_deferred_viewport.h" "src/engine/rendering/vulkan/named/gvulkan_named_deferred_viewport.cpp" "include/engine/rendering/vulkan/named/igvulkan_named_viewport.h" "internal/engine/rendering/renderer/gdeferred_renderer_layout.h" "src/engine/rendering/renderer/gdeferred_renderer_layout.cpp"  "internal/engine/rendering/renderer/gscene_composition_renderer_layout.h" "src/engine/rendering/renderer/gscene_composition_renderer_layout.cpp" "internal/engine/rendering/gpu_resources.h" "include/engine/rendering/igpu_resources.h" "src/engine/rendering/gpu_resources.cpp" "internal/engine/rendering/gpu_mesh_stream_resources.h" "src/engine/rendering/gpu_mesh_stream_resouces.cpp" "include/engine/rendering/vulkan/named/igvulkan_named_set.h" "internal/engine/rendering/renderer/gscene_renderer2.h" "src/engine/rendering/renderer/gscene_renderer2.cpp" "internal/engine/rendering/vulkan/named/gvulkan_named_graphic_pipeline.h" "src/engine/rendering/vulkan/named/gvulkan_named_graphic_pipeline.cpp" "include/engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h" "internal/engine/rendering/vulkan/named/gvulkan_named_pipeline_layout.h" "src/engine/rendering/vulkan/named/gvulkan_named_pipeline_layout.cpp" "include/engine/rendering/vulkan/named/viewports/igvulkan_named_composition_viewport.h" "include/engine/rendering/renderer/igvulkan_deferred_renderer.h" "internal/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.h" "src/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.cpp" "include/engine/rendering/vulkan/named/igvulkan_named_graphic_pipeline.h" "include/engine/rendering/point_light.h" "internal/engine/rendering/gpu_meshlet_stream_resources.h" "internal/engine/rendering/gpu_helpers.h" "src/engine/rendering/gpu_meshlet_stream_resources.cpp")
+ "internal/engine/manager/gscene_manager.h" "src/engine/manager/gscene_manager.cpp" "src/engine/rendering/mesh_data.cpp" "include/engine/rendering/wireframe_spec.h" 
+ "internal/engine/rendering/renderer/gscene_renderer.h" "src/engine/rendering/renderer/gscene_renderer.cpp" "internal/engine/rendering/renderer/gscene_wireframe_renderer_layout.h"
+ "src/engine/rendering/renderer/gscene_wireframe_renderer_layout.cpp"  "include/engine/scene/gscene_2.h" "src/engine/scene/gscene_2.cpp"
+ "internal/engine/rendering/renderer/gscene_material_renderer_layout.h" "src/engine/rendering/renderer/gscene_material_renderer_layout.cpp" 
+ "internal/engine/rendering/vulkan/named/gvulkan_named_deferred_viewport.h" "src/engine/rendering/vulkan/named/gvulkan_named_deferred_viewport.cpp" 
+ "include/engine/rendering/vulkan/named/igvulkan_named_viewport.h" "internal/engine/rendering/renderer/gdeferred_renderer_layout.h"
+ "src/engine/rendering/renderer/gdeferred_renderer_layout.cpp"  "internal/engine/rendering/renderer/gscene_composition_renderer_layout.h"
+ "src/engine/rendering/renderer/gscene_composition_renderer_layout.cpp" "internal/engine/rendering/gpu_resources.h" "include/engine/rendering/igpu_resources.h" 
+ "src/engine/rendering/gpu_resources.cpp" "internal/engine/rendering/gpu_mesh_stream_resources.h" "src/engine/rendering/gpu_mesh_stream_resouces.cpp"
+ "include/engine/rendering/vulkan/named/igvulkan_named_set.h" "internal/engine/rendering/renderer/gscene_renderer2.h" "src/engine/rendering/renderer/gscene_renderer2.cpp" 
+ "internal/engine/rendering/vulkan/named/gvulkan_named_graphic_pipeline.h" "src/engine/rendering/vulkan/named/gvulkan_named_graphic_pipeline.cpp" 
+ "include/engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h" "internal/engine/rendering/vulkan/named/gvulkan_named_pipeline_layout.h"
+ "src/engine/rendering/vulkan/named/gvulkan_named_pipeline_layout.cpp" "include/engine/rendering/vulkan/named/viewports/igvulkan_named_composition_viewport.h"
+ "include/engine/rendering/renderer/igvulkan_deferred_renderer.h" "internal/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.h" 
+ "src/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.cpp" "include/engine/rendering/vulkan/named/igvulkan_named_graphic_pipeline.h" 
+ "include/engine/rendering/point_light.h" "internal/engine/rendering/gpu_meshlet_stream_resources.h" "internal/engine/rendering/gpu_helpers.h" 
+ "src/engine/rendering/gpu_meshlet_stream_resources.cpp" "src/engine/scene/gentity.cpp" "internal/engine/scene/gentity.h" "internal/engine/scene/component/transform_component.h" "src/engine/scene/component/transform_component.cpp" "internal/engine/scene/gregistry.h" "src/engine/scene/gregistry.cpp")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -85,6 +101,7 @@ target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/taskflow")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross/include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect/")
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/single_include")
 
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
@@ -104,6 +121,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-headers" SPIRV
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-tools" SPIRV-TOOLS)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross" SPIRV-CROSS)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect" SPIRV-REFLECT)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/" ENTT)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 target_compile_definitions(glslang PRIVATE BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)

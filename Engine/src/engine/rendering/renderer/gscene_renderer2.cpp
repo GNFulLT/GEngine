@@ -1265,7 +1265,7 @@ void GSceneRenderer2::fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t fram
 	auto size = (mesh.boundingBox.max_ - mesh.boundingBox.min_);
 	glm::mat4 transform = glm::translate(glm::mat4(1), center) * glm::scale(glm::mat4(1), size);
 	auto currScene = p_sceneManager->get_current_scene();
-	glm::mat4 model = currScene->globalTransform_[nodeId];
+	glm::mat4 model =glm::mat4(1.f);
 	uint32_t gpuTransformIndex = p_sceneManager->get_gpu_transform_index(nodeId);
 	vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_aabbPipeline->get_vk_pipeline());
 	std::array<VkDescriptorSet, 3> descriptorSets;
@@ -1538,4 +1538,3 @@ uint32_t GSceneRenderer2::create_draw_data(uint32_t meshIndex, uint32_t material
 {
 	return m_meshStreamResources->create_draw_data(meshIndex,materialIndex,transformIndex);
 }
-

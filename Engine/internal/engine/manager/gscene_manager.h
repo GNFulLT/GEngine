@@ -9,6 +9,7 @@
 #include "engine/rendering/point_light.h"
 #include "public/core/templates/unordered_dense.h"
 #include "engine/rendering/vulkan/ivulkan_image.h"
+#include "internal/engine/scene/gentity.h"
 
 struct VkDescriptorSet_T;
 struct VkFramebuffer_T;

@@ -47,3 +47,6 @@
 [submodule "ThirdParty/meshoptimizer"]
 	path = ThirdParty/meshoptimizer
 	url = https://github.com/zeux/meshoptimizer.git
+[submodule "ThirdParty/entt"]
+	path = ThirdParty/entt
+	url = https://github.com/skypjack/entt.git

@@ -129,8 +129,8 @@ bool GSceneRenderer::init(IGVulkanViewport* vp)
 
 			//X Add transform data for it
 			auto transformId = i;
-			m_scene->globalTransform_[i] = glm::translate(glm::mat4(1.f), glm::vec3(-15.f, 0.f, 10.f)) * glm::scale(glm::mat4(1.f), glm::vec3(50, 50, 50));
-			m_scene->localTransform_[i] = glm::translate(glm::mat4(1.f), glm::vec3(-15.f, 0.f, 10.f)) * glm::scale(glm::mat4(1.f), glm::vec3(50, 50, 50));
+			//m_scene->globalTransform_[i] = glm::translate(glm::mat4(1.f), glm::vec3(-15.f, 0.f, 10.f)) * glm::scale(glm::mat4(1.f), glm::vec3(50, 50, 50));
+			//m_scene->localTransform_[i] = glm::translate(glm::mat4(1.f), glm::vec3(-15.f, 0.f, 10.f)) * glm::scale(glm::mat4(1.f), glm::vec3(50, 50, 50));
 			drawDatas[currentData].transformIndex = i;
 			//X If there is an assigned material give it
 			if (auto mtrl = m_scene->materialForNode_.find(i); mtrl != m_scene->materialForNode_.end())
@@ -144,9 +144,9 @@ bool GSceneRenderer::init(IGVulkanViewport* vp)
 	m_materialSSBO.reset(p_boundedDevice->create_buffer(m_materials.size() * sizeof(MaterialDescription), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 	m_materialSSBO->copy_data_to_device_memory(m_materials.data(), m_materials.size() * sizeof(MaterialDescription));
 	//X Upload transform datas
-	m_transformDataSSBO.reset(p_boundedDevice->create_buffer(m_scene->globalTransform_.size() * sizeof(glm::mat4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+	m_transformDataSSBO.reset(p_boundedDevice->create_buffer(1000 * sizeof(glm::mat4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 	m_transformDataMappedMem = m_transformDataSSBO->map_memory();
-	memcpy(m_transformDataMappedMem,m_scene->globalTransform_.data(), m_scene->globalTransform_.size() * sizeof(glm::mat4));
+	//memcpy(m_transformDataMappedMem,m_scene->globalTransform_.data(), m_scene->globalTransform_.size() * sizeof(glm::mat4));
 
 
 	//x After calculating give these to gpu
@@ -646,7 +646,7 @@ void GSceneRenderer::update_scene_nodes()
 			int nodeIndex = m_scene->changedNodesAtThisFrame_.front();
 			m_scene->changedNodesAtThisFrame_.pop();
 			glm::mat4* offset = ((glm::mat4*)m_transformDataMappedMem) + nodeIndex;
-			memcpy(offset,&m_scene->globalTransform_[nodeIndex],sizeof(glm::mat4));
+			//memcpy(offset,&m_scene->globalTransform_[nodeIndex],sizeof(glm::mat4));
 		}
 	}
 }
@@ -906,9 +906,9 @@ uint32_t GSceneRenderer::add_node_with_mesh(uint32_t meshIndex)
 		m_drawDataIDSSBO->unmap_memory();
 
 		
-		m_transformDataSSBO.reset(p_boundedDevice->create_buffer(m_scene->globalTransform_.size() * sizeof(glm::mat4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU).value());
+		m_transformDataSSBO.reset(p_boundedDevice->create_buffer(1000 * sizeof(glm::mat4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU).value());
 		m_transformDataMappedMem = m_transformDataSSBO->map_memory();
-		memcpy(m_transformDataMappedMem, m_scene->globalTransform_.data(), m_scene->globalTransform_.size() * sizeof(glm::mat4));
+		//memcpy(m_transformDataMappedMem, m_scene->globalTransform_.data(), m_scene->globalTransform_.size() * sizeof(glm::mat4));
 
 
 		for (int i = 0; i < m_framesInFlight; i++)

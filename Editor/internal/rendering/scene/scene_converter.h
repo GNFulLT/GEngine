@@ -28,8 +28,8 @@ public:
 
 	void process_scene(const SceneConfig& cfg);
 
-	MeshData* load_all_meshes(const char* path,std::vector<MaterialDescription>& desc ,std::unordered_map<uint32_t,std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles,Scene** transformDatas);
-	GMeshletData* load_all_meshes_meshlet(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** transformDatas);
+	MeshData* load_all_meshes(const char* path,std::vector<MaterialDescription>& desc ,std::unordered_map<uint32_t,std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles,Scene** transformDatas, std::unordered_map<uint32_t, glm::mat4>& transforms);
+	GMeshletData* load_all_meshes_meshlet(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** transformDatas, std::unordered_map<uint32_t, glm::mat4>& transforms);
 
 private:
 

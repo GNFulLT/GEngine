@@ -10,6 +10,7 @@
 #include <queue>
 void SceneConverter::traverse(const aiScene* sourceScene, Scene& scene, aiNode* node, int parent, int atLevel)
 {
+	assert(false);
     int newNode = Scene::add_node(scene, parent, atLevel);
     if (node->mName.C_Str()) {
         uint32_t stringID = (uint32_t)scene.names_.size();
@@ -24,12 +25,12 @@ void SceneConverter::traverse(const aiScene* sourceScene, Scene& scene, aiNode* 
         int mesh = (int)node->mMeshes[i];
         scene.meshes_[newSubNode] = mesh;
         scene.materialForNode_[newSubNode] = sourceScene->mMeshes[mesh]->mMaterialIndex;
-        scene.globalTransform_[newSubNode] = glm::mat4(1.0f);
-        scene.localTransform_[newSubNode] = glm::mat4(1.0f);
+        //scene.globalTransform_[newSubNode] = glm::mat4(1.0f);
+        //scene.localTransform_[newSubNode] = glm::mat4(1.0f);
     }
 
-    scene.globalTransform_[newNode] = glm::mat4(1.0f);
-    scene.localTransform_[newNode] = to_glm_mat4(node->mTransformation);
+    //scene.globalTransform_[newNode] = glm::mat4(1.0f);
+    //scene.localTransform_[newNode] = to_glm_mat4(node->mTransformation);
     // Travese the childrens too
     for (unsigned int n = 0; n < node->mNumChildren; n++)
         traverse(sourceScene, scene, node->mChildren[n], newNode, atLevel + 1);
@@ -151,7 +152,7 @@ glm::mat4 convertMatrix(const aiMatrix4x4& aiMat)
 	aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4
 	};
 }
-MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** virtualScene)
+MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** virtualScene, std::unordered_map<uint32_t, glm::mat4>& transforms)
 {
 	MeshData* meshData = new MeshData();
 	uint32_t indexOffset = 0;
@@ -219,7 +220,7 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 		{
 			auto glmT = glm::transpose(glm::make_mat4(&scene->mRootNode->mTransformation.a1));
 			uint32_t nodeIndex = gscene->add_node(*gscene, parent, 1);
-			gscene->localTransform_[nodeIndex] = glmT;
+			transforms.emplace(nodeIndex, glmT);
 			gscene->meshes_.emplace(nodeIndex, i);
 			gscene->materialForNode_.emplace(nodeIndex, scene->mMeshes[i]->mMaterialIndex);
 		}
@@ -250,7 +251,7 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 
 			ai_to_scene.emplace(iter->mChildren[i], nodeIndex);
 			
-			gscene->localTransform_[nodeIndex] = glmT;
+			transforms.emplace(nodeIndex, glmT);
 			if (meshCount != 0)
 			{
 				auto meshIndex = iter->mChildren[i]->mMeshes[0];
@@ -271,7 +272,7 @@ MeshData* SceneConverter::load_all_meshes(const char* path, std::vector<Material
 	return meshData;
 }
 
-GMeshletData* SceneConverter::load_all_meshes_meshlet(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** virtualScene)
+GMeshletData* SceneConverter::load_all_meshes_meshlet(const char* path, std::vector<MaterialDescription>& desc, std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, Scene** virtualScene,std::unordered_map<uint32_t,glm::mat4>& transforms)
 {
 	GMeshletData* meshletData = new GMeshletData();
 	uint32_t indexOffset = 0;
@@ -341,7 +342,8 @@ GMeshletData* SceneConverter::load_all_meshes_meshlet(const char* path, std::vec
 		{
 			auto glmT = glm::transpose(glm::make_mat4(&scene->mRootNode->mTransformation.a1));
 			uint32_t nodeIndex = gscene->add_node(*gscene, parent, 1);
-			gscene->localTransform_[nodeIndex] = glmT;
+			transforms.emplace(nodeIndex,glmT);
+			//gscene->localTransform_[nodeIndex] = glmT;
 			gscene->meshes_.emplace(nodeIndex, i);
 			gscene->materialForNode_.emplace(nodeIndex, scene->mMeshes[i]->mMaterialIndex);
 		}
@@ -371,8 +373,9 @@ GMeshletData* SceneConverter::load_all_meshes_meshlet(const char* path, std::vec
 			uint32_t nodeIndex = gscene->add_node(*gscene, parent, level);
 
 			ai_to_scene.emplace(iter->mChildren[i], nodeIndex);
+			transforms.emplace(nodeIndex, glmT);
 
-			gscene->localTransform_[nodeIndex] = glmT;
+			//gscene->localTransform_[nodeIndex] = glmT;
 			if (meshCount != 0)
 			{
 				auto meshIndex = iter->mChildren[i]->mMeshes[0];

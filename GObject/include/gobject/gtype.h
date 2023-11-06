@@ -5,7 +5,9 @@
 #include "public/typedefs.h"
 #include <string_view>
 #include "gobject/gfunction.h"
+#include <memory>
 
+struct GProperty;
 struct GTypeInfo;
 
 class GOBJECT_API GType
@@ -21,6 +23,8 @@ public:
 	bool equals(const GType& other) const _NO_EXCEPT_;
 
 	GFunction get_function_by_name(std::string_view name) _NO_EXCEPT_;
+
+	const std::vector<std::shared_ptr<GProperty>>* get_properties() _NO_EXCEPT_;
 
 	bool is_class() const _NO_EXCEPT_;
 private:

@@ -76,7 +76,8 @@ void GImGuiPropertiesWindow::render()
 
 			if (isChanged)
 			{
-				scene->localTransform_[m_currentSelectedNode] = glm::translate(glm::mat4(1.f), m_currentNodePosition) * glm::mat4_cast(m_currentNodeRotatition) * glm::scale(glm::mat4(1.f), m_currentNodeScale);
+				//glm::mat4 castt = glm::translate(glm::mat4(1.f), m_currentNodePosition) * glm::mat4_cast(m_currentNodeRotatition) * glm::scale(glm::mat4(1.f), m_currentNodeScale);
+				scene->set_transform_of(m_currentSelectedNode,glm::mat4(1.f));
 				scene->mark_as_changed(m_currentSelectedNode);
 			}
 		}

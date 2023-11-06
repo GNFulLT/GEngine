@@ -6,7 +6,7 @@ struct First
 {
 public:
 	int b(int a);
-private:
+	int number;
 };
 
 

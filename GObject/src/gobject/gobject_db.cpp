@@ -67,6 +67,22 @@ GFunctionWrapper* GObjectDB::define_function_for(GTypeInfo* type, std::unique_pt
 
 }
 
+GProperty* GObjectDB::define_property_for(GTypeInfo* type, std::unique_ptr<GProperty> property)
+{
+	if (type == nullptr || !type->m_is_valid || !property)
+	{
+		return nullptr;
+	}
+	if (const auto& prop = type->m_classInfo.m_propertyMap.find(std::string(property->get_name())); prop != type->m_classInfo.m_propertyMap.end())
+	{
+		return prop.operator->()->second.get();
+	}
+	auto wrp = std::shared_ptr<GProperty>(std::move(property));
+	type->m_classInfo.m_propertyMap.emplace(wrp->get_name(), wrp);
+	type->m_classInfo.m_properties.push_back(wrp);
+	return wrp.get();
+}
+
 GTypeInfo* GObjectDB::get_type_info(uint64_t index)
 {
 	if (const auto& oldTypeInfo = m_data->m_typeInfoTable.find(index); oldTypeInfo != m_data->m_typeInfoTable.end())

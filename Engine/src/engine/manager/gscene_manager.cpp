@@ -97,13 +97,18 @@ void GSceneManager::reconstruct_global_buffer_for_frame(uint32_t frame)
 			if (gpuIndexIter != m_cpu_to_gpu_map.end())
 			{
 				auto gpuIndex = gpuIndexIter->second;
-				set_transform_by_index(&m_currentScene->globalTransform_[nodeIndex], gpuIndex);
+				auto gtransform = m_currentScene->get_global_transform(nodeIndex);
+				assert(gtransform != nullptr);
+				set_transform_by_index(gtransform, gpuIndex);
 			}
 			if (auto light = m_nodeToLight.find(nodeIndex); light != m_nodeToLight.end())
 			{
 				auto lightIndex = light->second;
 				auto lightData = m_globalPointLights.cpuVector[lightIndex];
-				glm::vec3 nodePos = glm::vec3(m_currentScene->globalTransform_[nodeIndex][3][0], m_currentScene->globalTransform_[nodeIndex][3][1], m_currentScene->globalTransform_[nodeIndex][3][2]);
+				auto gtransform = m_currentScene->get_global_transform(nodeIndex);
+				assert(gtransform != nullptr);
+
+				glm::vec3 nodePos = glm::vec3(gtransform->operator[](3)[0], gtransform->operator[](3)[1], gtransform->operator[](3)[2]);
 				lightData.position = nodePos;
 				m_globalPointLights.set_by_index(&lightData, lightIndex);
 			}
@@ -798,6 +803,7 @@ void GSceneManager::set_transform_by_index(const glm::mat4* data, uint32_t gpuIn
 	memcpy(&m_globalTransformData.gpuBegin[gpuIndex], glm::value_ptr(*data), sizeof(float) * 16);
 }
 
+
 uint32_t GSceneManager::add_node_with_mesh_and_material(uint32_t meshIndex, uint32_t materialIndex)
 {
 	//X First create a node
@@ -824,7 +830,7 @@ uint32_t GSceneManager::add_node_with_mesh_and_material_and_transform(uint32_t m
 	//X First create transform data for the mesh
 	uint32_t nodeGpuIndex = add_default_transform();
 	
-	m_currentScene->localTransform_[nodeId] = *transform;
+	m_currentScene->set_transform_of(nodeId, *transform);
 	m_currentScene->mark_as_changed(nodeId);
 
 	set_transform_by_index(transform, nodeGpuIndex);
@@ -848,7 +854,7 @@ uint32_t GSceneManager::add_child_node_with_mesh_and_material_and_transform(uint
 	//X First create transform data for the mesh
 	uint32_t nodeGpuIndex = add_default_transform();
 
-	m_currentScene->localTransform_[nodeId] = *transform;
+	m_currentScene->set_transform_of(nodeId,*transform);
 	m_currentScene->mark_as_changed(nodeId);
 
 	set_transform_by_index(transform, nodeGpuIndex);

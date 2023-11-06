@@ -111,10 +111,10 @@ bool GMultiMeshRenderer::init(IGVulkanViewport* port)
 
 	//X Create buffer for transforms
 
-	m_transformBuffer.reset(m_boundedDevice->create_storage_buffer(m_scene->globalTransform_.size() * sizeof(glm::mat4)).value());
+	//m_transformBuffer.reset(m_boundedDevice->create_storage_buffer(m_scene->globalTransform_.size() * sizeof(glm::mat4)).value());
 
-	m_scene->globalTransform_[0] = glm::mat4(1.f) * glm::scale(glm::mat4(1.f),glm::vec3(50.f,50.f,50.f)) * glm::translate(glm::mat4(1.f), glm::vec3(0,0, 0));
-	m_transformBuffer->copy_data_to_device_memory(m_scene->globalTransform_.data(), m_scene->globalTransform_.size() * sizeof(glm::mat4));
+	//m_scene->globalTransform_[0] = glm::mat4(1.f) * glm::scale(glm::mat4(1.f),glm::vec3(50.f,50.f,50.f)) * glm::translate(glm::mat4(1.f), glm::vec3(0,0, 0));
+	//m_transformBuffer->copy_data_to_device_memory(m_scene->globalTransform_.data(), m_scene->globalTransform_.size() * sizeof(glm::mat4));
 
 	//X Create mesh buffer for mesh datas
 	m_meshDataBuffer.reset(m_boundedDevice->create_storage_buffer(m_meshDatas->meshes_.size()*sizeof(MeshData)).value());

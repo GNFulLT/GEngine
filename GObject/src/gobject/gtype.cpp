@@ -17,7 +17,10 @@ GType::GType(const GTypeInfo* inf)
 {
 	m_info = inf;
 }
-
+const std::vector<std::shared_ptr<GProperty>>* GType::get_properties() _NO_EXCEPT_
+{
+	return &m_info->m_classInfo.m_properties;
+}
 
 std::string_view GType::get_name() const _NO_EXCEPT_
 {

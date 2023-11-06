@@ -10,6 +10,8 @@
 #include <functional>
 #include <type_traits>
 
+
+struct GProperty;
 struct GTypeInfo;
 class GFunctionWrapper;
 struct GObjectDBData;
@@ -38,6 +40,9 @@ public:
 	}
 	
 	GFunctionWrapper* define_function_for(GTypeInfo* type,std::unique_ptr<GFunctionWrapper> functionWrapper);
+
+	//X TODO : TURN THIS TO A WRAPPER
+	GProperty* define_property_for(GTypeInfo* type, std::unique_ptr<GProperty> property);
 
 	GTypeInfo* get_type_info(uint64_t index);
 	
