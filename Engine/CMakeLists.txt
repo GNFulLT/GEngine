@@ -5,9 +5,11 @@ project(GEngine_Engine LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+execute_process(COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../Programs/reflect_script/reflect_generator.py ./ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+include(${CMAKE_CURRENT_SOURCE_DIR}/greflect.cmake)
 
 
-add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gapplication_impl.h" "include/engine/globals.h" "src/engine/globals.cpp"
+add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.cpp" "include/engine/gapplication_impl.h" "include/engine/globals.h" "src/engine/globals.cpp"
 "src/engine/rendering/vulkan/vulkan_app.cpp" "internal/engine/rendering/vulkan/vulkan_app.h" "internal/engine/rendering/vulkan/vulkan_utils.h" 
 "include/engine/rendering/vulkan/ivulkan_device.h" "internal/engine/rendering/vulkan/vulkan_device.h" "src/engine/rendering/vulkan/vulkan_device.cpp" "internal/engine/rendering/vulkan/vulkan_pdevice.h"
 "src/engine/rendering/vulkan/vulkan_pdevice.cpp" "internal/engine/rendering/vulkan/vulkan_ldevice.h" "src/engine/rendering/vulkan/vulkan_ldevice.cpp" "internal/engine/rendering/vulkan/vulkan_queue.h" 
@@ -87,7 +89,7 @@ add_library(GEngine_Engine SHARED "src/engine/gengine.cpp" "include/engine/gappl
  "include/engine/rendering/renderer/igvulkan_deferred_renderer.h" "internal/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.h" 
  "src/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.cpp" "include/engine/rendering/vulkan/named/igvulkan_named_graphic_pipeline.h" 
  "include/engine/rendering/point_light.h" "internal/engine/rendering/gpu_meshlet_stream_resources.h" "internal/engine/rendering/gpu_helpers.h" 
- "src/engine/rendering/gpu_meshlet_stream_resources.cpp" "src/engine/scene/gentity.cpp" "internal/engine/scene/gentity.h" "internal/engine/scene/component/transform_component.h" "src/engine/scene/component/transform_component.cpp" "internal/engine/scene/gregistry.h" "src/engine/scene/gregistry.cpp")
+ "src/engine/rendering/gpu_meshlet_stream_resources.cpp" "src/engine/scene/gentity.cpp" "internal/engine/scene/gentity.h" "internal/engine/scene/component/transform_component.h" "src/engine/scene/component/transform_component.cpp" "internal/engine/scene/gregistry.h" "src/engine/scene/gregistry.cpp" "internal/engine/scene/component/script_component.h")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")

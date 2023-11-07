@@ -1,9 +1,15 @@
 import os;
 import json;
 import re;
+import sys;
 
 REFLECT_FILE_NAME = "generated_reflect"
 REFLECT_CMAKE_NAME = "greflect"
+
+class GPropertyExtents:
+    def __init__(self):
+        self.name = None;
+        
 
 class GFileAttrib:
     def __init__(self,file_path,file_class_attribs):
@@ -17,8 +23,9 @@ class GClassAttrib:
         self.prop_attribs = prop_attribs;
 
 class GPropertyAttrib:
-     def __init__(self,prop_name,owner_name,full_prop):
+     def __init__(self,prop_name,prop_ref,owner_name,full_prop):
         self.prop_name = prop_name;
+        self.prop_ref = prop_ref;
         self.owner_name = owner_name;
         self.full_prop = full_prop;
 
@@ -63,6 +70,20 @@ def find_class_or_struct_name_and_type(file_content):
 
     return class_struct_objs;
 
+def check_for_prop_attrib(prop_def):
+    attribs = prop_def.split(',')
+    extents = GPropertyExtents()
+    for attrib in attribs:
+        prop_value = attrib.split('=')
+        if prop_value.__len__() != 2:
+            continue
+        stripped_attrib = prop_value[0].strip()
+        stripped_val = prop_value[1].strip()
+        if stripped_attrib == 'NAME':
+            extents.name = stripped_val;
+    return extents
+
+
 def read_attribs_in_h(filepath,attribs):
     with open(filepath,"r") as read_file:
         file_content = read_file.read()
@@ -71,14 +92,18 @@ def read_attribs_in_h(filepath,attribs):
         class_struct_types = find_class_or_struct_name_and_type(file_content);
 
         gmethod_pattern = r'GMETHOD\(\)\s*[^;]*\n\s*([^;]+\([^\)]*\))'
-        gprop_pattern = r'GPROPERTY\(\)\s*([^;]+);'
+        gprop_pattern = r'GPROPERTY\(([^)]*)\)\s*([^;]+);'
+
 
         file_class_attribs = []
+        any_added_in_file = False;
         for class_struct_type in class_struct_types:
             file_attrib_and_val = [];
             file_prop_attrib_and_val = [];
+            any_added = False;
             matches = re.finditer(gmethod_pattern, file_content[class_struct_type.begin_index:class_struct_type.end_index])
             for match in matches:
+                any_added = True
                 c_method_definition = match.group(1)
                 first_blank = c_method_definition.index(' ');
                 first_paranth = c_method_definition.index('(');
@@ -87,12 +112,28 @@ def read_attribs_in_h(filepath,attribs):
             
             matches2 = re.finditer(gprop_pattern, file_content[class_struct_type.begin_index:class_struct_type.end_index])
             for match in matches2:
-                c_prop_definition = match.group(1)
+                any_added = True
+                c_prop_definition = match.group(2)
+                print(f"PROP DEF = {c_prop_definition}")
                 first_blank = c_prop_definition.index(' ');
-                c_prop_name = c_prop_definition[first_blank+1:]
-                file_prop_attrib_and_val.append(GPropertyAttrib(c_prop_name,class_struct_type.class_struct_name,c_prop_definition))
-            file_class_attribs.append(GClassAttrib(class_struct_type,file_attrib_and_val,file_prop_attrib_and_val))
-        attribs.append(GFileAttrib(filepath,file_class_attribs));
+                c_prop_def = c_prop_definition[first_blank+1:]
+                c_prop_name =  "";
+                if c_prop_def.find(' ') != -1:
+                    c_prop_name = c_prop_def[0:c_prop_def.index(' ')];
+                elif c_prop_def.find('=') != -1:
+                    c_prop_name = c_prop_def[0:c_prop_def.index('=')];
+                
+                extents = check_for_prop_attrib(match.group(1));
+                prop_ref = c_prop_name
+                if extents.name:
+                    c_prop_name = extents.name
+
+                file_prop_attrib_and_val.append(GPropertyAttrib(c_prop_name,prop_ref,class_struct_type.class_struct_name,c_prop_definition))
+            if any_added:
+                any_added_in_file = any_added
+                file_class_attribs.append(GClassAttrib(class_struct_type,file_attrib_and_val,file_prop_attrib_and_val))
+        if any_added_in_file:
+            attribs.append(GFileAttrib(filepath,file_class_attribs));
 
 
 def iterate_files_in_dir(dir,attribs):
@@ -118,10 +159,11 @@ def end_reflect_for_class(write_file):
         write_file.write("}\n")
 
 def generate_local_cmake(reflect_cpp_path,project_cmake_path):
-    if os.path.exists(f"./{REFLECT_CMAKE_NAME}.cmake"):
-        os.remove(f"./{REFLECT_CMAKE_NAME}.cmake")
+    if os.path.exists(f"{project_cmake_path}/{REFLECT_CMAKE_NAME}.cmake"):
+        os.remove(f"{project_cmake_path}/{REFLECT_CMAKE_NAME}.cmake")
     with open(f"{project_cmake_path}/{REFLECT_CMAKE_NAME}.cmake","w") as write_file:
-        write_file.write(f"set(GREFLECT_GENERATED_CPP \"{reflect_cpp_path}\")")
+        include_path = reflect_cpp_path.replace("\\", "/");
+        write_file.write(f"set(GREFLECT_GENERATED_CPP \"{include_path}\")")
 
 def generate_reflect_cpp(gobject_path,attribs,base_path):
     if os.path.exists(f"{base_path}/{REFLECT_FILE_NAME}.cpp"):
@@ -139,14 +181,18 @@ def generate_reflect_cpp(gobject_path,attribs,base_path):
                 class_name = class_struct_type.class_struct_name;
                 begin_reflect_for_class(write_file,class_name)
                 for prop_attrib in class_attrib.prop_attribs:
-                    add_prop_reflect_for_class(write_file,class_name,prop_attrib.prop_name,prop_attrib.prop_name);
+                    add_prop_reflect_for_class(write_file,class_name,prop_attrib.prop_name,prop_attrib.prop_ref);
 
                 end_reflect_for_class(write_file)
     return os.path.abspath(f"{base_path}/{REFLECT_FILE_NAME}.cpp")
 
-def main(): 
-    if os.path.exists("./reflect_config.json"):
-        with open("reflect_config.json", "r") as read_file:
+def main():
+    config_path = sys.argv[1]
+    abs_path = os.path.abspath(f"{config_path}/reflect_config.json")
+    print(f"Trying to find reflect_config.json {abs_path}") 
+    if os.path.exists(f"{config_path}/reflect_config.json"):
+        print("Found") 
+        with open(f"{config_path}/reflect_config.json", "r") as read_file:
             data = json.load(read_file)
             gobject_utils_path = data["gobject_utils_path"]
             project_cmake_path = data["project_cmake_path"]
@@ -154,7 +200,11 @@ def main():
             for i in data["folders"]:
                 iterate_files_in_dir(i,attribs);
             file_path = generate_reflect_cpp(gobject_utils_path,attribs,project_cmake_path)
+            print(f"Generated to here : {file_path} Attrib count : {attribs.__len__()}")
             generate_local_cmake(file_path,project_cmake_path)
+    else:
+        print("Couldn't find config file")
+        
             
 
 if __name__=="__main__": 

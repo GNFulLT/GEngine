@@ -17,9 +17,25 @@ GType::GType(const GTypeInfo* inf)
 {
 	m_info = inf;
 }
-const std::vector<std::shared_ptr<GProperty>>* GType::get_properties() _NO_EXCEPT_
+const std::vector<GProperty> GType::get_properties() _NO_EXCEPT_
 {
-	return &m_info->m_classInfo.m_properties;
+	std::vector<GProperty> properties;
+	for (auto& property : m_info->m_classInfo.m_properties)
+	{
+		properties.emplace_back(property.get());
+	}
+
+	return properties;
+}
+
+GProperty GType::get_property_by_name(const char* name) _NO_EXCEPT_
+{
+	if (auto t = m_info->m_classInfo.m_propertyMap.find(std::string(name)); t != m_info->m_classInfo.m_propertyMap.end())
+	{
+		return GProperty(t->second.get());
+	}
+
+	return GProperty();
 }
 
 std::string_view GType::get_name() const _NO_EXCEPT_

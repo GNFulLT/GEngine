@@ -2,6 +2,7 @@
 #include "gobject/gtype_info.h"
 #include "gobject/gfunction_wrapper.h"
 #include "internal/gobject_db_data.h"
+#include "gobject/gproperty_wrapper.h"
 
 GObjectDB::GObjectDB()
 {
@@ -67,18 +68,18 @@ GFunctionWrapper* GObjectDB::define_function_for(GTypeInfo* type, std::unique_pt
 
 }
 
-GProperty* GObjectDB::define_property_for(GTypeInfo* type, std::unique_ptr<GProperty> property)
+GPropertyWrapper* GObjectDB::define_property_for(GTypeInfo* type, std::unique_ptr<GPropertyWrapper> property)
 {
 	if (type == nullptr || !type->m_is_valid || !property)
 	{
 		return nullptr;
 	}
-	if (const auto& prop = type->m_classInfo.m_propertyMap.find(std::string(property->get_name())); prop != type->m_classInfo.m_propertyMap.end())
+	if (const auto& prop = type->m_classInfo.m_propertyMap.find(std::string(property->m_name.c_str())); prop != type->m_classInfo.m_propertyMap.end())
 	{
 		return prop.operator->()->second.get();
 	}
-	auto wrp = std::shared_ptr<GProperty>(std::move(property));
-	type->m_classInfo.m_propertyMap.emplace(wrp->get_name(), wrp);
+	auto wrp = std::shared_ptr<GPropertyWrapper>(std::move(property));
+	type->m_classInfo.m_propertyMap.emplace(wrp->m_name.c_str(), wrp);
 	type->m_classInfo.m_properties.push_back(wrp);
 	return wrp.get();
 }

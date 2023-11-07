@@ -6,8 +6,9 @@
 #include <string_view>
 #include "gobject/gfunction.h"
 #include <memory>
+#include "gobject/gproperty.h"
+#include <vector>
 
-struct GProperty;
 struct GTypeInfo;
 
 class GOBJECT_API GType
@@ -24,7 +25,9 @@ public:
 
 	GFunction get_function_by_name(std::string_view name) _NO_EXCEPT_;
 
-	const std::vector<std::shared_ptr<GProperty>>* get_properties() _NO_EXCEPT_;
+	const std::vector<GProperty> get_properties() _NO_EXCEPT_;
+
+	GProperty get_property_by_name(const char* name) _NO_EXCEPT_;
 
 	bool is_class() const _NO_EXCEPT_;
 private:

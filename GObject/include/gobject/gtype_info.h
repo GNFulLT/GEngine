@@ -14,14 +14,14 @@
 #include <cassert>
 #include "public/core/templates/unordered_dense.h"
 #include "gobject/gfunction_wrapper.h"
-#include "gobject/gproperty.h"
+#include "gobject/gproperty_wrapper.h"
 
 struct GClassInfo
 {
     ankerl::unordered_dense::segmented_map<std::string,std::shared_ptr<GFunctionWrapper>> m_functionMap;
-    ankerl::unordered_dense::segmented_map<std::string, std::shared_ptr<GProperty>> m_propertyMap;
+    ankerl::unordered_dense::segmented_map<std::string, std::shared_ptr<GPropertyWrapper>> m_propertyMap;
 
-    std::vector<std::shared_ptr<GProperty>> m_properties;
+    std::vector<std::shared_ptr<GPropertyWrapper>> m_properties;
 };
 
 enum class TYPE_TRAIT_INFO : std::uint8_t
