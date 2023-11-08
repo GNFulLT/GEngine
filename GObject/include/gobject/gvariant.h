@@ -119,7 +119,7 @@ template<typename T, typename U, typename,typename>
 inline GVariant::GVariant(T&& val)
 {
 	m_rawData = TypeHelpers<U>::gnew(&m_storage, std::forward<T>(val));
-	m_type = create_type(GObjectDB::get_object_db().get_type_info(typeid(T).hash_code()));
+	m_type = create_type(add_or_get_type_info<T>());
 }
 
 

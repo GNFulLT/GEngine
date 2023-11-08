@@ -7,6 +7,7 @@
 #include "engine/rendering/vulkan/named/viewports/igvulkan_named_composition_viewport.h"
 #include "engine/rendering/renderer/igvulkan_deferred_renderer.h"
 #include "engine/rendering/material/gmaterial.h"
+#include "engine/scene/gentity.h"
 
 #include <cstdint>
 #include <vector>
@@ -66,6 +67,8 @@ public:
 	virtual bool init_deferred_renderer(IGVulkanNamedDeferredViewport* deferred) = 0;
 
 	virtual bool is_renderer_active() = 0;
+	
+	virtual GEntity* get_entity_by_id(uint32_t id) = 0;
 
 	virtual IGVulkanDeferredRenderer* get_deferred_renderer() const noexcept = 0;
 	

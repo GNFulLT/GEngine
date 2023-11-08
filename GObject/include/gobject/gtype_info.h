@@ -13,8 +13,11 @@
 #include <sstream>
 #include <cassert>
 #include "public/core/templates/unordered_dense.h"
-#include "gobject/gfunction_wrapper.h"
-#include "gobject/gproperty_wrapper.h"
+
+
+
+class GFunctionWrapper;
+class GPropertyWrapper;
 
 struct GClassInfo
 {

@@ -831,7 +831,7 @@ uint32_t GSceneManager::add_node_with_mesh_and_material_and_transform(uint32_t m
 	uint32_t nodeGpuIndex = add_default_transform();
 	
 	m_currentScene->set_transform_of(nodeId, *transform);
-	m_currentScene->mark_as_changed(nodeId);
+	//m_currentScene->mark_as_changed(nodeId);
 
 	set_transform_by_index(transform, nodeGpuIndex);
 
@@ -855,7 +855,7 @@ uint32_t GSceneManager::add_child_node_with_mesh_and_material_and_transform(uint
 	uint32_t nodeGpuIndex = add_default_transform();
 
 	m_currentScene->set_transform_of(nodeId,*transform);
-	m_currentScene->mark_as_changed(nodeId);
+	//m_currentScene->mark_as_changed(nodeId);
 
 	set_transform_by_index(transform, nodeGpuIndex);
 
@@ -950,6 +950,11 @@ void GSceneManager::update_sun_properties(const SunProperties* sunProps)
 const GlobalUniformBuffer* GSceneManager::get_global_data() const noexcept
 {
 	return &m_globalData;
+}
+
+GEntity* GSceneManager::get_entity_by_id(uint32_t id)
+{
+	return m_currentScene->get_entity_by_id(id);
 }
 
 

@@ -58,7 +58,7 @@ void GImGuiCompositionPortWindow::render()
 	{
 		auto scene = m_sceneManager->get_current_scene();
 		auto mtrx = scene->get_matrix_of(selectedNode);
-		if (mtrx != nullptr)
+		if (scene->has_matrix(selectedNode))
 		{
 			if (m_selectedNode != selectedNode)
 			{
@@ -71,11 +71,12 @@ void GImGuiCompositionPortWindow::render()
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, width,height);
 			auto camProj = glm::make_mat4(m_cameraManager->get_camera_proj_matrix());
 			bool isChanged = ImGuizmo::Manipulate(m_cameraManager->get_camera_view_matrix(), glm::value_ptr(camProj), ImGuizmo::TRANSLATE,
-				ImGuizmo::LOCAL, glm::value_ptr(*mtrx));
+				ImGuizmo::LOCAL, glm::value_ptr(mtrx));
 
 			if (isChanged)
 			{
-				scene->mark_as_changed(m_selectedNode);
+				scene->set_transform_of(m_selectedNode, mtrx);
+				//scene->mark_as_changed(m_selectedNode);
 			}
 		}
 	}

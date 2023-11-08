@@ -53,6 +53,7 @@ ENGINE_API glm::mat4* Scene::get_global_transform(uint32_t nodeID)
 	{
 		return &transform->get_global_transform();
 	}
+	return nullptr;
 }
 
 ENGINE_API void Scene::mark_as_changed(int nodeId)
@@ -72,8 +73,8 @@ ENGINE_API bool Scene::recalculate_transforms()
 		if (entity->has_component<TransformComponent>())
 		{
 			auto& transform = entity->get_component<TransformComponent>();
-			auto& globalTransform = transform.get_global_transform();
-			globalTransform = transform.get_local_transform();
+			//auto& globalTransform = transform.get_global_transform();
+			transform.set_global_transform(transform.get_local_transform());
 		}
 		changedAtThisFrame_[0].clear();
 	}
@@ -95,7 +96,7 @@ ENGINE_API bool Scene::recalculate_transforms()
 				{
 					val = parentEntity->get_component<TransformComponent>().get_global_transform() * val;
 				}
-				cglobal = val;
+				childTransform.set_global_transform(val);
 			}
 			//globalTransform_[c] = globalTransform_[p] * localTransform_[c];
 			changedNodesAtThisFrame_.push(c);
@@ -115,22 +116,41 @@ ENGINE_API void Scene::set_transform_of(uint32_t nodeID, const glm::mat4& t)
 	assert(entity != nullptr);
 	if (auto transform = entity->get_or_null_component<TransformComponent>(); transform != nullptr)
 	{
-		auto& loc = transform->get_local_transform();
-		loc = t;
+		transform->set_local_transform(t);
+		mark_as_changed(nodeID);
 	}
 }
-
-ENGINE_API glm::mat4* Scene::get_matrix_of(uint32_t nodeID)
+ENGINE_API GEntity* Scene::get_entity_by_id(uint32_t nodeID)
 {
 	if (nodeID >= hierarchy.size())
 		return nullptr;
 	auto entity = m_registry->get_entity_by_index(nodeID);
+	return entity;
+}
+ENGINE_API glm::mat4 Scene::get_matrix_of(uint32_t nodeID)
+{
+	if (nodeID >= hierarchy.size())
+		return glm::mat4(1.f);
+	auto entity = m_registry->get_entity_by_index(nodeID);
 	assert(entity != nullptr);
 	if (auto transform = entity->get_or_null_component<TransformComponent>(); transform != nullptr)
 	{
-		return &transform->get_local_transform();
+		return transform->get_local_transform();
 	}
-	return nullptr;
+	return glm::mat4(1.f);
+}
+
+ENGINE_API bool Scene::has_matrix(uint32_t nodeID)
+{
+	if (nodeID >= hierarchy.size())
+		return false;
+	auto entity = m_registry->get_entity_by_index(nodeID);
+	assert(entity != nullptr);
+	if (auto transform = entity->get_or_null_component<TransformComponent>(); transform != nullptr)
+	{
+		return true;
+	}
+	return false;
 }
 
 ENGINE_API Scene* Scene::create_scene_with_default_material(std::vector<MaterialDescription>& mat)
@@ -157,7 +177,7 @@ ENGINE_API int Scene::add_node(Scene& scene, int parent, int level)
 		//scene.localTransform_.push_back(glm::mat4(1.0f));
 		//scene.globalTransform_.push_back(glm::mat4(1.0f));
 		auto& entity = scene.m_registry->create_entity();
-		entity.emplace_component<TransformComponent>();
+		entity.emplace_component<TransformComponent>(&scene,node);
 	}
 
 	Hierarchy hierarchy;

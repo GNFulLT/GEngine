@@ -9,7 +9,7 @@
 #include "engine/rendering/point_light.h"
 #include "public/core/templates/unordered_dense.h"
 #include "engine/rendering/vulkan/ivulkan_image.h"
-#include "internal/engine/scene/gentity.h"
+#include "engine/scene/gentity.h"
 
 struct VkDescriptorSet_T;
 struct VkFramebuffer_T;
@@ -167,6 +167,10 @@ private:
 
 	// Inherited via IGSceneManager
 	virtual const GlobalUniformBuffer* get_global_data() const noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual GEntity* get_entity_by_id(uint32_t id) override;
 
 };
 

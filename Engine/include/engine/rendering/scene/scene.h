@@ -14,14 +14,13 @@
 //X Will be changed
 
 class GRegistry;
+class GEntity;
 
 #include <queue>
 enum SCENE_DECODE_ERROR
 {
 	SCENE_DECODE_ERROR_UNKNOWN
 };
-
-
 
 struct Scene {
 	ENGINE_API Scene();
@@ -46,16 +45,18 @@ struct Scene {
 	std::queue<int> changedNodesAtThisFrame_;
 
 	ENGINE_API glm::mat4* get_global_transform(uint32_t nodeID);
-	ENGINE_API void mark_as_changed(int nodeId);
 	ENGINE_API bool recalculate_transforms();
 	ENGINE_API void set_transform_of(uint32_t nodeID,const glm::mat4& transform);
 	//X Discouraged way to change matrix
-	ENGINE_API glm::mat4* get_matrix_of(uint32_t nodeID);
+	ENGINE_API glm::mat4 get_matrix_of(uint32_t nodeID);
+	ENGINE_API bool has_matrix(uint32_t nodeID);
+
 	ENGINE_API static Scene* create_scene_with_default_material(std::vector<MaterialDescription>& mat);
 	ENGINE_API static int add_node(Scene& scene, int parent, int level);
 	ENGINE_API static bool save_the_scene(const Scene& scene, const char* filePath);
 	ENGINE_API static std::expected<Scene*, SCENE_DECODE_ERROR> load_the_scene(const char* filePath);
-
+	ENGINE_API GEntity* get_entity_by_id(uint32_t id);
+	ENGINE_API void mark_as_changed(int nodeId);
 private:
 	GRegistry* m_registry;
 };

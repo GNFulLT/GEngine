@@ -3,7 +3,7 @@
 
 #include <entt/entt.hpp>
 #include "engine/GEngine_EXPORT.h"
-#include "internal/engine/scene/gentity.h"
+#include "engine/scene/gentity.h"
 
 class GRegistry
 {

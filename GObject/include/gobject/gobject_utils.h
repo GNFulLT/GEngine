@@ -31,10 +31,17 @@ namespace GTypeUtils
 	}
 
 	template<typename C, typename T>
-	inline GProperty* register_property(GTypeInfo* inf, std::string_view name, T C::* dataMemPtr)
+	inline GPropertyWrapper* register_property(GTypeInfo* inf, std::string_view name, T C::* dataMemPtr)
 	{
-		GProperty* wrp = new GPropertyRaw<C,T>(dataMemPtr,name.data());
-		return GObjectDB::get_object_db().define_property_for(inf, std::unique_ptr<GProperty>(wrp));
+		GPropertyWrapper* wrp = new GPropertyRaw<C,T>(dataMemPtr,name.data());
+		return GObjectDB::get_object_db().define_property_for(inf, std::unique_ptr<GPropertyWrapper>(wrp));
+	}
+
+	template<typename C, typename T>
+	inline GPropertyWrapper* register_property(GTypeInfo* inf, std::string_view name, T C::* dataMemPtr,const T&(C::* getter)(),void(C::* setter)(const T&))
+	{
+		GPropertyWrapper* wrp = new GPropertyGetterSetter<C, T>(dataMemPtr, name.data(),getter,setter);
+		return GObjectDB::get_object_db().define_property_for(inf, std::unique_ptr<GPropertyWrapper>(wrp));
 	}
 }
 
@@ -49,5 +56,7 @@ static void registeration_func_##type() { GTypeInfo* inf = GObjectDB::get_object
 #define GOBJECT_DEFINE_MEMBER_METHOD(name,func) GTypeUtils::register_member_function(inf,name,func);
 
 #define GOBJECT_DEFINE_PROPERTY(name,prop) GTypeUtils::register_property(inf,name,prop);
+
+#define GOBJECT_DEFINE_PROPERTY_GS(name,prop,getter,setter) GTypeUtils::register_property(inf,name,prop,getter,setter);
 
 #endif // GOBJECT_UTILS

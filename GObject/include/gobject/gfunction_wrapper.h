@@ -9,11 +9,11 @@
 #include <string>
 #include "gobject/gvariant.h"
 #include <string_view>
-#include "gobject/gobject_db.h"
 #include <expected>
 #include <tuple>
 #include "gobject/gfunction_execution_error.h"
 #include "gobject/gtype_utils.h"
+
 struct GTypeInfo;
 
 class GOBJECT_API GFunctionWrapper
@@ -160,8 +160,8 @@ class GMemberFunctionWrapper : public GFunctionWrapper
 	using mem_func_ptr = Return(C::*)(Args...);
 
 public:
-	GMemberFunctionWrapper(std::string_view name, mem_func_ptr ptr) : GFunctionWrapper(name,GTypeUtils::add_or_get_type_info<C>(),
-		GTypeUtils::add_or_get_type_info<Return>(),	{ GTypeUtils::add_or_get_type_info<std::remove_cv_t<std::remove_reference_t<Args>>>()... })
+	GMemberFunctionWrapper(std::string_view name, mem_func_ptr ptr) : GFunctionWrapper(name,add_or_get_type_info<C>(),
+		add_or_get_type_info<Return>(),	{ add_or_get_type_info<std::remove_cv_t<std::remove_reference_t<Args>>>()... })
 	{
 		m_memFunPtr = ptr;
 	}

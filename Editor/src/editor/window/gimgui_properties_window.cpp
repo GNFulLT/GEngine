@@ -49,8 +49,48 @@ void GImGuiPropertiesWindow::render()
 	if (auto selectedNode = m_sceneWindow->get_selected_entity();selectedNode != -1)
 	{
 		auto scene=  m_sceneManager->get_current_scene();
+		auto gentity = m_sceneManager->get_entity_by_id(selectedNode);
+		
 		auto mtrx = scene->get_matrix_of(selectedNode);
-		if (mtrx != nullptr)
+		
+		if (gentity != nullptr)
+		{
+			auto serComps = gentity->get_serializable_components();
+			for (auto serComp : *serComps)
+			{
+				auto type = serComp->get_type();
+				auto typeName = type.get_name();
+				if (ImGui::CollapsingHeader(typeName.data()))
+				{
+					auto props = type.get_properties();
+					for (auto& prop : props)
+					{
+						auto propName = prop.get_name();
+						auto propType = prop.get_type_info();
+						auto vec3Type = GTypeUtils::add_or_get_type<glm::vec3>();
+						if (vec3Type.equals(propType))
+						{
+							auto res = prop.get(serComp->as_variant());
+							if (res.has_value())
+							{
+								auto getter = res.value();
+								auto vv = *(glm::vec3*)getter.get_raw();
+								if (ImGui::InputFloat3(propName, glm::value_ptr(vv)))
+								{
+									auto stterRes = prop.set(serComp->as_variant(), GVariant(vv));
+									if (stterRes.has_value())
+									{
+										int a = 5;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (scene->has_matrix(selectedNode))
 		{
 			if (selectedNode != m_currentSelectedNode)
 			{
@@ -60,7 +100,7 @@ void GImGuiPropertiesWindow::render()
 			}
 			glm::vec3 skew;
 			glm::vec4 perspective;
-			glm::decompose(*mtrx, m_currentNodeScale, m_currentNodeRotatition, m_currentNodePosition, skew, perspective);
+			glm::decompose(mtrx, m_currentNodeScale, m_currentNodeRotatition, m_currentNodePosition, skew, perspective);
 			m_currentNodeRotatition = glm::conjugate(m_currentNodeRotatition);
 			bool isChanged = false;
 
@@ -76,9 +116,13 @@ void GImGuiPropertiesWindow::render()
 
 			if (isChanged)
 			{
-				//glm::mat4 castt = glm::translate(glm::mat4(1.f), m_currentNodePosition) * glm::mat4_cast(m_currentNodeRotatition) * glm::scale(glm::mat4(1.f), m_currentNodeScale);
-				scene->set_transform_of(m_currentSelectedNode,glm::mat4(1.f));
-				scene->mark_as_changed(m_currentSelectedNode);
+				glm::mat4 transf = glm::mat4(1.f);
+				transf = glm::translate(transf, m_currentNodePosition);
+				transf = glm::scale(transf, m_currentNodeScale);
+				transf = transf * glm::mat4(1.f);
+
+				scene->set_transform_of(m_currentSelectedNode, transf);
+				//scene->mark_as_changed(m_currentSelectedNode);
 			}
 		}
 		auto drawId = m_sceneManager->get_draw_id_of_node(selectedNode);

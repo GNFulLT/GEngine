@@ -4,6 +4,7 @@
 
 
 GOBJECT_ENABLE(TransformComponent)
-	GOBJECT_DEFINE_PROPERTY("m_localTransform",&TransformComponent::m_localTransform)
-	GOBJECT_DEFINE_PROPERTY("globalTransform",&TransformComponent::m_globalTransform)
+	GOBJECT_DEFINE_PROPERTY_GS("position", &TransformComponent::m_position, &TransformComponent::position_getter, &TransformComponent::position_setter)
+	GOBJECT_DEFINE_PROPERTY_GS("scale",&TransformComponent::m_scale,&TransformComponent::scale_getter,&TransformComponent::scale_setter)
+	GOBJECT_DEFINE_PROPERTY("rotation",&TransformComponent::m_rotation)
 }
