@@ -64,8 +64,8 @@ set(GSCRIPT_TARGETED_CPP "{}"))", projectName, "main.cpp");
 
 void GProjectManager::swap_selected_project(GProject* project)
 {
-	
-	m_selectedProject = project;
+	unload_selected_project();
+	load_project(project);
 }
 
 void GProjectManager::unload_selected_project()
@@ -79,4 +79,15 @@ void GProjectManager::unload_selected_project()
 
 void GProjectManager::load_project(GProject* project)
 {
+	m_selectedProject = project;
+}
+
+GProject* GProjectManager::get_selected_project() const noexcept
+{
+	return m_selectedProject;
+}
+
+bool GProjectManager::any_project_selected() const noexcept
+{
+	return m_selectedProject != nullptr;
 }

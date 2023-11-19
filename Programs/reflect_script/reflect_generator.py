@@ -67,12 +67,26 @@ def find_class_or_struct_name_and_type(file_content):
     class_struct_matches = re.finditer(class_struct_pattern, file_content)
     class_struct_objs=[];
     for class_struct_match in class_struct_matches:
-        print(f"{class_struct_match.group(2)}")
         class_struct_type = class_struct_match.group(1)
         class_struct_name = class_struct_match.group(2)
         class_start_pos = class_struct_match.start();
         class_end_pos = find_class_end(file_content,class_start_pos)
         if(class_end_pos != -1):
+            if class_struct_name == "ENGINE_API":
+                full_class = file_content[class_start_pos:class_end_pos]
+                first_brack = 0
+                for char in full_class:
+                    if char == '{':
+                        break
+                    first_brack += 1
+                class_name_attr = full_class[0:first_brack]
+                attribs = class_name_attr.split(' ')
+                first_dot = 0
+                for attrib in attribs:
+                    if attrib == ':':
+                        break;
+                    first_dot += 1
+                class_struct_name = attribs[first_dot -1]
             class_struct_objs.append(ClassStructType(class_struct_type,class_struct_name,class_start_pos,class_end_pos))
 
     return class_struct_objs;
@@ -135,9 +149,16 @@ def read_attribs_in_h(filepath,attribs):
                     c_prop_name = c_prop_def[0:c_prop_def.index('=')];
                 
                 extents = check_for_prop_attrib(match.group(1));
-                prop_ref = c_prop_name
+                c_prop_type_and_name = c_prop_definition.split(' ')
+                if len(c_prop_type_and_name) > 1:
+                    prop_ref = c_prop_type_and_name[1]
+                    if c_prop_name == "":
+                        c_prop_name = c_prop_type_and_name[1]
+                else:
+                    prop_ref = "UNKNOWN_ERROR"
                 if extents.name:
                     c_prop_name = extents.name
+                print(f"PROPERTY FOUND name : {c_prop_name} def : {c_prop_definition} prop_ref {prop_ref}")
                 prop_attrib = GPropertyAttrib(c_prop_name,prop_ref,class_struct_type.class_struct_name,c_prop_definition)
                 prop_attrib.setter = extents.setter
                 prop_attrib.getter = extents.getter

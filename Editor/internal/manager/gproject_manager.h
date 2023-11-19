@@ -1,7 +1,7 @@
 #ifndef GPROJECT_MANAGER_H
 #define GPROJECT_MANAGER_H
 
-#include "internal/gproject.h"
+#include "engine/gproject.h"
 #include <expected>
 
 enum GPROJECT_CREATE_ERROR
@@ -22,6 +22,10 @@ public:
 	void unload_selected_project();
 
 	void load_project(GProject* project);
+
+	GProject* get_selected_project() const noexcept;
+
+	bool any_project_selected() const noexcept;
 private:
 	GProject* m_selectedProject = nullptr;
 };

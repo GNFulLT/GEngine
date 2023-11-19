@@ -5,6 +5,7 @@
 #include <fstream>
 #include "editor/editor_application_impl.h"
 #include "internal/manager/gproject_manager.h"
+#include "internal/gproject.h"
 
 GImGuiProjectDescriptor::GImGuiProjectDescriptor()
 {
@@ -23,11 +24,24 @@ void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 		std::string projectName = "ExampleProject";
 		
 		auto exp = EditorApplicationImpl::get_instance()->get_project_manager()->create_project(path.string(), projectName);
-		if (exp.error())
+		if (!exp.has_value())
 		{
 			//X TODO : ERR
 			return;
 		}
 		auto proj = exp.value();
+		EditorApplicationImpl::get_instance()->get_project_manager()->swap_selected_project(proj);
+	}
+	auto proj = EditorApplicationImpl::get_instance()->get_project_manager()->get_selected_project();
+	if (proj != nullptr)
+	{
+		auto ppath = proj->get_project_path();
+		if (strcmp(ppath, path.string().c_str()) == 0)
+		{
+			if (ImGui::Selectable("Create Script"))
+			{
+
+			}
+		}
 	}
 }

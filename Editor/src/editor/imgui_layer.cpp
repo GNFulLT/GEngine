@@ -31,7 +31,7 @@
 #include "internal/window/gimgui_composition_window.h"
 #include "internal/window/gimgui_pbr_window.h"
 #include "internal/window/gimgui_sunshadow_window.h"
-
+#include "internal/menu/gproject_menu.h"
 #include "engine/gengine.h"
 #include "engine/imanager_table.h"
 #include "engine/manager/igscene_manager.h"
@@ -136,7 +136,7 @@ bool ImGuiLayer::init()
 
 	if (!inited)
 		return false;
-
+	m_windowManager->create_imgui_menu(new GProjectMenu());
 	m_windowManager->create_imgui_menu(new GThemeMenu());
 
 	m_scene = new GImGuiSceneWindow();

@@ -3,7 +3,7 @@
 
 #include "gobject/gtype.h"
 #include "gobject/gtype_utils.h"
-#include "engine/rendering/scene/iserializable.h"
+#include "engine/iserializable.h"
 
 template<typename T>
 class SerializableComponent : ISerializable

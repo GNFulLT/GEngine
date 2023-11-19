@@ -422,26 +422,6 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		ImGui::SetCursorPosY(24.f);
 		int iconBegin = ImGui::GetCursorPosX();
 
-		if (ImGui::BeginMenu("Project"))
-		{
-
-		}
-		ImGui::Spacing();
-
-		ImGui::SetCursorPosY(24.f);
-
-		if (ImGui::BeginMenu("View"))
-		{
-
-		}
-		ImGui::Spacing();
-
-		ImGui::SetCursorPosY(24.f);
-
-		if (ImGui::BeginMenu("Plugins"))
-		{
-
-		}
 		ImGui::Spacing();
 		ImGui::SetCursorPosY(24.f);
 		for (int i = 0; i < m_menuVector.size(); i++)
