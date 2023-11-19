@@ -31,6 +31,7 @@ public:
 	virtual void destroy() override;
 
 private:
+	bool m_popupIsOpen = false;
 	GImGuiWindowStorage* m_storage;
 	std::filesystem::path m_currentPath;
 	std::filesystem::path m_rightClickedFile;

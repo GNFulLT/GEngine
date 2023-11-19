@@ -51,6 +51,8 @@ def find_class_end(file_content, start_pos):
     balance = 0
     i = start_pos
     while i < len(file_content):
+        if file_content[i] == ';' and balance == 0:
+            return -1
         if file_content[i] == '{':
             balance += 1
         elif file_content[i] == '}':
@@ -61,10 +63,11 @@ def find_class_end(file_content, start_pos):
     return -1
 
 def find_class_or_struct_name_and_type(file_content):
-    class_struct_pattern = r'(class|struct)\s+(\w+)\s*(?::\s*\w+\s*)?(?::{)?'
+    class_struct_pattern = r'(class|struct)\s+(\w+)\s*(?::\s*\w+\s*)?(\{)?'
     class_struct_matches = re.finditer(class_struct_pattern, file_content)
     class_struct_objs=[];
     for class_struct_match in class_struct_matches:
+        print(f"{class_struct_match.group(2)}")
         class_struct_type = class_struct_match.group(1)
         class_struct_name = class_struct_match.group(2)
         class_start_pos = class_struct_match.start();

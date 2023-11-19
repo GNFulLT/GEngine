@@ -89,7 +89,7 @@ add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.
  "include/engine/rendering/renderer/igvulkan_deferred_renderer.h" "internal/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.h" 
  "src/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.cpp" "include/engine/rendering/vulkan/named/igvulkan_named_graphic_pipeline.h" 
  "include/engine/rendering/point_light.h" "internal/engine/rendering/gpu_meshlet_stream_resources.h" "internal/engine/rendering/gpu_helpers.h" 
- "src/engine/rendering/gpu_meshlet_stream_resources.cpp" "src/engine/scene/gentity.cpp" "include/engine/scene/gentity.h" "internal/engine/scene/component/transform_component.h" "src/engine/scene/component/transform_component.cpp" "internal/engine/scene/gregistry.h" "src/engine/scene/gregistry.cpp" "internal/engine/scene/component/script_component.h" "include/engine/rendering/scene/iserializable.h")
+ "src/engine/rendering/gpu_meshlet_stream_resources.cpp" "src/engine/scene/gentity.cpp" "include/engine/scene/gentity.h" "internal/engine/scene/component/transform_component.h" "src/engine/scene/component/transform_component.cpp" "internal/engine/scene/gregistry.h" "src/engine/scene/gregistry.cpp" "internal/engine/scene/component/script_component.h" "include/engine/rendering/scene/iserializable.h" "include/engine/scene/components/igscript.h" "src/engine/scene/component/script_component.cpp" "internal/engine/resource/gscript_resource.h")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -104,6 +104,7 @@ target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross/include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect/")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/single_include")
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/dylib/include")
 
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
@@ -124,6 +125,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-tools" SPIRV-T
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross" SPIRV-CROSS)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect" SPIRV-REFLECT)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/" ENTT)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/dylib/" DYLIB)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 target_compile_definitions(glslang PRIVATE BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)

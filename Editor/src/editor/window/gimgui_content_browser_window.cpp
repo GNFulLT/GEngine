@@ -19,6 +19,7 @@
 #include "internal/window/content_helper/descriptors/gimgui_spirv_descriptor.h"
 #include "internal/window/content_helper/descriptors/gimgui_model_asset_descriptor.h"
 #include "internal/window/content_helper/descriptors/gimgui_gmesh_descriptor.h"
+#include "internal/window/content_helper/descriptors/gimgui_project_descriptor.h"
 
 GImGuiContentBrowserWindow::GImGuiContentBrowserWindow()
 {
@@ -99,6 +100,7 @@ bool GImGuiContentBrowserWindow::init()
 	m_contentHelper.register_descriptor(new GImGuiSpirvDescriptor());
 	m_contentHelper.register_descriptor(new GImGuiModelAssetDescriptor());
 	m_contentHelper.register_descriptor(new GImGuiGMeshDescriptor());
+	m_contentHelper.register_descriptor(new GImGuiProjectDescriptor());
 	return true;
 }
 
@@ -164,6 +166,7 @@ void GImGuiContentBrowserWindow::render()
 	std::string selectedFile;
 	auto iter = m_currentPath;
 	bool enteredFolder = false;
+	bool isAnyHovered = false;
 	for (const auto& dirEntry : directory_iterator(iter))
 	{
 		VkDescriptorSet_T* desc = nullptr;
@@ -223,6 +226,7 @@ void GImGuiContentBrowserWindow::render()
 		{
 			entry = dirEntry;
 			selectedFile = fileType;
+			isAnyHovered = true;
 		}
 
 		auto textWidth = ImGui::CalcTextSize(str.c_str()).x;
@@ -237,14 +241,25 @@ void GImGuiContentBrowserWindow::render()
 	}
 	
 
-	if (m_mouse->get_mouse_button_state(MOUSE_BUTTON_RIGHT) && entry.exists())
+	if (m_mouse->get_mouse_button_state(MOUSE_BUTTON_RIGHT))
 	{
-		auto descriptors = m_contentHelper.get_descriptor_of_type_if_any(selectedFile.c_str());
-		if (descriptors != nullptr && descriptors->size() > 0)
+		if (entry.exists())
 		{
-			m_rightClickedFile = entry.path();
-			m_rightClickedFileType = selectedFile;
+			auto descriptors = m_contentHelper.get_descriptor_of_type_if_any(selectedFile.c_str());
+			if (descriptors != nullptr && descriptors->size() > 0)
+			{
+				m_rightClickedFile = entry.path();
+				m_rightClickedFileType = selectedFile;
+				ImGui::OpenPopup("file_popup", 0);
+				m_popupIsOpen = true;
+			}
+		}
+		else if(!isAnyHovered && !m_popupIsOpen)
+		{
+			m_rightClickedFileType = ".";
+			m_rightClickedFile = m_currentPath;
 			ImGui::OpenPopup("file_popup", 0);
+			m_popupIsOpen = true;
 		}
 	}
 
@@ -268,6 +283,10 @@ void GImGuiContentBrowserWindow::render()
 			}
 		}
 		ImGui::EndPopup();
+	}
+	else
+	{
+		m_popupIsOpen = false;
 	}
 	
 }
