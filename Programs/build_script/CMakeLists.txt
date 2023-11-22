@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "${GENGINE_DIR}/editor/thirdparty/GObject/include")
 target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "${GENGINE_DIR}/editor/thirdparty/entt/single_include")
 target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "${GENGINE_DIR}/editor/thirdparty/glm")
+target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "include/")
 
 #${GREFLECT_GENERATED_CPP}
 add_library(${GSCRIPT_PROJECT_NAME} SHARED ${GSCRIPT_TARGETED_CPP})

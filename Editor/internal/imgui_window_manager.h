@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 #include <atomic>
-
+#include <stack>
 class IGTextureResource;
 class Window;
 
@@ -51,6 +51,11 @@ public:
 	void try_to_show_string_in_new_editor(const std::string& content, std::string_view name, std::string_view id, bool isReadOnly = true);
 
 	GImGuiWindow* get_window_if_exist(std::string_view name);
+
+
+	void set_modal_setter(std::function<bool()> modalSetter);
+
+	std::function<bool()> get_modal_setter();
 private:
 	void render_main_dockspace();
 
@@ -69,7 +74,9 @@ private:
 	void unsafe_add_window(GImGuiWindow* window);
 
 	void safe_extract_window(GImGuiWindow* win);
+
 private:
+	std::function<bool()> m_modalSetter;
 	//X TODO : USE SHARED OR UNIQUE PTR
 	ankerl::unordered_dense::segmented_map<std::string, GImGuiWindow*> m_windowMap;
 	std::vector<GImGuiWindow*> m_windowVector;

@@ -39,3 +39,8 @@ GType GProperty::get_parent_type_info() const noexcept
 {
 	return m_wrapper->m_parentInfo;
 }
+
+bool GProperty::is_valid() const noexcept
+{
+	return m_wrapper != nullptr;
+}

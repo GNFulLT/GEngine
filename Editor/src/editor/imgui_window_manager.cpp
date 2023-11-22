@@ -589,3 +589,13 @@ void ImGuiWindowManager::safe_extract_window(GImGuiWindow* win)
 		extract_window(win);
 	}
 }
+
+void ImGuiWindowManager::set_modal_setter(std::function<bool()> modalSetter)
+{
+	m_modalSetter = modalSetter;
+}
+
+std::function<bool()> ImGuiWindowManager::get_modal_setter()
+{
+	return m_modalSetter;
+}

@@ -5,11 +5,17 @@
 #include <fstream>
 #include "editor/editor_application_impl.h"
 #include "internal/manager/gproject_manager.h"
-#include "internal/gproject.h"
+#include "engine/gproject.h"
+#include <imgui/imgui_internal.h>
+#include "internal/imgui_layer.h"
+#include "internal/imgui_window_manager.h"
 
 GImGuiProjectDescriptor::GImGuiProjectDescriptor()
 {
 	m_supportedFiles.push_back(".");
+	m_supportedFiles.push_back(".gproject");
+
+	memset(buf, 0, 50);
 }
 
 const std::vector<std::string>* GImGuiProjectDescriptor::get_file_types()
@@ -19,6 +25,19 @@ const std::vector<std::string>* GImGuiProjectDescriptor::get_file_types()
 
 void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 {
+	auto projManager = EditorApplicationImpl::get_instance()->get_project_manager();
+	if (m_scriptCreation)
+	{
+	}
+
+	if (std::filesystem::is_regular_file(path))
+	{
+		if (ImGui::Selectable("Open GProject"))
+		{
+			projManager->open_project(path);
+		}
+		return;
+	}
 	if (ImGui::Selectable("Create Project"))
 	{
 		std::string projectName = "ExampleProject";
@@ -32,16 +51,50 @@ void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 		auto proj = exp.value();
 		EditorApplicationImpl::get_instance()->get_project_manager()->swap_selected_project(proj);
 	}
-	auto proj = EditorApplicationImpl::get_instance()->get_project_manager()->get_selected_project();
+
+	auto proj = projManager->get_selected_project();
+	bool same = false;
 	if (proj != nullptr)
 	{
 		auto ppath = proj->get_project_path();
-		if (strcmp(ppath, path.string().c_str()) == 0)
+		std::error_code err;
+		auto relPath = std::filesystem::relative(path,ppath,err);
+		
+		if (relPath.string().rfind("..",0) != 0)
 		{
+			same = true;
 			if (ImGui::Selectable("Create Script"))
 			{
+				EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->set_modal_setter([&,projMng = projManager]() {
+					if(m_scriptCreation)
+						ImGui::OpenPopup("Create GScript");
+					if (ImGui::BeginPopupModal("Create GScript", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+					{
 
+						ImGui::InputText("Class Name", buf, 50);
+						if (ImGui::Button("Create"))
+						{
+							std::string className = buf;
+							auto size = className.size();
+							projMng->create_script(className);
+							m_scriptCreation = false;
+							ImGui::CloseCurrentPopup();
+							memset(buf, 0, 50);
+						}
+						if (ImGui::Button("Close"))
+						{
+							m_scriptCreation = false;
+							ImGui::CloseCurrentPopup();
+						}
+						ImGui::EndPopup();
+						return true;
+					}
+					return false;
+				});
+				m_scriptCreation = true; 
 			}
 		}
 	}
+
+	
 }

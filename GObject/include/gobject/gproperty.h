@@ -26,6 +26,8 @@ public:
 	GType get_type_info() const noexcept;
 
 	GType get_parent_type_info() const noexcept;
+
+	bool is_valid() const noexcept;
 private:
 	GPropertyWrapper* m_wrapper;
 };

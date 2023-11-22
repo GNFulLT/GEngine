@@ -53,3 +53,6 @@
 [submodule "ThirdParty/dylib"]
 	path = ThirdParty/dylib
 	url = https://github.com/martin-olivier/dylib.git
+[submodule "ThirdParty/rapidjson"]
+	path = ThirdParty/rapidjson
+	url = https://github.com/Tencent/rapidjson.git

@@ -93,7 +93,7 @@ add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.
  "internal/engine/scene/component/transform_component.h" "src/engine/scene/component/transform_component.cpp" "internal/engine/scene/gregistry.h"
  "src/engine/scene/gregistry.cpp" "internal/engine/scene/component/script_component.h" "include/engine/iserializable.h" 
  "include/engine/scene/components/igscript.h" "src/engine/scene/component/script_component.cpp" "internal/engine/resource/gscript_resource.h"
- "include/engine/igobject.h" "include/engine/gproject.h" "src/engine/gproject.cpp")
+ "include/engine/igobject.h" "include/engine/gproject.h" "src/engine/gproject.cpp" "include/engine/io/json_utils.h" "src/engine/io/json_utils.cpp")
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -109,6 +109,7 @@ target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect/")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/single_include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/dylib/include")
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/rapidjson/include")
 
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
@@ -130,6 +131,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv_cross" SPIRV-C
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect" SPIRV-REFLECT)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/" ENTT)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/dylib/" DYLIB)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/rapidjson/" RAPIDJSON)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 target_compile_definitions(glslang PRIVATE BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)

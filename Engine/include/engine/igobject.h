@@ -7,11 +7,12 @@
 #include "gobject/gobject_defs.h"
 
 #define GOBJECT_DEF(CLASS_NAME,PARENT_CLASS) 	virtual GType get_type() const override { 	return create_type(add_or_get_type_info<CLASS_NAME>());  } \
-			virtual GVariant as_variant() override{ return  GVariant(GVariantRef(*((CLASS_NAME*)this))); }
+			virtual GVariant as_variant() override{ GVariantRef ref = GVariantRef(*((CLASS_NAME*)this)); return  GVariant(ref); }
 
 class IGObject : public ISerializable
 {
 public:
+	virtual ~IGObject() = default;
 	virtual GType get_type() const override
 	{
 		return GType();

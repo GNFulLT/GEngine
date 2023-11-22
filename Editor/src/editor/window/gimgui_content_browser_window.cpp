@@ -258,7 +258,7 @@ void GImGuiContentBrowserWindow::render()
 		{
 			m_rightClickedFileType = ".";
 			m_rightClickedFile = m_currentPath;
-			ImGui::OpenPopup("file_popup", 0);
+			ImGui::OpenPopup("file_popup");
 			m_popupIsOpen = true;
 		}
 	}
@@ -270,6 +270,11 @@ void GImGuiContentBrowserWindow::render()
 		{
 			m_currentPath = pth;
 		}
+	}
+	auto modalID = EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->get_modal_setter();
+	if (modalID)
+	{
+		modalID();
 	}
 
 	if (ImGui::BeginPopup("file_popup"))
@@ -288,6 +293,7 @@ void GImGuiContentBrowserWindow::render()
 	{
 		m_popupIsOpen = false;
 	}
+	
 	
 }
 
