@@ -173,6 +173,8 @@ void ImGuiWindowManager::render_windows()
 		iterator++;
 		
 	}
+
+	handle_modals();
 	
 	m_isInRender.store(false);
 }
@@ -213,6 +215,12 @@ GImGuiWindow* ImGuiWindowManager::get_window_if_exist(std::string_view name)
 		return window->second;
 	}
 	return nullptr;
+}
+
+bool ImGuiWindowManager::add_modal_to_queue(IGImGuiModalImpl* impl)
+{
+	m_modalStack.push(new GImGuiModal(impl));
+	return true;
 }
 
 void ImGuiWindowManager::render_main_dockspace()
@@ -500,6 +508,7 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		cp_x = 0;
 		cp_y = 0;
 	}
+
 }
 
 void ImGuiWindowManager::dock_the_window_if_needs(GImGuiWindow* win)
@@ -587,6 +596,19 @@ void ImGuiWindowManager::safe_extract_window(GImGuiWindow* win)
 	else
 	{
 		extract_window(win);
+	}
+}
+
+void ImGuiWindowManager::handle_modals()
+{
+	if (m_modalStack.size() == 0)
+		return;
+	auto modal = m_modalStack.front();
+	if (!modal->render_modal())
+	{
+		m_modalStack.pop();
+		delete modal;
+		ImGui::CloseCurrentPopup();
 	}
 }
 

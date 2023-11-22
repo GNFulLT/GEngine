@@ -42,7 +42,7 @@ add_library(GEditor SHARED  "src/editor/editor_application_impl.cpp" "src/editor
  "internal/window/content_helper/descriptors/gimgui_project_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_project_descriptor.cpp"
  "internal/manager/gproject_manager.h" "src/editor/manager/gproject_manager.cpp" 
  "internal/menu/gproject_menu.h" "src/editor/menu/gproject_menu.cpp" "internal/window/gimgui_file_dialog_window.h" 
- "src/editor/window/gimgui_file_dialog_window.cpp")
+ "src/editor/window/gimgui_file_dialog_window.cpp" "internal/gimgui_modal.h" "include/editor/igimgui_modal_impl.h" "src/editor/gimgui_modal.cpp" "internal/modal/gimgui_function_modal.h" "src/editor/modal/gimgui_function_modal.cpp")
 
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Core/include")
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Engine/include")

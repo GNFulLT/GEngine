@@ -13,6 +13,8 @@
 #include <vector>
 #include <atomic>
 #include <stack>
+#include "internal/gimgui_modal.h"
+
 class IGTextureResource;
 class Window;
 
@@ -52,6 +54,7 @@ public:
 
 	GImGuiWindow* get_window_if_exist(std::string_view name);
 
+	bool add_modal_to_queue(IGImGuiModalImpl* impl);
 
 	void set_modal_setter(std::function<bool()> modalSetter);
 
@@ -75,7 +78,9 @@ private:
 
 	void safe_extract_window(GImGuiWindow* win);
 
+	void handle_modals();
 private:
+	std::queue<GImGuiModal*> m_modalStack;
 	std::function<bool()> m_modalSetter;
 	//X TODO : USE SHARED OR UNIQUE PTR
 	ankerl::unordered_dense::segmented_map<std::string, GImGuiWindow*> m_windowMap;

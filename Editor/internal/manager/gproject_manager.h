@@ -57,10 +57,13 @@ public:
 		return std::filesystem::path(proj->get_project_path()) / proj->get_script_path();
 	}
 
+	const std::string& get_vs22_path() const noexcept;
 private:
 	bool add_file_to_project_cmake(GProject* project,std::filesystem::path file);
 private:
 	GProject* m_selectedProject = nullptr;
+
+	std::string m_vs2022Path;
 };
 
 #endif // GPROJECT_MANAGER_H

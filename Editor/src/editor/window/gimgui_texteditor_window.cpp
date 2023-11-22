@@ -41,6 +41,8 @@ GImGuiTextEditorWindow::GImGuiTextEditorWindow(std::filesystem::path path,FILE_T
 		m_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 		break;
 	case FILE_TYPE_C_HEADER:
+		m_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+		break;
 	case FILE_TYPE_C_SRC:
 		m_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::C());
 		break;

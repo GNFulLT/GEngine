@@ -9,6 +9,7 @@
 #include <imgui/imgui_internal.h>
 #include "internal/imgui_layer.h"
 #include "internal/imgui_window_manager.h"
+#include "internal/modal/gimgui_function_modal.h"
 
 GImGuiProjectDescriptor::GImGuiProjectDescriptor()
 {
@@ -65,10 +66,34 @@ void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 			same = true;
 			if (ImGui::Selectable("Create Script"))
 			{
-				EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->set_modal_setter([&,projMng = projManager]() {
-					if(m_scriptCreation)
+				EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->add_modal_to_queue(new GImGuiFunctionModal("Create GScript", [&, projMng = projManager]() {
+
+					ImGui::InputText("Class Name", buf, 50);
+					if (ImGui::Button("Create"))
+					{
+						std::string className = buf;
+						auto size = className.size();
+						projMng->create_script(className);
+						m_scriptCreation = false;
+						ImGui::CloseCurrentPopup();
+						memset(buf, 0, 50);
+					}
+					if (ImGui::Button("Close"))
+					{
+						m_scriptCreation = false;
+						ImGui::CloseCurrentPopup();
+					}					
+					return m_scriptCreation;
+
+				}));
+				/*EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->set_modal_setter([&,projMng = projManager]() {
+					if (m_scriptCreation)
+					{
 						ImGui::OpenPopup("Create GScript");
-					if (ImGui::BeginPopupModal("Create GScript", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+						ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+					}
+					if (ImGui::BeginPopupModal("Create GScript", nullptr,  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
 					{
 
 						ImGui::InputText("Class Name", buf, 50);
@@ -90,7 +115,7 @@ void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 						return true;
 					}
 					return false;
-				});
+				});*/
 				m_scriptCreation = true; 
 			}
 		}

@@ -219,6 +219,11 @@ void {}::update(float dt)
 	return true;
 }
 
+const std::string& GProjectManager::get_vs22_path() const noexcept
+{
+	return m_vs2022Path;
+}
+
 bool GProjectManager::add_file_to_project_cmake(GProject* project, std::filesystem::path file)
 {
 	auto scriptCmakePath = get_script_path(project) / "gscript.cmake";

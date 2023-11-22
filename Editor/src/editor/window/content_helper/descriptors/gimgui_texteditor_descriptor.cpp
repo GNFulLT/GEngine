@@ -16,6 +16,11 @@ GImGuiTextEditorDescriptor::GImGuiTextEditorDescriptor()
 		m_supportedFiles.push_back(hlsl);
 	}
 	m_supportedFiles.push_back(".txt");
+	m_supportedFiles.push_back(".h");
+	m_supportedFiles.push_back(".cpp");
+	m_supportedFiles.push_back(".cmake");
+
+
 }
 
 const std::vector<std::string>* GImGuiTextEditorDescriptor::get_file_types()
