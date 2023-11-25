@@ -3,6 +3,54 @@
 #include <fstream>
 #include <spdlog/fmt/fmt.h>
 #include "engine/io/json_utils.h"
+
+inline static constexpr const std::string_view exportString = R"(#include {}_EXPORT.h
+#include <engine/plugin/gplugin.h> 
+
+#define API_DEF {}_API
+// Script Includes
+{}
+
+bool script_space_register(const GNFScriptRegistration* registration)
+{{
+		GNFScriptRegisterArgs space;
+		space.scriptNamespace = GSCRIPT_SPACE_NAME;
+		space.pluginVersion.version_minor = 0;
+		space.pluginVersion.version_major = 1;
+		return registration->scriptSpaceRegister(&space);
+}}	
+
+extern "C" API_DEF GSCRIPT_REGISTRATION 
+{{
+
+	bool spaceRegistered = script_space_register(registration);
+	if(spaceRegistered)
+	{{
+		return false;
+	}}
+	GNFScriptRegisterArgs scriptRegister;
+	scriptRegister.pluginVersion.version_minor = 0;
+	scriptRegister.pluginVersion.version_major = 1;
+	
+	// Script Register
+	{}
+}}
+)";
+
+std::string replaced_path(std::filesystem::path path)
+{
+	auto str = path.string();
+	std::replace(str.begin(),str.end(),'\\', '/');
+	return str;
+}
+
+GProjectManager::GProjectManager()
+{
+	std::filesystem::path posix_path("a/b/c");
+	posix_path.make_preferred();
+}
+
+
 std::expected<GProject*, GPROJECT_CREATE_ERROR> GProjectManager::create_project(std::string path, std::string projectName)
 {
 	return create_project(path,projectName, projectName);
@@ -29,12 +77,16 @@ std::expected<GProject*, GPROJECT_CREATE_ERROR> GProjectManager::create_project(
 include(GenerateExportHeader)
 
 set(GSCRIPT_PROJECT_NAME "{}")
-set(GSCRIPT_TARGETED_CPP )
-set(GENGINE_DIR {})
-)", projectName,std::filesystem::current_path().string());
+set(GENGINE_DIR "{}")
+set(GSCRIPT_NAMESPACE_NAME "{}")
+set(GSCRIPT_TARGETED_CPP "src/{}/main.h" )
+)", projectName, replaced_path(std::filesystem::current_path()), projectNamespace, projectName);
 	
-	auto scriptPath = get_script_path(gproject);
 
+	
+
+	auto scriptPath = get_script_path(gproject);
+	
 	std::filesystem::path pth = scriptPath / "gscript.cmake";
 	
 	std::filesystem::create_directories(scriptPath);
@@ -76,8 +128,13 @@ set(GENGINE_DIR {})
 	}
 	auto includeDir = scriptPath / INCLUDE_FOLDER_NAME / gproject->get_project_name();
 	auto srcDir = scriptPath / SRC_FOLDER_NAME / gproject->get_project_name();
+
+
 	std::filesystem::create_directories(includeDir);
 	std::filesystem::create_directories(srcDir);
+	
+	create_source_cpp_file(gproject, srcDir / "main.cpp");
+
 
 	return gproject;
 }
@@ -167,13 +224,33 @@ bool GProjectManager::create_script(const std::string& className)
 #define {}_H
 
 #include "engine/scene/component/igscript.h"
-#include "{}_EXPORT.h"
+#include <engine/plugin/gplugin.h> 
 
-class {}_API {} : public IGScript {{
+class {} : public IGScript {{
 public:
 	virtual void update(float dt) override;
 private:
 }};
+
+extern "C" pGNFScriptObject {}_C_CTOR(pGObject* obj)
+{{
+	return new {}();
+}}
+
+extern "C" void {}_C_DTOR(pGNFScriptObject* obj)
+{{	
+	auto realObj = ({}*)obj;
+	delet realObj;
+}}
+
+extern "C" bool {}_REGISTER_FUNC(const GNFScriptRegistration* registration,const GNFScriptRegisterArgs* arg)
+{{
+	arg->scriptName = {};
+	arg->scriptCtor = &{}_C_CTOR;
+	arg->scriptDtor = &{}_C_DTOR;
+
+	return registration->scriptRegister(arg);
+}}  
 
 #endif)";
 
@@ -194,7 +271,8 @@ void {}::update(float dt)
 	std::transform(snakeCase.begin(), snakeCase.end(), upperSnakeCase.begin(), ::toupper);
 	{
 		auto projectName = m_selectedProject->get_project_name();
-		const std::string frmatStr = fmt::format(header.data(), upperSnakeCase, upperSnakeCase, projectName, m_selectedProject->get_project_name(),className);
+		const std::string frmatStr = fmt::format(header.data(), upperSnakeCase, upperSnakeCase, className,className,
+			className,className,className,className,className,className, className);
 		classHeaderStream.write(frmatStr.c_str(), frmatStr.size());
 	}
 	classHeaderStream.flush();
@@ -213,16 +291,16 @@ void {}::update(float dt)
 
 	auto relativeCppPath = std::filesystem::relative(cppPath, scriptPath,err );
 	if(!err)
-		add_file_to_project_cmake(m_selectedProject, relativeCppPath);
+		add_file_to_project_cmake(m_selectedProject, replaced_path(relativeCppPath));
 	else
-		add_file_to_project_cmake(m_selectedProject, cppPath);
+		add_file_to_project_cmake(m_selectedProject, replaced_path(cppPath));
 
 	auto relativeHPath = std::filesystem::relative(hPath, scriptPath, err);
 
 	if(!err)
-		add_file_to_project_cmake(m_selectedProject, relativeHPath);
+		add_file_to_project_cmake(m_selectedProject, replaced_path(relativeHPath));
 	else
-		add_file_to_project_cmake(m_selectedProject, cppPath);
+		add_file_to_project_cmake(m_selectedProject, replaced_path(cppPath));
 
 	return true;
 }
@@ -264,6 +342,16 @@ bool GProjectManager::add_file_to_project_cmake(GProject* project, std::filesyst
 	scriptCmakeOutput.flush();
 
 	return true;
+}
+
+bool GProjectManager::create_source_cpp_file(GProject* project,std::filesystem::path filePath)
+{
+	std::ofstream fileStream(filePath);
+	if (!fileStream.is_open()) {
+		return false;
+	}
+	auto projName = project->get_project_name();
+	fileStream << fmt::format(exportString.data(), projName, projName,"","").c_str();
 }
 
 

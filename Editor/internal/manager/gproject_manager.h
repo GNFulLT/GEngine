@@ -18,6 +18,8 @@ class GProjectManager
 public:
 	inline static constexpr const std::string_view SRC_FOLDER_NAME = "src";
 	inline static constexpr const std::string_view INCLUDE_FOLDER_NAME = "include";
+	
+	GProjectManager();
 
 	std::expected<GProject*, GPROJECT_CREATE_ERROR> create_project(std::string path,std::string projectName);
 
@@ -60,6 +62,7 @@ public:
 	const std::string& get_vs22_path() const noexcept;
 private:
 	bool add_file_to_project_cmake(GProject* project,std::filesystem::path file);
+	bool create_source_cpp_file(GProject* project,std::filesystem::path filePath);
 private:
 	GProject* m_selectedProject = nullptr;
 
