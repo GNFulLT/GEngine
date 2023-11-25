@@ -1,6 +1,6 @@
 #include "internal/engine/scene/component/script_component.h"
 
-ScriptComponent::ScriptComponent(Scene* scene, uint32_t nodeID,entt::entity entity, IGScript* script)
+ScriptComponent::ScriptComponent(Scene* scene, uint32_t nodeID, GEntity* entity, IGScript* script)
 {
 	m_boundedNodeID = nodeID;
 	m_boundedScene = scene;

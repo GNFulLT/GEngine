@@ -4,14 +4,14 @@
 #include "engine/scene/component/igscript.h"
 #include "gobject/gobject_defs.h"
 #include <cstdint>
-#include "entt/entt.hpp"
+#include "engine/scene/gentity.h"
 
 class Scene;
 
 class ScriptComponent
 {
 public:
-	ScriptComponent(Scene* scene, uint32_t nodeID,entt::entity entity,IGScript* script);
+	ScriptComponent(Scene* scene, uint32_t nodeID,GEntity* entity,IGScript* script);
 	ScriptComponent(const ScriptComponent&) = delete;
 	ScriptComponent& operator=(const ScriptComponent&) = delete;
 
@@ -21,7 +21,7 @@ private:
 	uint32_t m_boundedNodeID;
 	Scene* m_boundedScene;
 	IGScript* m_script;
-	entt::entity m_entity;
+	GEntity* m_entity;
 };
 
 #endif // SCRIPT_COMPONENT_H

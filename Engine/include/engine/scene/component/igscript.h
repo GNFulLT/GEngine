@@ -3,6 +3,7 @@
 
 #include "engine/GEngine_EXPORT.h"
 #include "entt/entt.hpp"
+#include "engine/scene/gentity.h"
 
 class ScriptComponent;
 
@@ -16,9 +17,9 @@ public:
 	virtual void update(float dt) = 0;
 
 protected:
-	virtual entt::entity get_bounded_entity() const noexcept;
+	virtual GEntity* get_bounded_entity() const noexcept;
 private:
-	entt::entity m_entityID;
+	GEntity* m_entityID;
 };
 
 #endif // IGSCRIPT_H
