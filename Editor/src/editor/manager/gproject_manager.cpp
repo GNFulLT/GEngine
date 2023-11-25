@@ -25,8 +25,13 @@ std::expected<GProject*, GPROJECT_CREATE_ERROR> GProjectManager::create_project(
 	}
 	auto gproject = new GProject(projectFolderPath.string(), projectName, projectNamespace);
 
-	std::string cmakeString = fmt::format(R"(set(GSCRIPT_PROJECT_NAME "{}")
-set(GSCRIPT_TARGETED_CPP ))", projectName);
+	std::string cmakeString = fmt::format(R"(
+include(GenerateExportHeader)
+
+set(GSCRIPT_PROJECT_NAME "{}")
+set(GSCRIPT_TARGETED_CPP )
+set(GENGINE_DIR {})
+)", projectName,std::filesystem::current_path().string());
 	
 	auto scriptPath = get_script_path(gproject);
 
@@ -161,13 +166,15 @@ bool GProjectManager::create_script(const std::string& className)
 	constexpr const std::string_view header = R"(#ifndef {}_H
 #define {}_H
 
-#include "engine/scene/components/igscript.h"
+#include "engine/scene/component/igscript.h"
+#include "{}_EXPORT.h"
 
-class {} : public IGScript {{
+class {}_API {} : public IGScript {{
 public:
 	virtual void update(float dt) override;
 private:
-}}
+}};
+
 #endif)";
 
 	constexpr const std::string_view cpp = R"(#include "{}.h"
@@ -186,7 +193,8 @@ void {}::update(float dt)
 	upperSnakeCase.resize(snakeCase.size());
 	std::transform(snakeCase.begin(), snakeCase.end(), upperSnakeCase.begin(), ::toupper);
 	{
-		const std::string frmatStr = fmt::format(header.data(), upperSnakeCase, upperSnakeCase, className);
+		auto projectName = m_selectedProject->get_project_name();
+		const std::string frmatStr = fmt::format(header.data(), upperSnakeCase, upperSnakeCase, projectName, m_selectedProject->get_project_name(),className);
 		classHeaderStream.write(frmatStr.c_str(), frmatStr.size());
 	}
 	classHeaderStream.flush();

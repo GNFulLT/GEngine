@@ -1,4 +1,4 @@
-#include "internal/engine/scene/component/transform_component.h"
+#include "engine/scene/component/transform_component.h"
 #include "engine/scene/serializable_component.h"
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>

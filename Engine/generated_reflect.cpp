@@ -1,6 +1,6 @@
 #include "C:\Users\lenovo\Desktop\GEngine\GObject\include\gobject\gobject_utils.h"
 #include "C:\Users\lenovo\Desktop\GEngine\Engine\include\engine\gproject.h"
-#include "C:\Users\lenovo\Desktop\GEngine\Engine\internal\engine\scene\component\transform_component.h"
+#include "C:\Users\lenovo\Desktop\GEngine\Engine\include\engine\scene\component\transform_component.h"
 
 
 

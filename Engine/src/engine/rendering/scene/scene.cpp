@@ -4,7 +4,7 @@
 #include <map>
 
 #include "internal/engine/scene/gregistry.h"
-#include "internal/engine/scene/component/transform_component.h"
+#include "engine/scene/component/transform_component.h"
 
 
 void save_scene_map(std::ofstream& ofstream,const Scene& scene,const std::unordered_map<uint32_t,uint32_t>& map)
