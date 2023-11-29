@@ -11,10 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #include(${CMAKE_CURRENT_SOURCE_DIR}/greflect.cmake)
 add_library(${GSCRIPT_PROJECT_NAME} SHARED ${GSCRIPT_TARGETED_CPP})
 
-# Only Windows
-set_property(TARGET GEngine_Engined PROPERTY IMPORTED_LOCATION "${GENGINE_DIR}/GEngine_Engined.dll")
+# Only Windows and Debug Mod
+set_property(TARGET ${GSCRIPT_PROJECT_NAME} PROPERTY IMPORTED_LOCATION "${GENGINE_DIR}/GEngine_Engined.dll")
+set_property(TARGET ${GSCRIPT_PROJECT_NAME} PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/GEngine_Engined.lib")
 
-set_property(TARGET GEngine_Engined PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/GEngine_Engined.lib")
+target_link_libraries(${GSCRIPT_PROJECT_NAME} GEngine_Engined)
 
 target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "${GENGINE_DIR}/editor/thirdparty/GEngine/include")
 target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "${GENGINE_DIR}/editor/thirdparty/spdlog/include")
@@ -24,6 +25,7 @@ target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "${GENGINE_DIR}/editor
 target_include_directories(${GSCRIPT_PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 target_compile_definitions(${GSCRIPT_PROJECT_NAME} PRIVATE GSCRIPT_SPACE_NAME=${GSCRIPT_NAMESPACE_NAME})
+
 
 GENERATE_EXPORT_HEADER(${GSCRIPT_PROJECT_NAME}
     BASE_NAME ${GSCRIPT_PROJECT_NAME}
