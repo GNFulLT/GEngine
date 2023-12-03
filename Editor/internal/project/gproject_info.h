@@ -4,6 +4,8 @@
 #include "engine/gproject.h"
 #include "internal/project/gscript_info.h"
 #include <unordered_map>
+#include <filesystem>
+class GScriptInfo;
 
 class GProjectInfo
 {

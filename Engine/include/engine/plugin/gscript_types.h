@@ -34,6 +34,8 @@ typedef struct GNFScriptRegistration
 	GNFScriptRegister scriptRegister;
 };
 
+typedef void(GSCRIPT_REGISTRATION_FUNC_TYPE)(const GNFScriptRegistration* registration);
+#define GSCRIPT_REGISTRATION_FUNC_NAME "GENGINE_SCRIPT_REGISTRATION"
 #define GSCRIPT_REGISTRATION void GENGINE_SCRIPT_REGISTRATION(const GNFScriptRegistration* registration)
 
 #endif // GSCRIPT_TYPES_H

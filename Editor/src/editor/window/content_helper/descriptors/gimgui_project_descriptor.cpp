@@ -10,6 +10,10 @@
 #include "internal/imgui_layer.h"
 #include "internal/imgui_window_manager.h"
 #include "internal/modal/gimgui_function_modal.h"
+#include "engine/gengine.h"
+#include "engine/imanager_table.h"
+#include "engine/manager/igscript_manager.h"
+#include "engine/plugin/igscript_space.h"
 
 GImGuiProjectDescriptor::GImGuiProjectDescriptor()
 {
@@ -117,6 +121,16 @@ void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 					return false;
 				});*/
 				m_scriptCreation = true; 
+			}
+			if (ImGui::Selectable("Load Script"))
+			{
+				auto scriptPath = projManager->get_script_path(proj);
+				auto outDllPath = scriptPath / "out" / "build" / "x64-Debug" / fmt::format("{}.dll",proj->get_project_name());
+				if (std::filesystem::exists(outDllPath))
+				{
+					auto scriptManager = ((GSharedPtr<IGScriptManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCRIPT))->get();
+					auto scriptSpace = scriptManager->load_script_space(outDllPath);
+				}
 			}
 		}
 	}

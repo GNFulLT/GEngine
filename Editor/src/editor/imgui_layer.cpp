@@ -32,6 +32,9 @@
 #include "internal/window/gimgui_pbr_window.h"
 #include "internal/window/gimgui_sunshadow_window.h"
 #include "internal/menu/gproject_menu.h"
+#include "internal/menu/gwindow_menu.h"
+#include "internal/window/provider/gimgui_script_window_provider.h"
+
 #include "engine/gengine.h"
 #include "engine/imanager_table.h"
 #include "engine/manager/igscene_manager.h"
@@ -137,6 +140,9 @@ bool ImGuiLayer::init()
 	if (!inited)
 		return false;
 	m_windowManager->create_imgui_menu(new GProjectMenu());
+	auto windowMenu = new GWindowMenu(m_windowManager);
+	m_windowManager->create_imgui_menu(windowMenu);
+	windowMenu->register_provider(new GImGuiScriptWindowProvider());
 	m_windowManager->create_imgui_menu(new GThemeMenu());
 
 	m_scene = new GImGuiSceneWindow();

@@ -4,7 +4,7 @@
 #include <spdlog/fmt/fmt.h>
 #include "engine/io/json_utils.h"
 
-inline static constexpr const std::string_view exportString = R"(#include {}_EXPORT.h
+inline static constexpr const std::string_view exportString = R"(#include "{}_EXPORT.h"
 #include <engine/plugin/gplugin.h> 
 
 #define API_DEF {}_API
@@ -13,7 +13,7 @@ inline static constexpr const std::string_view exportString = R"(#include {}_EXP
 
 bool script_space_register(const GNFScriptRegistration* registration)
 {{
-		GNFScriptRegisterArgs space;
+		GNFScriptSpaceRegisterArgs space;
 		space.scriptNamespace = GSCRIPT_SPACE_NAME;
 		space.pluginVersion.version_minor = 0;
 		space.pluginVersion.version_major = 1;
@@ -24,9 +24,9 @@ extern "C" API_DEF GSCRIPT_REGISTRATION
 {{
 
 	bool spaceRegistered = script_space_register(registration);
-	if(spaceRegistered)
+	if(!spaceRegistered)
 	{{
-		return false;
+		return;
 	}}
 	GNFScriptRegisterArgs scriptRegister;
 	scriptRegister.pluginVersion.version_minor = 0;
@@ -79,7 +79,7 @@ include(GenerateExportHeader)
 set(GSCRIPT_PROJECT_NAME "{}")
 set(GENGINE_DIR "{}")
 set(GSCRIPT_NAMESPACE_NAME "{}")
-set(GSCRIPT_TARGETED_CPP "src/{}/main.h" )
+set(GSCRIPT_TARGETED_CPP "src/{}/main.cpp" )
 )", projectName, replaced_path(std::filesystem::current_path()), projectNamespace, projectName);
 	
 
@@ -240,12 +240,12 @@ extern "C" pGNFScriptObject {}_C_CTOR(pGObject* obj)
 extern "C" void {}_C_DTOR(pGNFScriptObject* obj)
 {{	
 	auto realObj = ({}*)obj;
-	delet realObj;
+	delete realObj;
 }}
 
-extern "C" bool {}_REGISTER_FUNC(const GNFScriptRegistration* registration,const GNFScriptRegisterArgs* arg)
+extern "C" bool {}_REGISTER_FUNC(const GNFScriptRegistration* registration,GNFScriptRegisterArgs* arg)
 {{
-	arg->scriptName = {};
+	arg->scriptName = "{}";
 	arg->scriptCtor = &{}_C_CTOR;
 	arg->scriptDtor = &{}_C_DTOR;
 
@@ -254,7 +254,7 @@ extern "C" bool {}_REGISTER_FUNC(const GNFScriptRegistration* registration,const
 
 #endif)";
 
-	constexpr const std::string_view cpp = R"(#include "{}.h"
+	constexpr const std::string_view cpp = R"(#include "{}/{}.h"
 
 void {}::update(float dt)
 {{
@@ -281,7 +281,7 @@ void {}::update(float dt)
 	auto cppPath = projectSrcPath / fmt::format("{}.cpp", snakeCase);
 	std::ofstream classCppStream(cppPath);
 	{
-		auto frmatStr = fmt::format(cpp.data(), snakeCase, className);
+		auto frmatStr = fmt::format(cpp.data(), m_selectedProject->get_project_name(),snakeCase, className);
 		classCppStream.write(frmatStr.c_str(), frmatStr.size());
 	}
 	classCppStream.flush();
@@ -296,11 +296,18 @@ void {}::update(float dt)
 		add_file_to_project_cmake(m_selectedProject, replaced_path(cppPath));
 
 	auto relativeHPath = std::filesystem::relative(hPath, scriptPath, err);
+	auto srcDir = get_src_path(m_selectedProject);
 
-	if(!err)
+	if (!err)
+	{
 		add_file_to_project_cmake(m_selectedProject, replaced_path(relativeHPath));
+	}
 	else
-		add_file_to_project_cmake(m_selectedProject, replaced_path(cppPath));
+	{
+		add_file_to_project_cmake(m_selectedProject, replaced_path(hPath));
+	}
+	add_script_to_registration(srcDir / "main.cpp", hPath, className);
+
 
 	return true;
 }
@@ -352,6 +359,63 @@ bool GProjectManager::create_source_cpp_file(GProject* project,std::filesystem::
 	}
 	auto projName = project->get_project_name();
 	fileStream << fmt::format(exportString.data(), projName, projName,"","").c_str();
+
+	return true;
+}
+
+bool GProjectManager::add_script_to_registration(std::filesystem::path mainCppPath,std::filesystem::path scriptHeaderPath, std::string className)
+{
+	std::ifstream mainFile(mainCppPath);
+	if (!mainFile.is_open()) {
+		return false;
+	}
+
+	std::stringstream buffer;
+	buffer << mainFile.rdbuf();
+	std::string fileContent = buffer.str();
+
+	std::size_t targetPosition = fileContent.find("GSCRIPT_REGISTRATION");
+	if (targetPosition == std::string::npos) {
+		return false;
+	}
+
+	//X Find first bracket
+	std::size_t openingParenthesis = fileContent.find("{", targetPosition);
+	if (openingParenthesis == std::string::npos) {
+		return false;
+	}
+	//X Find closing brack
+	int balance = 1;
+	std::size_t iter = openingParenthesis;
+	while (balance != 0)
+	{
+		iter++;
+		if (fileContent[iter] == '{')
+			balance++;
+		else if (fileContent[iter] == '}')
+			balance--;
+	}
+	std::string newContent;
+	newContent = fileContent.insert(iter, fmt::format(R"(	{}_REGISTER_FUNC(registration,&scriptRegister);
+)",className));
+
+	
+	auto scriptPath = get_script_include_path(m_selectedProject);
+	std::error_code errCode;
+	auto relativeHPath = std::filesystem::relative(scriptHeaderPath, scriptPath, errCode);
+	auto relativeHStr = replaced_path(relativeHPath);
+	newContent = newContent.insert(0,fmt::format("#include <{}>\n", relativeHStr));
+
+	std::ofstream mainOutput(mainCppPath);
+	if (!mainOutput.is_open()) {
+		return false;
+	}
+
+	mainOutput << newContent;
+	mainOutput.flush();
+
+	return true;
+
 }
 
 

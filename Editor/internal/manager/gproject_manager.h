@@ -58,11 +58,18 @@ public:
 		assert(proj != nullptr);
 		return std::filesystem::path(proj->get_project_path()) / proj->get_script_path();
 	}
+	
+	inline static std::filesystem::path get_script_include_path(GProject* proj)
+	{
+		assert(proj != nullptr);
+		return get_script_path(proj) / INCLUDE_FOLDER_NAME;
+	}
 
 	const std::string& get_vs22_path() const noexcept;
 private:
 	bool add_file_to_project_cmake(GProject* project,std::filesystem::path file);
 	bool create_source_cpp_file(GProject* project,std::filesystem::path filePath);
+	bool add_script_to_registration(std::filesystem::path mainCppPath,std::filesystem::path scriptHeaderPath,std::string className);
 private:
 	GProject* m_selectedProject = nullptr;
 

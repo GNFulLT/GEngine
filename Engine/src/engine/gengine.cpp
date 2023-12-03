@@ -31,6 +31,7 @@
 #include "internal/engine/manager/gscene_manager.h"
 #include "internal/engine/rendering/renderer/gscene_renderer.h"
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_deferred_viewport.h"
+#include "internal/engine/manager/gscript_manager.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -73,6 +74,7 @@ GEngine::GEngine()
 	s_managerTable->set_manager(ENGINE_MANAGER_SHADER, new GSharedPtr<IGShaderManager>(new GShaderManager()));
 	s_managerTable->set_manager(ENGINE_MANAGER_CAMERA, new GSharedPtr<IGCameraManager>(new GCameraManager(FRAME_IN_FLIGHT)));
 	s_managerTable->set_manager(ENGINE_MANAGER_SCENE, new GSharedPtr<IGSceneManager>(new GSceneManager()));
+	s_managerTable->set_manager(ENGINE_MANAGER_SCRIPT, new GSharedPtr<IGScriptManager>(new GScriptManager()));
 
 	s_logger->enable_file_logging("logs/log_err.txt",LOG_LEVEL_ERROR);
 	s_device = dev;
