@@ -1,0 +1,91 @@
+#version 460
+
+#extension GL_EXT_control_flow_attributes: require
+#extension GL_EXT_shader_8bit_storage: require
+#extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+#extension GL_EXT_mesh_shader : require
+#extension GL_KHR_shader_subgroup_ballot: require
+#extension GL_KHR_shader_subgroup_vote: require
+#extension GL_EXT_scalar_block_layout : require
+
+#include <./data/shader/meshlet_def.h>
+#include <./data/shader/mesh_def.h>
+
+const uint NVMESHLET_PER_TASK = 32;
+
+layout(set = 0,binding = 0,scalar) uniform  UniformBuffer { mat4   inMtx; vec3 camPos;} ubo;
+
+layout(set = 1,binding = 0,scalar) readonly buffer MeshletDatas { MeshData data[]; } meshletDatas;
+layout(set = 1,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
+layout(set = 1,binding = 2,scalar) readonly buffer DrawID { uint data[]; } drawIDs;
+layout(set = 1,binding = 3,scalar) readonly buffer VertexData { float data[]; } vertexDatas;
+
+
+
+layout(set = 4,binding = 0,scalar) readonly buffer GMeshletDescriptor { MeshletDescriptor data[]; } meshletDescriptors;
+layout(set = 4,binding = 1,scalar) readonly buffer GMeshletDatas { GMeshlet data[]; } gmeshletDatas;
+layout(set = 4,binding = 2,scalar) readonly buffer MeshletVertexDatas { uint data[]; } meshletVertexDatas;
+layout(set = 4,binding = 3,scalar) readonly buffer MeshletTriangleDatas { uint8_t data[]; } meshletTriangleDatas;
+
+const uint TASK_MESHLET_ITERATIONS = ((32 + kShaderGroupSizeNV - 1) / kShaderGroupSizeNV );
+
+layout(set = 2,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
+
+layout(local_size_x = kShaderGroupSizeNV) in;
+
+struct TaskData
+{
+	uint meshletIndices[kShaderGroupSizeNV];
+};
+
+taskPayloadSharedEXT TaskData td;
+
+void main()
+{
+	uint drawId = drawIDs.data[gl_DrawID];
+	uint meshletDataIndex = drawDatas.data[drawId].meshIndex;
+	MeshData meshlet = meshletDatas.data[meshletDataIndex];
+	MeshletDescriptor meshletDescriptor = meshletDescriptors.data[meshletDataIndex];
+
+	uint groupThreadIndex = gl_LocalInvocationID.x;
+	uint localMeshletIndex = gl_GlobalInvocationID.x;
+	if(localMeshletIndex >= meshletDescriptor.meshletCount)
+	{
+		return;
+	}
+	uint meshletIndex = meshletDescriptor.meshletOffset + localMeshletIndex;
+	bool visible = true;
+	
+	//X Currently no culling
+	uvec4 visibleBallot = subgroupBallot(visible);
+	
+	uint subgroupLocalMeshletIndex = subgroupBallotExclusiveBitCount(visibleBallot);
+
+	uint baseID = gl_WorkGroupID.x * NVMESHLET_PER_TASK;
+	uint laneID = gl_LocalInvocationID.x;
+	
+	[[unroll]]
+  	for (uint i = 0; i < kShaderGroupSizeNV; i++)
+	{
+		uint  meshletLocal  = i;
+    		uint  meshletGlobal = baseID + meshletLocal;
+		meshletGlobal = min(meshletGlobal,meshletDescriptor.meshletCount);
+		td.meshletIndices[i] = meshletDescriptor.meshletOffset + meshletGlobal;
+	}
+	uint lastMeshlet = meshletDescriptor.meshletOffset + localMeshletIndex + kShaderGroupSizeNV;
+	
+	//td.meshletIndices[subgroupLocalMeshletIndex] = meshletIndex;
+	
+	//uint visibleMeshletCount = subgroupBallotBitCount(visibleBallot);
+	
+	uint size = kShaderGroupSizeNV;
+	if(baseID + kShaderGroupSizeNV >= meshletDescriptor.meshletCount)
+	{
+		size = size - (baseID + kShaderGroupSizeNV - meshletDescriptor.meshletCount);
+		
+	}
+	EmitMeshTasksEXT(size,1,1);
+	
+		
+}

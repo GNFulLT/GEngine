@@ -117,6 +117,8 @@ target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/single_include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/dylib/include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/rapidjson/include")
+target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp/include")
+target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer/src")
 
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
@@ -139,11 +141,18 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spirv-reflect" SPIRV
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/entt/" ENTT)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/dylib/" DYLIB)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/rapidjson/" RAPIDJSON)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer" MESHOPTIMIZER)
+
+set(BUILD_SHARED_LIBS ON)
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp" ASSIMP)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
 target_compile_definitions(glslang PRIVATE BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)
 
 
+target_link_libraries(GEngine_Engine PRIVATE assimp)
+target_link_libraries(GEngine_Engine PRIVATE meshoptimizer)
 target_link_libraries(GEngine_Engine PUBLIC volk)
 target_link_libraries(GEngine_Engine PRIVATE simdjson)
 target_link_libraries(GEngine_Engine PRIVATE GEngine_Core)

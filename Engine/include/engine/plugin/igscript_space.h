@@ -18,6 +18,8 @@ public:
 	virtual std::vector<IGScriptObject*>* get_loaded_script_objects() = 0;
 
 	virtual IGScriptObject* get_loaded_script_object_by_name(const char* name) = 0;
+
+	virtual const char* get_dll_name() = 0;
 private:
 };
 

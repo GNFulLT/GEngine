@@ -117,7 +117,6 @@ ENGINE_API void Scene::set_transform_of(uint32_t nodeID, const glm::mat4& t)
 	if (auto transform = entity->get_or_null_component<TransformComponent>(); transform != nullptr)
 	{
 		transform->set_local_transform(t);
-		mark_as_changed(nodeID);
 	}
 }
 ENGINE_API GEntity* Scene::get_entity_by_id(uint32_t nodeID)

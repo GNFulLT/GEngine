@@ -154,6 +154,8 @@ public:
 
 	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_renderpass(IGVulkanRenderPass* vp, const std::vector<IVulkanShaderStage*>& shaderStages,
 		const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight, IGVulkanGraphicPipelineLayoutCreator* injector) = 0;
+
+	virtual bool has_meshlet_support() const noexcept = 0;
 private:
 };
 

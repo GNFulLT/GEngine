@@ -56,10 +56,14 @@ GSceneRenderer2::GSceneRenderer2(IGVulkanLogicalDevice* dev, IGPipelineObjectMan
 bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNamedSetLayout* drawDataSetLayout, IGVulkanNamedSetLayout* lightDataSetLayout, IGVulkanNamedSetLayout* cullSetLayout)
 {
 	m_meshStreamResources = new GPUMeshStreamResources(p_boundedDevice, 7, m_framesInFlight, p_pipelineManager);
-	m_useMeshlet = true;
+	
+	m_useMeshlet = true && p_boundedDevice->has_meshlet_support();
+
 	uint32_t beginMesh = calculate_nearest_1mb<GMeshData>();
 	assert(m_meshStreamResources->init(calculate_nearest_10mb<float>()*3, calculate_nearest_10mb<uint32_t>()*14, beginMesh,
-		calculate_nearest_1mb<DrawData>(), m_useMeshlet));
+		calculate_nearest_1mb<DrawData>()));
+
+
 	if (m_useMeshlet)
 	{
 		m_meshletStreamResources = new GPUMeshletStreamResources(p_boundedDevice, p_pipelineManager, m_framesInFlight);
@@ -564,10 +568,16 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 		m_deferredFragmentPBRShaderRes = p_resourceManager->create_shader_resource("deferredFragment", "SceneRenderer", "./data/shader/composition_pbr.glsl_frag").value();
 		m_deferredletVertexShaderRes = p_resourceManager->create_shader_resource("deferredVertex", "SceneRenderer", "./data/shader/deferred_meshlet.glsl_vert").value();
 		//X This will be loaded when mesh shading enable
-		m_deferredTaskShaderRes = p_resourceManager->create_shader_resource("deferredVertex", "SceneRenderer", "./data/shader/meshlet_task.glsl_task").value();
-		m_deferredMeshShaderRes = p_resourceManager->create_shader_resource("deferredVertex", "SceneRenderer", "./data/shader/meshlet_task.glsl_mesh").value();
-		m_deferredMeshFragmentShaderRes = p_resourceManager->create_shader_resource("deferredMeshFrag", "SceneRenderer", "./data/shader/deferred_meshlet.glsl_frag").value();
+		if (m_useMeshlet)
+		{
+			m_deferredTaskShaderRes = p_resourceManager->create_shader_resource("deferredVertex", "SceneRenderer", "./data/shader/meshlet_task.glsl_task").value();
+			m_deferredMeshShaderRes = p_resourceManager->create_shader_resource("deferredVertex", "SceneRenderer", "./data/shader/meshlet_task.glsl_mesh").value();
+			m_deferredMeshFragmentShaderRes = p_resourceManager->create_shader_resource("deferredMeshFrag", "SceneRenderer", "./data/shader/deferred_meshlet.glsl_frag").value();
+			m_sunShadowMeshShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_mesh").value();
+			m_sunShadowTaskShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_task").value();
 
+		}
+		
 		m_compositionVertexShaderRes = p_resourceManager->create_shader_resource("compositionVertex", "SceneRenderer", "./data/shader/composition.glsl_vert").value();
 		m_compositionFragmentShaderRes = p_resourceManager->create_shader_resource("compositionFrag", "SceneRenderer", "./data/shader/composition.glsl_frag").value();
 		m_cullComputeShaderRes = p_resourceManager->create_shader_resource("cullCompute", "SceneRenderer", "./data/shader/cull.glsl_comp").value();
@@ -579,11 +589,9 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 		m_sunShadowVertexShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_vert").value();
 		m_sunShadowFragmentShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_frag").value();
 
+	
 		assert(m_deferredVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		//assert(m_deferredletVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
-		assert(m_deferredTaskShaderRes->load() == RESOURCE_INIT_CODE_OK);
-		assert(m_deferredMeshShaderRes->load() == RESOURCE_INIT_CODE_OK);
-		assert(m_deferredMeshFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 
 		assert(m_deferredFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_deferredFragmentPBRShaderRes->load() == RESOURCE_INIT_CODE_OK);
@@ -598,6 +606,14 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 		assert(m_sunShadowVertexShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		assert(m_sunShadowFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 
+		if (m_useMeshlet)
+		{
+			assert(m_sunShadowMeshShaderRes->load() == RESOURCE_INIT_CODE_OK);
+			assert(m_sunShadowTaskShaderRes->load() == RESOURCE_INIT_CODE_OK);
+			assert(m_deferredTaskShaderRes->load() == RESOURCE_INIT_CODE_OK);
+			assert(m_deferredMeshShaderRes->load() == RESOURCE_INIT_CODE_OK);
+			assert(m_deferredMeshFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
+		}
 	}
 	assert(load_shadow_resources());
 	//X Create the pipeline
@@ -701,18 +717,21 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			delete stages[0];
 			delete stages[1];
 
-			stages[0] = p_shaderManager->create_shader_stage_from_shader_res(m_deferredTaskShaderRes).value();
-			stages[1] = p_shaderManager->create_shader_stage_from_shader_res(m_deferredMeshShaderRes).value();
-			stages.push_back(p_shaderManager->create_shader_stage_from_shader_res(m_deferredFragmentShaderRes).value());
-			
-			m_deferredMeshletPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_deferredPass, "deferred_meshlet_pipeline");
-			m_deferredMeshletPipeline->init(m_deferredletLayout, stages, states);
-			delete stages[0];
-			delete stages[1];
-			delete stages[2];
+			if (m_useMeshlet)
+			{
+				stages[0] = p_shaderManager->create_shader_stage_from_shader_res(m_deferredTaskShaderRes).value();
+				stages[1] = p_shaderManager->create_shader_stage_from_shader_res(m_deferredMeshShaderRes).value();
+				stages.push_back(p_shaderManager->create_shader_stage_from_shader_res(m_deferredFragmentShaderRes).value());
 
-			stages.resize(2);
+				m_deferredMeshletPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_deferredPass, "deferred_meshlet_pipeline");
+				m_deferredMeshletPipeline->init(m_deferredletLayout, stages, states);
+				delete stages[0];
+				delete stages[1];
+				delete stages[2];
 
+				stages.resize(2);
+			}
+		
 			delete states[3];
 			delete states[6];
 
@@ -729,6 +748,20 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			m_sunShadowPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_shadowPass, "sun_shadow_pipeline");
 			m_sunShadowPipeline->init(m_sunShadowLayout, stages, states);
 
+			//X TODO : SEPARATE 
+			if (m_useMeshlet)
+			{
+				delete stages[0];
+				stages[0] = p_shaderManager->create_shader_stage_from_shader_res(m_sunShadowMeshShaderRes).value();
+				stages.resize(3);
+				stages[2] = p_shaderManager->create_shader_stage_from_shader_res(m_sunShadowTaskShaderRes).value();
+				m_sunShadowMeshPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_shadowPass, "sun_shadow_mesh_pipeline");
+				m_sunShadowMeshPipeline->init(m_deferredletLayout, stages, states);
+				delete stages[2];
+				stages.resize(2);
+
+			}
+			
 			delete stages[0];
 			delete stages[1];
 			delete states[6];
@@ -1352,7 +1385,25 @@ void GSceneRenderer2::begin_and_end_fill_cmd_for_shadow(GVulkanCommandBuffer* cm
 
 		m_meshStreamResources->cmd_draw_indirect_data(cmd, frame);
 	}
-	
+	else
+	{
+		vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_sunShadowMeshPipeline->get_vk_pipeline());
+		std::array<VkDescriptorSet, 5> descriptorSets;
+		descriptorSets[0] = p_sceneManager->get_global_set_for_frame(frame);
+		descriptorSets[1] = this->m_meshStreamResources->get_draw_set_by_index(frame);
+		descriptorSets[2] = m_drawDataSet;
+		descriptorSets[3] = m_bindlessSet;
+		descriptorSets[4] = m_meshletStreamResources->get_set_by_index(frame);
+
+		vkCmdBindDescriptorSets(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_deferredletLayout->get_vk_pipeline_layout(), 0, descriptorSets.size(), descriptorSets.data(), 0, 0);
+
+		vkCmdSetViewport(cmd->get_handle(), 0, 1, &port);
+		vkCmdSetScissor(cmd->get_handle(), 0, 1, &rect);
+
+		m_meshletStreamResources->cmd_draw_indirect_data(cmd, frame, m_meshStreamResources->m_maxIndirectDrawCommand,
+			m_meshStreamResources->m_globalIndirectCommandBuffers[frame].get(), m_meshStreamResources->m_globalIndirectCommandsBeginOffset);
+
+	}
 	vkCmdEndRenderPass(cmd->get_handle());
 }
 

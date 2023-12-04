@@ -104,6 +104,12 @@ private:
 	VkPipeline_T* m_compMeshletPipeline;
 	IGVulkanNamedPipelineLayout* m_computeMeshletPipelineLayout;
 
+
+	IGShaderResource* m_sunShadowMeshShaderRes;
+	IGShaderResource* m_sunShadowTaskShaderRes;
+
+	GVulkanNamedGraphicPipeline* m_sunShadowMeshPipeline;
+
 	//--------
 	IGVulkanNamedSetLayout* m_sunShadowSetLayout;
 
@@ -155,6 +161,8 @@ private:
 	IGShaderResource* m_boundingBoxFragmentShaderRes;
 	IGShaderResource* m_sunShadowVertexShaderRes;
 	IGShaderResource* m_sunShadowFragmentShaderRes;
+
+
 	VkFormat m_compositionFormat;
 
 	GVulkanNamedGraphicPipeline* m_selectedCompositionPipeline;

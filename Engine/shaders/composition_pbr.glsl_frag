@@ -176,33 +176,38 @@ float filterPCF(vec4 sc)
 float filterRandom(vec4 P)
 {
 	ivec3 offsetCoord;
-	vec2 f = mod(gl_FragCoord.xy,vec2(8.0));
+	// Map the current frag position to random offset map with moding to its y z val
+	vec2 f = mod(gl_FragCoord.xy,vec2(16.0));
 	offsetCoord.yz = ivec2(f);
-	float sum = 0.0;
-	int samplesDiv2 = int(4.0*4.0/2.0);
+
+	//X X value of the texture
+	int samplesDiv2 = int(8.0*8.0/2.0);
+	//X Calculate the shadowCoord (P is perspective so divide it to w)
 	vec4 shadowCoord = P / P.w;
-	ivec3 texDim = textureSize(samplerOffset, 0);
+	
+	//X Calculate the texture size and texel size the samplerOffset	
+	ivec2 texDim = textureSize(samplerSHD, 0);
 	vec2 texelSize = vec2(1.0/texDim.x,1.0/texDim.y);
-	vec4 iter = shadowCoord;
-	float depth = 0.0;
+	
+
+	
+	//X Sum of all depth vals
+	float sum = 0.0;
+
 	for (int i = 0 ; i < 4 ; i++) {
 		offsetCoord.x = i;
         	vec4 Offsets = texelFetch(samplerOffset, offsetCoord, 0) * 5;
-		iter.xy = shadowCoord.xy + Offsets.xy * texelSize;
-		depth = textureProj(shadowCoord,Offsets.xy * texelSize);
-		sum += depth;
-		
+		//X Calculate the offset
+		vec2 fullOffset = Offsets.xy * texelSize;
+		sum += textureProj(shadowCoord,fullOffset);
 	}
    	float shadow = sum / 8.0;
 	if (shadow != 0.0 && shadow != 1.0) {
 		for (int i = 4 ; i < samplesDiv2 ; i++) {
-			 offsetCoord.x = i;
+			offsetCoord.x = i;
         		vec4 Offsets = texelFetch(samplerOffset, offsetCoord, 0) * 5;
-			iter.xy = shadowCoord.xy + Offsets.xy * texelSize;
-			depth = textureProj(shadowCoord,Offsets.xy * texelSize);
-			sum += depth;
-			depth = textureProj(shadowCoord,Offsets.zw * texelSize);
-			sum += depth;
+			sum += textureProj(shadowCoord,Offsets.xy * texelSize);
+			sum += textureProj(shadowCoord,Offsets.zw * texelSize);
 		}
 		shadow = sum / float(samplesDiv2 * 2.0);
 	}
@@ -315,7 +320,7 @@ void main()
 	}
 	
 	vec4 shadowClip	= biasMat * ubo.sunLP * vec4(fragPos, 1.0);
-	float shadowFactor = filterPCF(shadowClip);
+	float shadowFactor = filterRandom(shadowClip);
 	
 	//X Sun Light directional
 	{

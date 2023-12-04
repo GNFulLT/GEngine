@@ -172,5 +172,9 @@ private:
 	// Inherited via IGVulkanLogicalDevice
 	virtual IGVulkanGraphicPipeline* create_and_init_graphic_pipeline_injector_for_renderpass(IGVulkanRenderPass* vp, const std::vector<IVulkanShaderStage*>& shaderStages, const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight, IGVulkanGraphicPipelineLayoutCreator* injector) override;
 
+
+	// Inherited via IGVulkanLogicalDevice
+	virtual bool has_meshlet_support() const noexcept override;
+
 };
 #endif // GVULKAN_LDEVICE_H

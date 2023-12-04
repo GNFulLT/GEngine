@@ -2,7 +2,7 @@
 
 #extension GL_EXT_scalar_block_layout : require
 
-#include <./data/shader/mesh_def.h>
+#include <./data/shader/meshlet_def.h>
 
 struct ImDraw
 {
@@ -13,10 +13,13 @@ struct ImDraw
 
 layout(set = 0,binding = 0,scalar) uniform  UniformBuffer { mat4   inMtx; vec3 camPos;} ubo;
 
-layout(set = 1,binding = 0,scalar) readonly buffer MeshDatas { MeshData data[]; } meshDatas;
+
+//X Mesh Data
+layout(set = 1,binding = 0,scalar) readonly buffer MeshletDatas { MeshData data[]; } meshletDatas;
+//X Draw Data
 layout(set = 1,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
 layout(set = 1,binding = 2,scalar) readonly buffer DrawID { uint data[]; } drawIDs;
-layout(set = 1,binding = 3,scalar) readonly buffer Vertex { float data[]; } vertexDatas;
+layout(set = 1,binding = 3,scalar) readonly buffer VertexData { float data[]; } vertexDatas;
 
 layout(set = 2,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
 
@@ -47,7 +50,7 @@ void main()
 	mat3 inModel = transpose(inverse(mat3(transformDatas.data[transformIndex])));
 	mat4 model = transformDatas.data[transformIndex];
 	uint vertOffset = gl_VertexIndex;
-	MeshData meshData = meshDatas.data[meshIndex];
+	MeshletData meshData = meshletDatas.data[meshIndex];
 	uint vertexElementCount = calculateVertexElementCount(meshData);	
 
 	uint index = gl_VertexIndex;
@@ -64,7 +67,7 @@ void main()
 	gl_Position = (ubo.inMtx *  transformDatas.data[transformIndex]  * tempPos);
 	vec3 aNormal = octahedral_decode(norm);
 	//X Unpack the normal data and calcul
-	if((meshData.meshFlag & MESH_TYPE_HAS_TANGENT_BITANGENT) != 0)
+	if((meshData.meshFlag & MESHLET_TYPE_HAS_TANGENT_BITANGENT) != 0)
 	{	
 		// 7 8 9 Tangent
 		vec3 aTangent = vec3(vertexDatas.data[currentVertexBeginFloat+7],vertexDatas.data[currentVertexBeginFloat+8],vertexDatas.data[currentVertexBeginFloat+9]);

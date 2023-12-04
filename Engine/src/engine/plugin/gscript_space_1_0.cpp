@@ -1,11 +1,12 @@
 #include "internal/engine/plugin/gscript_space_1_0.h"
 #include "internal/engine/plugin/gscript_object_1_0.h"
 
-GScriptSpace_1_0::GScriptSpace_1_0(const std::string& spaceName)
+GScriptSpace_1_0::GScriptSpace_1_0(const std::string& spaceName, const std::string& dllName)
 {
 	m_scriptSpaceName = spaceName;
 	m_version.version_minor = 0;
 	m_version.version_major = 1;
+	m_dllName = dllName;
 }
 
 const char* GScriptSpace_1_0::get_script_space_name()
@@ -42,4 +43,9 @@ IGScriptObject* GScriptSpace_1_0::create_script_object(const std::string& name, 
 	m_scriptObjectMap.emplace(name, obj);
 	m_loadedScriptObjects.push_back(obj);
 	return obj;
+}
+
+const char* GScriptSpace_1_0::get_dll_name()
+{
+	return m_dllName.c_str();
 }

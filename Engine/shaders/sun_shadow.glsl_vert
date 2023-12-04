@@ -27,7 +27,6 @@ layout(set = 1,binding = 0,scalar) readonly buffer MeshDatas { MeshData data[]; 
 layout(set = 1,binding = 1,scalar) readonly buffer DrawDatas { DrawData data[]; } drawDatas;
 layout(set = 1,binding = 2,scalar) readonly buffer DrawID { uint data[]; } drawIDs;
 layout(set = 1,binding = 3,scalar) readonly buffer Vertex { float data[]; } vertexDatas;
-layout(set = 1,binding = 4,scalar) readonly buffer Index { uint data[]; } indexDatas;
 
 layout(set = 2,binding = 0,scalar) readonly buffer TransformDatas { mat4 data[]; } transformDatas;
 

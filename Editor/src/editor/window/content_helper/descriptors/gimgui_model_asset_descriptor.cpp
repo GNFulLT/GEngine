@@ -13,7 +13,7 @@
 #include "engine/gengine.h"
 #include "engine/imanager_table.h"
 #include <unordered_map>
-
+#include "engine/manager/igscene_manager.h"
 
 GImGuiModelAssetDescriptor::GImGuiModelAssetDescriptor()
 {
@@ -51,6 +51,7 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 		std::vector<MaterialDescription> materials;
 		auto filePath = path.string();
 		std::unordered_map<uint32_t, glm::mat4> outTransforms;
+		
 		auto mesh = con->load_all_meshes_meshlet(filePath.c_str(), materials, texturePaths, &convertedScene, outTransforms);
 		auto lastMeshlet = mesh->gmeshlets_[mesh->gmeshlets_.size() - 1];
 		//auto mesh = con->load_all_meshes(filePath.c_str(), materials, texturePaths,&convertedScene);

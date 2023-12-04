@@ -39,8 +39,15 @@ const std::vector<IGScriptSpace*>* GScriptManager::get_loaded_script_spaces() co
 {
 	return &m_scriptSpaces;	
 }
-IGScriptSpace* GScriptManager::load_script_space(std::filesystem::path path)
+
+std::expected<IGScriptSpace*, GSCRIPT_SPACE_LOAD_ERROR> GScriptManager::load_script_space(std::filesystem::path path)
 {
+	auto pathAsStr = path.filename().string();
+	for (auto space : m_scriptSpaces)
+	{
+		if (strcmp(space->get_dll_name(), pathAsStr.c_str()) == 0)
+			return std::unexpected(GSCRIPT_SPACE_LOAD_ERROR_ALREADY_LOADED);
+	}
 	dylib* lib;
 	try
 	{
@@ -49,8 +56,9 @@ IGScriptSpace* GScriptManager::load_script_space(std::filesystem::path path)
 		if (!symbolHas)
 		{
 			delete lib;
-			return nullptr;
+			return std::unexpected(GSCRIPT_SPACE_LOAD_ERROR_DLL_ERROR);
 		}
+		m_currentDllPath = pathAsStr.c_str();
 		std::string symbolName = GSCRIPT_REGISTRATION_FUNC_NAME;
 		auto registerFunc = lib->get_function<GSCRIPT_REGISTRATION_FUNC_TYPE>(symbolName);
 		GNFScriptRegistration registration;
@@ -66,12 +74,12 @@ IGScriptSpace* GScriptManager::load_script_space(std::filesystem::path path)
 			m_libs.push_back((void*)lib);
 			return m_currentStartedSpace;
 		}
-		return nullptr;
+		return std::unexpected(GSCRIPT_SPACE_LOAD_ERROR_ALREADY_LOADED);
 	}
 	catch (const std::exception& ex)
 	{
 		//X LOG
-		return nullptr;
+			return std::unexpected(GSCRIPT_SPACE_LOAD_ERROR_DLL_ERROR);
 	}
 }
 
@@ -99,7 +107,7 @@ bool GScriptManager::register_script_space(const GNFScriptSpaceRegisterArgs* arg
 	}
 	if (vers.version_major == 1 && vers.version_minor == 0)
 	{
-		m_currentStartedSpace = new GScriptSpace_1_0(namesSpace);
+		m_currentStartedSpace = new GScriptSpace_1_0(namesSpace,m_currentDllPath);
 		m_scriptSpaceMap.emplace(namesSpace, m_currentStartedSpace);
 		m_scriptSpaces.push_back(m_currentStartedSpace);
 		return true;

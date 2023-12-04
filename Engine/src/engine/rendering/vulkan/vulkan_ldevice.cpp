@@ -704,6 +704,11 @@ IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_graphic_pipeline_
 	return cpipe;
 }
 
+bool GVulkanLogicalDevice::has_meshlet_support() const noexcept
+{
+	return m_meshletsEnabled;
+}
+
 
 std::expected<IGVulkanIndirectBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice::create_indirect_buffer(uint32_t size)
 {

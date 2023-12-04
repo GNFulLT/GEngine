@@ -1,0 +1,128 @@
+#version 460
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: enable
+#extension GL_EXT_scalar_block_layout : require
+
+struct MaterialData
+{
+	vec4 emissiveColor_;
+	vec4 albedoColor_;
+
+	float occlusionFactor_;
+	float roughnessFactor_;
+	float metallicFactor_;
+	
+	float transparencyFactor_;
+	float alphaTest_;
+
+	uint  flags_;
+
+	uint     ambientOcclusionMap_;
+	uint     emissiveMap_;
+	uint     albedoMap_;
+	uint     metallicRoughnessMap_;
+	uint     normalMap_;
+	uint     opacityMap_;
+	uint     metallicMap_;
+	uint     roughnessMap_;
+};
+
+
+
+layout(location = 0) in vec2 uv;
+layout(location = 1) in vec3 v_worldNormal;
+layout(location = 2) in vec4 v_worldPos;
+layout(location = 3) in flat uint matIdx;
+layout(location = 4) in flat uint hasTBN;
+layout(location = 5) in mat3 iTBN;
+
+layout (location = 0) out vec4 outPosition;
+layout (location = 1) out vec4 outAlbedo;
+layout (location = 2) out vec4 outEmission;
+layout (location = 3) out vec4 outPBR;
+
+layout(set = 2,binding = 1,scalar) readonly   buffer MatBO { MaterialData data[]; } mat_bo;
+layout (set = 3,binding = 0) uniform sampler2D textures[];
+
+float sign_not_zero(float f){
+  return(f >= 0.0) ? 1.0 : -1.0;
+}
+vec2 sign_not_zero(vec2 v) {
+  return vec2(sign_not_zero(v.x), sign_not_zero(v.y));
+}
+
+vec2 octahedral_encode(vec3 n) {
+    vec2 p = n.xy * (1.0f / (abs(n.x) + abs(n.y) +
+        abs(n.z)));
+    return (n.z < 0.0f) ? ((1.0 - abs(p.yx)) *
+        sign_not_zero(p)) : p;
+}
+
+
+void main()
+{	
+	
+	MaterialData materialData =  mat_bo.data[matIdx];
+	vec3 emission = materialData.emissiveColor_.rgb;
+	outPosition = vec4(v_worldPos.rgb,1.f);
+	bool alpha = false;
+	if(materialData.albedoMap_ < 2000)
+	{
+		vec4 albedoMap = texture(textures[nonuniformEXT(materialData.albedoMap_)], uv);
+		if(albedoMap.a != 0.0)
+		{
+			outAlbedo = albedoMap;
+		}
+		else
+		{
+			alpha = true;
+		}
+	
+	}
+	else
+	{
+		outAlbedo = materialData.albedoColor_;
+	}
+	if(!alpha)
+	{
+	float occlusion = 1.f;
+	float roughness = materialData.roughnessFactor_;
+	float metallic = materialData.metallicFactor_;
+	if(materialData.ambientOcclusionMap_ < 2000)
+	{
+		occlusion *= texture(textures[nonuniformEXT(materialData.ambientOcclusionMap_)], uv).r;
+	}
+	if(materialData.emissiveMap_ < 2000)
+	{
+		emission = texture(textures[nonuniformEXT(materialData.emissiveMap_)], uv).rgb;
+	}
+	if(materialData.metallicMap_ < 2000)
+	{
+		metallic *= texture(textures[nonuniformEXT(materialData.metallicMap_)], uv).b;
+	}
+	if(materialData.roughnessMap_ < 2000)
+	{
+		roughness *= texture(textures[nonuniformEXT(materialData.roughnessMap_)], uv).g;
+	}
+	vec3 normal = normalize(v_worldNormal);
+	if(materialData.normalMap_ < 2000 && hasTBN == 1)
+	{
+		vec3 normalMap = texture(textures[nonuniformEXT(materialData.normalMap_)], uv).rgb;
+	    	normalMap = normalMap * 2.0 - 1.0;   
+		normalMap = normalize(iTBN * normalMap); 
+		normal = normalMap;
+ 
+	}
+
+	vec2 octaNormal = octahedral_encode(normal);
+	vec2 uoctaNormal = (octaNormal+1.f)/2.f;
+	outEmission = vec4(emission,uoctaNormal.g);
+	outPBR = vec4(occlusion,roughness,metallic,1.f);
+	outPBR.a = uoctaNormal.r;
+	}
+	else
+	{
+		discard;
+	}
+
+}

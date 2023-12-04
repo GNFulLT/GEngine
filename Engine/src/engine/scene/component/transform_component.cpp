@@ -40,6 +40,7 @@ void TransformComponent::set_local_transform(const glm::mat4& tr) noexcept
 	glm::vec3 skew;
 	glm::vec4 perspective;
 	glm::decompose(tr, m_scale, m_rotation, m_position, skew, perspective);
+	p_scene->mark_as_changed(m_nodeID);
 }
 
 const glm::vec3& TransformComponent::scale_getter()

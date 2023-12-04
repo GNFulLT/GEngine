@@ -31,6 +31,7 @@ const std::vector<std::string>* GImGuiProjectDescriptor::get_file_types()
 void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 {
 	auto projManager = EditorApplicationImpl::get_instance()->get_project_manager();
+
 	if (m_scriptCreation)
 	{
 	}
@@ -79,47 +80,16 @@ void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 						auto size = className.size();
 						projMng->create_script(className);
 						m_scriptCreation = false;
-						ImGui::CloseCurrentPopup();
 						memset(buf, 0, 50);
 					}
 					if (ImGui::Button("Close"))
 					{
 						m_scriptCreation = false;
-						ImGui::CloseCurrentPopup();
 					}					
 					return m_scriptCreation;
 
 				}));
-				/*EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->set_modal_setter([&,projMng = projManager]() {
-					if (m_scriptCreation)
-					{
-						ImGui::OpenPopup("Create GScript");
-						ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-					}
-					if (ImGui::BeginPopupModal("Create GScript", nullptr,  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
-					{
-
-						ImGui::InputText("Class Name", buf, 50);
-						if (ImGui::Button("Create"))
-						{
-							std::string className = buf;
-							auto size = className.size();
-							projMng->create_script(className);
-							m_scriptCreation = false;
-							ImGui::CloseCurrentPopup();
-							memset(buf, 0, 50);
-						}
-						if (ImGui::Button("Close"))
-						{
-							m_scriptCreation = false;
-							ImGui::CloseCurrentPopup();
-						}
-						ImGui::EndPopup();
-						return true;
-					}
-					return false;
-				});*/
 				m_scriptCreation = true; 
 			}
 			if (ImGui::Selectable("Load Script"))
@@ -130,6 +100,26 @@ void GImGuiProjectDescriptor::draw_menu_for_file(std::filesystem::path path)
 				{
 					auto scriptManager = ((GSharedPtr<IGScriptManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCRIPT))->get();
 					auto scriptSpace = scriptManager->load_script_space(outDllPath);
+					if (!scriptSpace.has_value())
+					{
+						auto err = scriptSpace.error();
+						if (err == GSCRIPT_SPACE_LOAD_ERROR_ALREADY_LOADED)
+						{
+							EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->add_modal_to_queue(new GImGuiFunctionModal("Script Space is already loaded", [&, projMng = projManager]() {
+								ImGui::Text("Do you want to reload script space ?");
+								if (ImGui::Button("Yes"))
+								{
+									return false;
+								}
+								ImGui::SameLine();
+								if (ImGui::Button("No"))
+								{
+									return false;
+								}
+								return true;
+							}));
+						}
+					}
 				}
 			}
 		}
