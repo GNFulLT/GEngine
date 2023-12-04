@@ -147,6 +147,7 @@ void ManagerTable::delete_manager(ENGINE_MANAGER manager)
 		break;
 	case ENGINE_MANAGER_CAMERA:
 		delete (GSharedPtr<IGCameraManager>*)mng;
+		break;
 	case ENGINE_MANAGER_SCENE:
 		delete (GSharedPtr<IGSceneManager>*)mng;
 		break;

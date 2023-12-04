@@ -6,6 +6,8 @@
 #include <spdlog/fmt/fmt.h>
 #include "engine/manager/igscene_manager.h"
 #include "engine/imanager_table.h"
+#include "engine/plugin/igscript_object.h"
+#include "engine/scene/component/script_group_component.h"
 
 GImGuiSceneWindow::GImGuiSceneWindow()
 {
@@ -39,11 +41,30 @@ void GImGuiSceneWindow::render()
 	while (iter > -1 && iter < m_scene->hierarchy.size())
 	{
 
-	bool isOpen = ImGui::TreeNodeEx(fmt::format("Node {}", iter).c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick);
-	if (ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+		bool isOpen = ImGui::TreeNodeEx(fmt::format("Node {}", iter).c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick);
+
+		if (ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
 		{
 			m_selectedEntity = iter;
 		}
+	
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (ImGui::AcceptDragDropPayload("SCRIPT_TYPE"))
+			{
+				auto currentNodeGEntity = m_sceneManager->get_entity_by_id(iter);
+				auto ramLoc = (std::size_t*)ImGui::GetDragDropPayload()->Data;
+				if (!currentNodeGEntity->has_component<ScriptGroupComponent>())
+					currentNodeGEntity->emplace_component<ScriptGroupComponent>(currentNodeGEntity);
+				auto& scriptComp = currentNodeGEntity->get_component<ScriptGroupComponent>();
+				auto obj = (IGScriptObject*)(*ramLoc);
+				scriptComp.try_to_register_script(obj);
+			}
+			ImGui::EndDragDropTarget();
+		}
+		
+		
 		//X Iterate here left child tree
 		if (isOpen)
 		{

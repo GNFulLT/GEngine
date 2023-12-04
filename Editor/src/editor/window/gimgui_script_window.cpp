@@ -36,7 +36,16 @@ void GImGuiScriptWindow::render()
 			for (auto scriptObj : *scriptObjs)
 			{
 				auto scriptName = scriptObj->get_script_name();
-				ImGui::Text(scriptName);
+				ImGui::Button(scriptName);
+				if (ImGui::BeginDragDropSource())
+				{
+					auto ramLoc = std::size_t(scriptObj);
+					//X Pointer size
+					ImGui::SetDragDropPayload("SCRIPT_TYPE",&ramLoc,sizeof(std::size_t));
+
+					ImGui::EndDragDropSource();
+				}
+
 			}
 		}
 	}

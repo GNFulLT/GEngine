@@ -11,6 +11,8 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include "engine/rendering/vulkan/ivulkan_queue.h"
+#include <queue>
+#include <engine/scene/component/script_group_component.h>
 
 struct AABB
 {
@@ -955,6 +957,36 @@ const GlobalUniformBuffer* GSceneManager::get_global_data() const noexcept
 GEntity* GSceneManager::get_entity_by_id(uint32_t id)
 {
 	return m_currentScene->get_entity_by_id(id);
+}
+
+void GSceneManager::update_entities(float dt)
+{
+	std::queue<uint32_t> queue;
+	queue.push(0);
+	//X TODO : SHOULD BE CHANGED
+	while (!queue.empty())
+	{
+		auto iter = queue.front();
+		queue.pop();
+
+		auto entity = get_entity_by_id(iter);
+		if (entity != nullptr)
+		{
+			if (entity->has_component<ScriptGroupComponent>())
+			{
+				entity->get_component<ScriptGroupComponent>().update(dt);
+			}
+		}
+		// Enqueue children (if any)
+		uint32_t child = m_currentScene->hierarchy[iter].firstChild;
+		while (child != UINT32_MAX)
+		{
+			queue.push(child);
+			
+			child = m_currentScene->hierarchy[child].nextSibling;
+
+		}
+	}
 }
 
 

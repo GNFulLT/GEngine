@@ -20,6 +20,7 @@ public:
 private:
 	std::unordered_map<std::string, IGScriptSpace*> m_scriptSpaceMap;
 	std::vector<IGScriptSpace*> m_scriptSpaces;
+	std::vector<void*> m_libs;
 	IGScriptSpace* m_currentStartedSpace;
 };
 

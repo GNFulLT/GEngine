@@ -14,6 +14,11 @@ public:
 	virtual const GNFPluginVersion* get_plugin_version() override;
 
 	virtual void destroy() override;
+
+
+	virtual IGScript* create_script() override;
+
+	virtual void destroy_script(IGScript* script) override;
 private:
 	IGScriptSpace* m_scriptSpace;
 	GNFPluginVersion m_version;
@@ -21,6 +26,7 @@ private:
 
 	GNFScriptClassConstructor m_scriptCtor;
 	GNFScriptClassDestructor m_scriptDtor;
+
 
 };
 

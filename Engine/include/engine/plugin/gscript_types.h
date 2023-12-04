@@ -16,7 +16,7 @@ typedef struct GNFScriptSpaceRegisterArgs
 typedef bool(*GNFScriptSpaceRegister)(const GNFScriptSpaceRegisterArgs*);
 
 typedef pGNFScriptObject(*GNFScriptClassConstructor)(pGObject*);
-typedef void(*GNFScriptClassDestructor)(pGNFScriptObject*);
+typedef void(*GNFScriptClassDestructor)(pGNFScriptObject);
 
 typedef struct GNFScriptRegisterArgs
 {

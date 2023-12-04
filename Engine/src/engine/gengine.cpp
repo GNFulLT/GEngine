@@ -207,9 +207,15 @@ void GEngine::tick(double deltaTime)
 	{
 		s_cameraManager->update(deltaTime);
 
-		m_impl->update();
+		if (g_updateEnable)
+		{
+			s_sceneManager->update_entities(deltaTime);
 
-		m_impl->after_update();
+			m_impl->update();
+
+			m_impl->after_update();
+		}
+		
 		//X Physic Collisions
 
 

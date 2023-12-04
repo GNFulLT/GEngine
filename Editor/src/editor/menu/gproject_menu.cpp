@@ -1,5 +1,6 @@
 #include "internal/menu/gproject_menu.h"
 #include "imgui/imgui.h"
+#include "engine/globals.h"
 
 bool GProjectMenu::init()
 {
@@ -21,6 +22,14 @@ void GProjectMenu::render()
 	if (ImGui::MenuItem("Create Project"))
 	{
 		
+	}
+	if (ImGui::MenuItem("Run"))
+	{
+		enable_update();
+	}
+	if (ImGui::MenuItem("Stop"))
+	{
+		disable_update();
 	}
 }
 

@@ -6,10 +6,11 @@
 #include "engine/scene/gentity.h"
 
 class ScriptComponent;
-
+class ScriptGroupComponent;
 class ENGINE_API IGScript
 {
 	friend class ScriptComponent;
+	friend class ScriptGroupComponent;
 public:
 	IGScript();
 	virtual ~IGScript() = default;

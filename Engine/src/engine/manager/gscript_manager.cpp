@@ -28,6 +28,11 @@ GScriptManager::~GScriptManager()
 	{
 		delete m_scriptSpaces[i];
 	}
+	for (auto lib : m_libs)
+	{
+		auto ptr = (dylib*)lib;
+		delete ptr;
+	}
 }
 
 const std::vector<IGScriptSpace*>* GScriptManager::get_loaded_script_spaces() const noexcept
@@ -36,20 +41,32 @@ const std::vector<IGScriptSpace*>* GScriptManager::get_loaded_script_spaces() co
 }
 IGScriptSpace* GScriptManager::load_script_space(std::filesystem::path path)
 {
+	dylib* lib;
 	try
 	{
-		dylib lib(path);
-		auto symbolHas = lib.has_symbol(GSCRIPT_REGISTRATION_FUNC_NAME);
+		lib = new dylib(path);
+		auto symbolHas = lib->has_symbol(GSCRIPT_REGISTRATION_FUNC_NAME);
 		if (!symbolHas)
+		{
+			delete lib;
 			return nullptr;
+		}
 		std::string symbolName = GSCRIPT_REGISTRATION_FUNC_NAME;
-		auto registerFunc = lib.get_function<GSCRIPT_REGISTRATION_FUNC_TYPE>(symbolName);
+		auto registerFunc = lib->get_function<GSCRIPT_REGISTRATION_FUNC_TYPE>(symbolName);
 		GNFScriptRegistration registration;
 		registration.scriptRegister = &register_scripti;
 		registration.scriptSpaceRegister = &register_script_spacei;
 
+		auto prevSpace = m_currentStartedSpace;
 		(registerFunc)(&registration);
-		return m_currentStartedSpace;
+		auto currSpace = m_currentStartedSpace;
+
+		if (currSpace != prevSpace)
+		{
+			m_libs.push_back((void*)lib);
+			return m_currentStartedSpace;
+		}
+		return nullptr;
 	}
 	catch (const std::exception& ex)
 	{

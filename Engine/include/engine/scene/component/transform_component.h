@@ -6,10 +6,11 @@
 #include "engine/scene/serializable_component.h"
 #include <glm/ext.hpp>
 #include "engine/manager/igscene_manager.h"
+#include "engine/GEngine_EXPORT.h"
 
 class Scene;
 
-class TransformComponent : public SerializableComponent<TransformComponent>
+class ENGINE_API TransformComponent : public SerializableComponent<TransformComponent>
 {
 public:
 	TransformComponent(Scene* scene,uint32_t nodeID);

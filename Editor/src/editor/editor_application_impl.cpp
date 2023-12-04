@@ -31,6 +31,7 @@
 #include "engine/manager/igscene_manager.h"
 #include "internal/manager/geditor_texture_debug_manager.h"
 #include "internal/manager/gproject_manager.h"
+#include "engine/globals.h"
 
 IGVulkanLogicalDevice* s_device;
 
@@ -198,6 +199,7 @@ bool EditorApplicationImpl::init(GEngine* engine)
 
     ((GSharedPtr<IGCameraManager>*)engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_CAMERA))->get()->set_positioner(m_fpsCameraPositioner.get());
     
+    disable_update();
 
     return true;    
 }

@@ -114,5 +114,7 @@ public:
 	virtual void update_sun_properties(const SunProperties* sunProps) = 0;
 
 	virtual const GlobalUniformBuffer* get_global_data() const noexcept = 0;
+
+	virtual void update_entities(float dt) = 0;
 };
 #endif // ISCENE_MANAGER_H

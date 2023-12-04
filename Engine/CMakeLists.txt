@@ -96,11 +96,15 @@ add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.
  "include/engine/igobject.h" "include/engine/gproject.h" "src/engine/gproject.cpp" "include/engine/io/json_utils.h" "src/engine/io/json_utils.cpp" "src/engine/scene/component/igscript.cpp" 
  "include/engine/manager/igscript_manager.h" "include/engine/plugin/gplugin.h" "include/engine/plugin/gplugin_types.h" "include/engine/plugin/gscript_types.h"
  "include/engine/plugin/gapi_general_types.h" "include/engine/plugin/igscript_space.h" "include/engine/plugin/igscript_object.h" "internal/engine/plugin/gscript_space_1_0.h" 
- "src/engine/plugin/gscript_space_1_0.cpp" "internal/engine/plugin/gscript_object_1_0.h" "src/engine/plugin/gscript_object_1_0.cpp" "internal/engine/manager/gscript_manager.h" "src/engine/manager/gscript_manager.cpp")
+ "src/engine/plugin/gscript_space_1_0.cpp" "internal/engine/plugin/gscript_object_1_0.h" "src/engine/plugin/gscript_object_1_0.cpp" "internal/engine/manager/gscript_manager.h" "src/engine/manager/gscript_manager.cpp" "include/engine/scene/component/script_group_component.h" "src/engine/scene/component/script_group_component.cpp")
+
+ set(RAPIDJSON_BUILD_TESTS OFF)
 
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/volk")
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glm")
+
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vulkan/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/simdjson/include")

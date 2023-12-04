@@ -172,6 +172,10 @@ private:
 	// Inherited via IGSceneManager
 	virtual GEntity* get_entity_by_id(uint32_t id) override;
 
+
+	// Inherited via IGSceneManager
+	virtual void update_entities(float dt) override;
+
 };
 
 #endif // GSCENE_MANAGER_H

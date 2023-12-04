@@ -9,6 +9,7 @@ GScriptObject_1_0::GScriptObject_1_0(IGScriptSpace* boundedScriptSpace, const st
 
 	m_scriptCtor = scriptCtor;
 	m_scriptDtor = scriptDtor;
+
 }
 
 const IGScriptSpace* GScriptObject_1_0::get_bounded_script_space()
@@ -28,4 +29,15 @@ const GNFPluginVersion* GScriptObject_1_0::get_plugin_version()
 
 void GScriptObject_1_0::destroy()
 {
+}
+
+IGScript* GScriptObject_1_0::create_script()
+{
+	auto ptr =  ((*m_scriptCtor)(nullptr));
+	return (IGScript*)ptr;
+}
+
+void GScriptObject_1_0::destroy_script(IGScript* script)
+{
+	(m_scriptDtor)((pGNFScriptObject)script);
 }
