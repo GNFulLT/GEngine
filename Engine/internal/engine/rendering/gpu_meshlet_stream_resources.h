@@ -18,6 +18,7 @@ public:
 	void cmd_draw_indirect_data(GVulkanCommandBuffer* cmd, uint32_t frame, uint32_t maxIndirectDrawCommand, IVulkanBuffer* indirectBuffer, uint32_t countOffset);
 
 	uint32_t add_meshlet_data(const GMeshletData* gmeshlet);
+	uint32_t add_meshlet_data(const GMeshletDataExtra* gmeshlet);
 private:
 	IGVulkanLogicalDevice* p_boundedDevice;
 	IGPipelineObjectManager* p_pipelineManager;

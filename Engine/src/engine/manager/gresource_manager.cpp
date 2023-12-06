@@ -160,6 +160,11 @@ bool GResourceManager::add_image_loader(IImageLoader* loader)
 	return true;
 }
 
+IGMeshLoader* GResourceManager::select_mesh_loader_by_path(std::filesystem::path path) const
+{
+	return nullptr;
+}
+
 const std::vector<IImageLoader*>* GResourceManager::get_imageloaders_by_loading_type(GIMAGETYPE supportedType)
 {
 	if (auto type = m_imageTypeLoader.find(supportedType); type != m_imageTypeLoader.end())

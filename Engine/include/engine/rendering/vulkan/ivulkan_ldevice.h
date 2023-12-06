@@ -156,6 +156,9 @@ public:
 		const std::vector<IGVulkanGraphicPipelineState*>& states, uint32_t framesInFlight, IGVulkanGraphicPipelineLayoutCreator* injector) = 0;
 
 	virtual bool has_meshlet_support() const noexcept = 0;
+
+	virtual bool use_meshlet() const noexcept = 0;
+
 private:
 };
 

@@ -68,6 +68,10 @@ private:
 
 
 
+
+	// Inherited via IGResourceManager
+	virtual IGMeshLoader* select_mesh_loader_by_path(std::filesystem::path path) const override;
+
 };
 
 #endif // GRESOURCE_MANAGER_H

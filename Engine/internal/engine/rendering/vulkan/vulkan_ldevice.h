@@ -147,7 +147,7 @@ private:
 	VmaAllocator allocator;
 
 	bool m_meshletsEnabled = false;
-
+	bool m_tryToUseMeshlet = true;
 
 
 
@@ -175,6 +175,10 @@ private:
 
 	// Inherited via IGVulkanLogicalDevice
 	virtual bool has_meshlet_support() const noexcept override;
+
+
+	// Inherited via IGVulkanLogicalDevice
+	virtual bool use_meshlet() const noexcept override;
 
 };
 #endif // GVULKAN_LDEVICE_H

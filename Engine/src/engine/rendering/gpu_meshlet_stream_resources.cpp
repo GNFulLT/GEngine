@@ -204,3 +204,27 @@ uint32_t GPUMeshletStreamResources::add_meshlet_data(const GMeshletData* meshlet
 
 	return m_meshletExtraData.add_to_buffer(gmeshExtra);
 }
+
+uint32_t GPUMeshletStreamResources::add_meshlet_data(const GMeshletDataExtra* gmeshlet)
+{
+	uint32_t beginGMeshlet = m_mergedGMeshlet.add_to_buffer(gmeshlet->gmeshlets_);
+	uint32_t beginMeshletVertex = m_mergedMeshletVertex.add_to_buffer(gmeshlet->meshletVertexData_);
+	uint32_t beginMeshletTriangle = m_mergedMeshletTriangles.add_to_buffer(gmeshlet->meshletTriangleData_);
+	//X Create gmesh data for per mesh
+	//X TODO : DONT COPY
+	std::vector<GMeshletExtra> gmeshExtra(gmeshlet->gmeshletExtra_.size());
+	for (int i = 0; i < gmeshExtra.size(); i++)
+	{
+		auto& gmeshExtraData = gmeshExtra[i];
+
+		gmeshExtraData.meshletTrianglesOffset = beginMeshletTriangle + gmeshlet->gmeshletExtra_[i].meshletTrianglesOffset;
+		gmeshExtraData.meshletVerticesOffset = beginMeshletVertex + gmeshlet->gmeshletExtra_[i].meshletVerticesOffset;
+		gmeshExtraData.meshletOffset = beginGMeshlet + gmeshlet->gmeshletExtra_[i].meshletOffset;
+
+		gmeshExtraData.meshletTrianglesCount = gmeshlet->gmeshletExtra_[i].meshletTrianglesCount;
+		gmeshExtraData.meshletVerticesCount = gmeshlet->gmeshletExtra_[i].meshletVerticesCount;
+		gmeshExtraData.meshletCount = gmeshlet->gmeshletExtra_[i].meshletCount;
+	}
+
+	return m_meshletExtraData.add_to_buffer(gmeshExtra);
+}

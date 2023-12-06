@@ -46,6 +46,10 @@ void GImGuiModelAssetDescriptor::draw_menu_for_file(std::filesystem::path path)
 	}
 	if (ImGui::Selectable("Add to scene"))
 	{
+		auto sceneManager = ((GSharedPtr<IGSceneManager>*)EditorApplicationImpl::get_instance()->m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCENE))->get();
+		sceneManager->load_scene(path);
+		return;
+
 		std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>> texturePaths;
 		Scene* convertedScene;
 		std::vector<MaterialDescription> materials;

@@ -7,11 +7,13 @@
 #include <glm/ext.hpp>
 #include "engine/manager/igscene_manager.h"
 #include "engine/GEngine_EXPORT.h"
+#include "engine/igobject.h"
 
 class Scene;
 
-class ENGINE_API TransformComponent : public SerializableComponent<TransformComponent>
+class ENGINE_API TransformComponent : public IGObject
 {
+	GOBJECT_DEF(TransformComponent, IGObject)
 public:
 	TransformComponent(Scene* scene,uint32_t nodeID);
 	TransformComponent(const TransformComponent&) = delete;

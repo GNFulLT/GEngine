@@ -54,7 +54,10 @@ public:
 	virtual void set_composition_views(IVulkanImage* position, IVulkanImage* albedo, IVulkanImage* emission, IVulkanImage* pbr,VkSampler_T* sampler,IGVulkanNamedViewport* deferredVp, IGVulkanNamedViewport* compositionVp);
 
 	uint32_t add_mesh_to_scene(const MeshData* meshData, uint32_t shapeID = 0);
+	uint32_t add_mesh_to_scene(const MeshData2* meshData);
+
 	uint32_t add_meshlet_to_scene(const GMeshletData* meshlet);
+	uint32_t add_meshlet_to_scene(const GMeshletDataExtra* meshlet);
 
 	uint32_t create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex);
 

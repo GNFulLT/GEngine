@@ -28,6 +28,7 @@ public:
 	bool init(uint32_t beginVertexCount, uint32_t beginIndexCount, uint32_t beginMeshCount, uint32_t beginDrawDataAndIdCount);
 
 	uint32_t add_mesh_data(const MeshData* meshData);
+	uint32_t add_mesh_data(const MeshData2* meshData);
 
 	uint32_t add_mesh_data(const GMeshletData* meshlet);
 

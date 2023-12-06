@@ -57,7 +57,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 {
 	m_meshStreamResources = new GPUMeshStreamResources(p_boundedDevice, 7, m_framesInFlight, p_pipelineManager);
 	
-	m_useMeshlet = true && p_boundedDevice->has_meshlet_support();
+	m_useMeshlet = p_boundedDevice->use_meshlet();
 
 	uint32_t beginMesh = calculate_nearest_1mb<GMeshData>();
 	assert(m_meshStreamResources->init(calculate_nearest_10mb<float>()*3, calculate_nearest_10mb<uint32_t>()*14, beginMesh,
@@ -271,6 +271,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 	//X Create pipeline layouts
 	{
 		//X DeferredLet Layout
+		if(this->m_useMeshlet)
 		{
 			VkPipelineLayoutCreateInfo inf = {};
 			std::array<VkDescriptorSetLayout, 5> setLayouts;
@@ -367,6 +368,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			m_computePipelineLayout = p_pipelineManager->create_or_get_named_pipeline_layout("ComputePipelineLayout", &inf);
 			assert(m_computePipelineLayout != nullptr);
 		}
+		if(m_useMeshlet)
 		{
 			std::array<VkDescriptorSetLayout, 6> setLayouts;
 			setLayouts[0] = globalUniformSet;
@@ -836,14 +838,17 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			auto cmpPipe = vkCreateComputePipelines(p_boundedDevice->get_vk_device(), nullptr, 1, &compInfo, nullptr, &m_compPipeline);
 			assert(cmpPipe == VK_SUCCESS);
 			delete cullCompStage;
+			if (m_useMeshlet)
+			{
+				cullCompStage = p_shaderManager->create_shader_stage_from_shader_res(m_cullComputeMeshletShaderRes).value();
+				compInfo.stage = *cullCompStage->get_creation_info();
+				compInfo.layout = m_computeMeshletPipelineLayout->get_vk_pipeline_layout();
 
-			cullCompStage = p_shaderManager->create_shader_stage_from_shader_res(m_cullComputeMeshletShaderRes).value();
-			compInfo.stage = *cullCompStage->get_creation_info();
-			compInfo.layout = m_computeMeshletPipelineLayout->get_vk_pipeline_layout();
-
-			cmpPipe = vkCreateComputePipelines(p_boundedDevice->get_vk_device(), nullptr, 1, &compInfo, nullptr, &m_compMeshletPipeline);
-			assert(cmpPipe == VK_SUCCESS);
-
+				cmpPipe = vkCreateComputePipelines(p_boundedDevice->get_vk_device(), nullptr, 1, &compInfo, nullptr, &m_compMeshletPipeline);
+				assert(cmpPipe == VK_SUCCESS);
+				delete cullCompStage;
+			}
+			
 		}
 
 	}
@@ -1287,8 +1292,6 @@ void GSceneRenderer2::fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame
 void GSceneRenderer2::fill_aabb_cmd_for(GVulkanCommandBuffer* cmd, uint32_t frame, uint32_t nodeId)
 {
 	uint32_t drawId = p_sceneManager->get_draw_id_of_node(nodeId);
-	if (drawId == -1 || m_useMeshlet)
-		return;
 
 	uint32_t meshIndex = m_meshStreamResources->m_globalDrawData.cpuVector[drawId].mesh;
 	uint32_t transformIndex = m_meshStreamResources->m_globalDrawData.cpuVector[drawId].transformIndex;
@@ -1577,12 +1580,22 @@ uint32_t GSceneRenderer2::add_mesh_to_scene(const MeshData* meshData, uint32_t r
 	return m_meshStreamResources->add_mesh_data(meshData);
 }
 
+uint32_t GSceneRenderer2::add_mesh_to_scene(const MeshData2* meshData)
+{
+	return m_meshStreamResources->add_mesh_data(meshData);
+}
+
 uint32_t GSceneRenderer2::add_meshlet_to_scene(const GMeshletData* meshlet)
 {
 	uint32_t meshId = m_meshStreamResources->add_mesh_data(meshlet);
 	uint32_t meshletId = m_meshletStreamResources->add_meshlet_data(meshlet);
 	assert(meshId == meshletId);
 	return meshId;
+}
+
+uint32_t GSceneRenderer2::add_meshlet_to_scene(const GMeshletDataExtra* meshlet)
+{
+	return m_meshletStreamResources->add_meshlet_data(meshlet);;
 }
 
 uint32_t GSceneRenderer2::create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex)

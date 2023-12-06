@@ -5,7 +5,6 @@
 #include <algorithm>
 #include "internal/engine/rendering/vulkan/vulkan_main_viewport.h"
 
-static VkPresentModeKHR presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
 GVulkanSwapchain::GVulkanSwapchain(GVulkanLogicalDevice* inDevice, VkSurfaceKHR surface, uint32_t desiredImageCount, uint32_t width, uint32_t height, VkSurfaceFormatKHR format, IGVulkanQueue* presentQueue) : m_device(inDevice),m_surface(surface)
 {
@@ -18,6 +17,7 @@ GVulkanSwapchain::GVulkanSwapchain(GVulkanLogicalDevice* inDevice, VkSurfaceKHR 
 	m_currentImage = 0;
 	m_needHandle = false;
 	m_viewPort = new GVulkanMainViewport(inDevice,width,height);
+	m_presentMode =	VK_PRESENT_MODE_MAILBOX_KHR;
 }
 
 bool GVulkanSwapchain::init()
@@ -27,6 +27,40 @@ bool GVulkanSwapchain::init()
 	
 	if (!inited)
 		return false;
+
+	//X CHECK PRESENT MODE SUPPORTED
+	//X TODO : make better
+	if (m_supportedPresentModes.size() == 0)
+	{
+		uint32_t presentModeCount = 0;
+		vkGetPhysicalDeviceSurfacePresentModesKHR((VkPhysicalDevice)m_device->get_bounded_physical_device()->get_vk_physical_device(), m_surface, &presentModeCount, nullptr);
+		m_supportedPresentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR((VkPhysicalDevice)m_device->get_bounded_physical_device()->get_vk_physical_device(), m_surface, &presentModeCount, m_supportedPresentModes.data());
+		
+		bool isFound = false;
+		bool fifoRelaxedSupport = false;
+		for (auto mode : m_supportedPresentModes)
+		{
+			if (m_presentMode == mode)
+			{
+				isFound = true;
+			}
+			if (mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+			{
+				fifoRelaxedSupport = true;
+			}
+		}
+
+		if (!isFound)
+		{
+			if (fifoRelaxedSupport)
+				m_presentMode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+			else
+				m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
+		}
+
+	}
+
 
 	if (m_details.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		m_surfaceExtent = m_details.capabilities.currentExtent;
@@ -50,7 +84,7 @@ bool GVulkanSwapchain::init()
 	info.queueFamilyIndexCount = 1;
 	info.pQueueFamilyIndices = &presentQueue;
 	info.preTransform = m_details.capabilities.currentTransform;
-	info.presentMode = presentMode;
+	info.presentMode = m_presentMode;
 	info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	info.clipped = VK_TRUE;
 	info.surface = m_surface;

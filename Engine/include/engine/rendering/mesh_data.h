@@ -15,6 +15,9 @@ struct MeshData
 	std::vector<BoundingBox> boxes_;
 };
 
+
+
+
 struct GMeshletData
 {
 
@@ -26,6 +29,7 @@ struct GMeshletData
 	std::vector<GMeshMeshlet> gmeshMeshlets_;
 };
 
+
 struct GMeshletExtra
 {
 	uint32_t meshletOffset = 0;
@@ -36,6 +40,16 @@ struct GMeshletExtra
 	uint32_t meshletVerticesCount = 0;
 	uint32_t meshletTrianglesCount = 0;
 };
+
+struct GMeshletDataExtra
+{
+	std::vector<GMeshlet> gmeshlets_;
+	std::vector<uint32_t> meshletVertexData_;
+	std::vector<uint8_t> meshletTriangleData_;
+	std::vector<GMeshletExtra> gmeshletExtra_;
+};
+
+
 
 ENGINE_API std::expected<MeshData*, GMESH_DECODE_ERROR> decode_file(const char* filePath);
 ENGINE_API void recalculateBoundingBoxes(MeshData& m);
@@ -58,7 +72,6 @@ struct GMeshData
 
 	uint64_t meshFlag = 0;
 	inline uint32_t getLODIndicesCount(uint32_t lod) const { return lodOffset[lod + 1] - lodOffset[lod]; }
-
 };
 
 struct GMeshMeshletData
@@ -87,4 +100,14 @@ struct GMeshMeshletData
 	inline uint32_t getLODIndicesCount(uint32_t lod) const { return lodOffset[lod + 1] - lodOffset[lod]; }
 
 };
+
+
+struct MeshData2
+{
+	std::vector<uint32_t> indexData_;
+	std::vector<float> vertexData_;
+	std::vector<GMeshData> meshes_;
+	std::vector<BoundingBox> boxes_;
+};
+
 #endif // GMESH_DATA_H

@@ -70,7 +70,8 @@ void GImGuiPropertiesWindow::render()
 						auto vec3Type = GTypeUtils::add_or_get_type<glm::vec3>();
 						if (vec3Type.equals(propType))
 						{
-							auto res = prop.get(serComp->as_variant());
+							auto asVar = serComp->as_variant();
+							auto res = prop.get(asVar);
 							if (res.has_value())
 							{
 								auto getter = res.value();

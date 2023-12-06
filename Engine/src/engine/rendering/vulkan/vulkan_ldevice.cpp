@@ -56,6 +56,8 @@ GVulkanLogicalDevice::~GVulkanLogicalDevice()
 
 bool GVulkanLogicalDevice::init()
 {
+	m_tryToUseMeshlet = false;
+
 	auto physicalDevice = m_physicalDev.as_shared();
 	if (!physicalDevice.is_valid())
 		return false;
@@ -707,6 +709,11 @@ IGVulkanGraphicPipeline* GVulkanLogicalDevice::create_and_init_graphic_pipeline_
 bool GVulkanLogicalDevice::has_meshlet_support() const noexcept
 {
 	return m_meshletsEnabled;
+}
+
+bool GVulkanLogicalDevice::use_meshlet() const noexcept
+{
+	return has_meshlet_support() && m_tryToUseMeshlet;
 }
 
 

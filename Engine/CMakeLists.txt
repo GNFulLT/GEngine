@@ -96,7 +96,7 @@ add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.
  "include/engine/igobject.h" "include/engine/gproject.h" "src/engine/gproject.cpp" "include/engine/io/json_utils.h" "src/engine/io/json_utils.cpp" "src/engine/scene/component/igscript.cpp" 
  "include/engine/manager/igscript_manager.h" "include/engine/plugin/gplugin.h" "include/engine/plugin/gplugin_types.h" "include/engine/plugin/gscript_types.h"
  "include/engine/plugin/gapi_general_types.h" "include/engine/plugin/igscript_space.h" "include/engine/plugin/igscript_object.h" "internal/engine/plugin/gscript_space_1_0.h" 
- "src/engine/plugin/gscript_space_1_0.cpp" "internal/engine/plugin/gscript_object_1_0.h" "src/engine/plugin/gscript_object_1_0.cpp" "internal/engine/manager/gscript_manager.h" "src/engine/manager/gscript_manager.cpp" "include/engine/scene/component/script_group_component.h" "src/engine/scene/component/script_group_component.cpp")
+ "src/engine/plugin/gscript_space_1_0.cpp" "internal/engine/plugin/gscript_object_1_0.h" "src/engine/plugin/gscript_object_1_0.cpp" "internal/engine/manager/gscript_manager.h" "src/engine/manager/gscript_manager.cpp" "include/engine/scene/component/script_group_component.h" "src/engine/scene/component/script_group_component.cpp" "internal/engine/resource/gmesh_resource.h" "src/engine/resource/gmesh_resource.cpp" "include/engine/io/gmesh_loader.h" "internal/engine/scene/scene_loader.h" "src/engine/scene/scene_loader.cpp")
 
  set(RAPIDJSON_BUILD_TESTS OFF)
 
@@ -148,11 +148,11 @@ set(BUILD_SHARED_LIBS ON)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp" ASSIMP)
 
 target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
-target_compile_definitions(glslang PRIVATE BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)
+target_compile_definitions(glslang PUBLIC BUILD_TESTING=OFF ENABLE_HLSL=ON ENABLE_OPT=ON)
 
 
-target_link_libraries(GEngine_Engine PRIVATE assimp)
-target_link_libraries(GEngine_Engine PRIVATE meshoptimizer)
+target_link_libraries(GEngine_Engine PUBLIC assimp)
+target_link_libraries(GEngine_Engine PUBLIC meshoptimizer)
 target_link_libraries(GEngine_Engine PUBLIC volk)
 target_link_libraries(GEngine_Engine PRIVATE simdjson)
 target_link_libraries(GEngine_Engine PRIVATE GEngine_Core)

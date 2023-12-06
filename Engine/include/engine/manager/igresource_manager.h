@@ -8,6 +8,7 @@
 #include <string_view>
 #include <expected>
 #include <vector>
+#include <filesystem>
 
 enum RESOURCE_ERROR
 {
@@ -22,6 +23,7 @@ class IGTextureResource;
 class IGVulkanDescriptorCreator;
 class IImageLoader;
 enum GIMAGETYPE;
+class IGMeshLoader;
 
 typedef GSharedPtr<GResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> GResourcePtr;
 typedef GSharedPtr<IResource, GSHARED_PTR_INTERNAL_MODE_THREAD_SAFE> IResourcePtr;
@@ -48,6 +50,8 @@ public:
 	virtual void destroy_shader_resource(IGShaderResource* shader) = 0;
 
 	virtual const std::vector<IImageLoader*>* get_imageloaders_by_loading_type(GIMAGETYPE type) = 0;
+
+	virtual IGMeshLoader* select_mesh_loader_by_path(std::filesystem::path path) const = 0;
 private:
 };
 #endif // IGRESOURCE_MANAGER_H

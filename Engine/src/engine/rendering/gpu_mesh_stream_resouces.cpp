@@ -260,6 +260,28 @@ uint32_t GPUMeshStreamResources::add_mesh_data(const MeshData* meshData)
 	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
 	return beginMeshIndex; 
 }
+uint32_t GPUMeshStreamResources::add_mesh_data(const MeshData2* meshData)
+{
+	//X Add the vertices and indices
+	uint32_t beginVertexFloat = m_mergedVertex.add_to_buffer(meshData->vertexData_);
+	uint32_t beginIndex = m_mergedIndex.add_to_buffer(meshData->indexData_);
+	//X Create gmesh data for per mesh
+	std::vector<GMeshData> gmeshes(meshData->meshes_.size());
+	for (int i = 0; i < meshData->meshes_.size(); i++)
+	{
+		GMeshData* gmesh = &gmeshes[i];
+		gmesh->boundingBox = meshData->boxes_[i];
+		gmesh->extent = glm::vec4(0, 0, 0, 0);
+		gmesh->vertexOffset += (beginVertexFloat)+meshData->meshes_[i].vertexOffset;
+		gmesh->indexOffset += beginIndex + meshData->meshes_[i].indexOffset;
+		gmesh->vertexCount = meshData->meshes_[i].vertexCount;
+		gmesh->lodCount = meshData->meshes_[i].lodCount;
+		gmesh->meshFlag = meshData->meshes_[i].meshFlag;
+		memcpy(&gmeshes[i].lodOffset[0], &meshData->meshes_[i].lodOffset[0], sizeof(uint32_t) * MeshConstants::MAX_LOD_COUNT);
+	}
+	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
+	return beginMeshIndex;
+}
 uint32_t GPUMeshStreamResources::add_mesh_data(const GMeshletData* meshData)
 {
 	//X Add the vertices and indices

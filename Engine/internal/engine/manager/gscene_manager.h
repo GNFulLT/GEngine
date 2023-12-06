@@ -46,6 +46,8 @@ public:
 	
 	virtual uint32_t add_node_to_root();
 	virtual uint32_t add_mesh_to_scene(const MeshData* mesh);
+	virtual uint32_t add_mesh_to_scene(const MeshData2* mesh);
+
 	virtual uint32_t add_meshlet_to_scene(const GMeshletData* meshlet) override;
 
 	virtual uint32_t add_node_with_mesh_and_defaults(uint32_t meshIndex);
@@ -175,6 +177,14 @@ private:
 
 	// Inherited via IGSceneManager
 	virtual void update_entities(float dt) override;
+
+
+	// Inherited via IGSceneManager
+	virtual bool load_scene(std::filesystem::path path) override;
+
+
+	// Inherited via IGSceneManager
+	virtual uint32_t add_meshlet_to_scene(const GMeshletDataExtra* meshlet) override;
 
 };
 

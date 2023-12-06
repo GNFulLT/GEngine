@@ -7,9 +7,10 @@
 #include "engine/scene/serializable_component.h"
 #include <unordered_map>
 #include "engine/GEngine_EXPORT.h"
+#include "engine/igobject.h"
 
 template<typename T>
-concept SerializableComp = std::derived_from<T, SerializableComponent<T>>;
+concept SerializableComp = std::derived_from<T, SerializableComponent<T>> || std::derived_from<T, IGObject>;
 
 class ENGINE_API GEntity
 {

@@ -52,7 +52,10 @@ private:
 	uint32_t m_imageCount;
 	VkSurfaceFormatKHR m_surfaceFormat;
 	bool m_needHandle;
+	VkPresentModeKHR m_presentMode;
 	IGVulkanQueue* m_presentQueue;
+	std::vector<VkPresentModeKHR> m_supportedPresentModes;
+
 };
 
 #endif //VULKAN_SWAPCHAIN_H

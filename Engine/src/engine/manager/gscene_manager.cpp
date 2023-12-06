@@ -13,6 +13,10 @@
 #include "engine/rendering/vulkan/ivulkan_queue.h"
 #include <queue>
 #include <engine/scene/component/script_group_component.h>
+#include "internal/engine/scene/scene_loader.h"
+
+#include <assimp/scene.h>
+#include <meshoptimizer.h>
 
 struct AABB
 {
@@ -731,6 +735,11 @@ uint32_t GSceneManager::add_mesh_to_scene(const MeshData* mesh)
 	return this->m_deferredRenderer->add_mesh_to_scene(mesh);
 }
 
+uint32_t GSceneManager::add_mesh_to_scene(const MeshData2* mesh)
+{
+	return this->m_deferredRenderer->add_mesh_to_scene(mesh);
+}
+
 uint32_t GSceneManager::add_meshlet_to_scene(const GMeshletData* meshlet)
 {
 	return this->m_deferredRenderer->add_meshlet_to_scene(meshlet);
@@ -987,6 +996,19 @@ void GSceneManager::update_entities(float dt)
 
 		}
 	}
+}
+
+bool GSceneManager::load_scene(std::filesystem::path path)
+{
+	auto res = ((GSharedPtr<IGResourceManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
+	auto dev = ((GSharedPtr<IGVulkanDevice>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE))->get()->as_logical_device().get();
+
+	return SceneLoader::load_scene(path, this, res, dev->use_meshlet());
+}
+
+uint32_t GSceneManager::add_meshlet_to_scene(const GMeshletDataExtra* meshlet)
+{
+	return m_deferredRenderer->add_meshlet_to_scene(meshlet);
 }
 
 

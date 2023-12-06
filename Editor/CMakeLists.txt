@@ -61,19 +61,11 @@ target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Third
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../Engine" ENGINE)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glm" GLM)
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer" MESHOPTIMIZER)
-
-set(BUILD_SHARED_LIBS ON)
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp" ASSIMP)
-
 
 target_link_libraries(GEditor PRIVATE GEngine_Core)
 target_link_libraries(GEditor PRIVATE GEngine_Engine)
 target_link_libraries(GEditor PRIVATE glfw)
 target_link_libraries(GEditor PRIVATE spdlog)
-target_link_libraries(GEditor PRIVATE assimp)
-target_link_libraries(GEditor PRIVATE meshoptimizer)
 
 include(GenerateExportHeader)
 
