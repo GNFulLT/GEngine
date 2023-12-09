@@ -3,6 +3,10 @@
 #include <fstream>
 #include <spdlog/fmt/fmt.h>
 #include "engine/io/json_utils.h"
+#include "engine/gengine.h"
+#include "engine/imanager_table.h"
+#include "engine/manager/igscene_manager.h"
+#include "engine/rendering/scene/scene.h"
 
 inline static constexpr const std::string_view exportString = R"(#include "{}_EXPORT.h"
 #include <engine/plugin/gplugin.h> 
@@ -138,6 +142,127 @@ set(GSCRIPT_TARGETED_CPP "src/{}/main.cpp" )
 
 	return gproject;
 }
+struct MaterialHeader
+{
+	uint32_t hashSize;
+};
+bool GProjectManager::save_project(GProject* project)
+{
+	auto sceneManager = GET_MANAGER(IGSceneManager, ENGINE_MANAGER_SCENE);
+	auto meshCount = sceneManager->get_mesh_count();
+	auto meshPath = get_asset_mesh_path(project);
+	//X TODO MAKE GENERIC HERE
+	for (int meshIndex = 0; meshIndex < meshCount; meshIndex++)
+	{
+		auto meshName = sceneManager->get_mesh_name(meshIndex);
+		sceneManager->save_loaded_mesh(meshPath, meshName.c_str(), meshIndex);
+	}
+
+
+	//X Now save textures
+	auto textureCount = sceneManager->get_saved_texture_count();
+	std::unordered_map<uint32_t, std::string> newTexturePathsById;
+	for (int textureIndex = 0; textureIndex < textureCount; textureIndex++)
+	{
+		auto textureRes = sceneManager->get_saved_texture_by_id(textureIndex);
+		if (textureRes == nullptr)
+			continue;
+		auto pathStr = textureRes->get_resource_path();
+		if (!std::filesystem::exists(pathStr))
+		{
+			//X TODO : LOG
+			continue;
+		}
+
+		auto path = std::filesystem::path(pathStr);
+		auto fileName = path.filename().string();
+
+		auto savedPath = get_asset_texture_path(m_selectedProject) / fileName;
+
+		std::ofstream stream(savedPath);
+
+		stream.close();
+
+		std::filesystem::copy_file(path, savedPath,std::filesystem::copy_options::overwrite_existing);
+
+		newTexturePathsById.emplace(textureIndex, savedPath.string());
+	}
+
+	//X Serialize Materials
+	auto materials = sceneManager->get_current_scene_materials();
+	
+	for (int i = 0;i<materials.size();i++)
+	{
+		auto& material = materials[i];
+
+		//X TODO : LOG
+		std::ofstream materialStream(get_asset_material_path(m_selectedProject) / fmt::format("{}.gmaterial", sceneManager->get_material_name_by_id(i)));
+
+		std::string texturePaths;
+
+		if (material.albedoMap_ != UINT32_MAX)
+		{
+
+			if (auto texturePathIter = newTexturePathsById.find(material.albedoMap_); texturePathIter != newTexturePathsById.end())
+			{
+				texturePaths += fmt::format("{}={}", material.albedoMap_,texturePathIter->second);
+				texturePaths += "/";
+			}
+		}
+		if (material.ambientOcclusionMap_ != UINT32_MAX)
+		{
+			if (auto texturePathIter = newTexturePathsById.find(material.ambientOcclusionMap_); texturePathIter != newTexturePathsById.end())
+			{
+				texturePaths += fmt::format("{}={}", material.ambientOcclusionMap_, texturePathIter->second);
+
+				texturePaths += "/";
+			}
+		}
+		if (material.emissiveMap_ != UINT32_MAX)
+		{
+			if (auto texturePathIter = newTexturePathsById.find(material.emissiveMap_); texturePathIter != newTexturePathsById.end())
+			{
+				texturePaths += fmt::format("{}={}", material.emissiveMap_, texturePathIter->second);
+
+				texturePaths += "/";
+			}
+		}
+		if (material.metallicyMap_ != UINT32_MAX)
+		{
+			if (auto texturePathIter = newTexturePathsById.find(material.metallicyMap_); texturePathIter != newTexturePathsById.end())
+			{
+				texturePaths += fmt::format("{}={}", material.metallicyMap_, texturePathIter->second);
+
+				texturePaths += "/";
+			}
+		}
+		if (material.roughnessMap_ != UINT32_MAX)
+		{
+			if (auto texturePathIter = newTexturePathsById.find(material.roughnessMap_); texturePathIter != newTexturePathsById.end())
+			{
+				texturePaths += fmt::format("{}={}", material.roughnessMap_, texturePathIter->second);
+
+				texturePaths += "/";
+			}
+		}
+		if (texturePaths.size() != 0)
+			texturePaths.pop_back();
+		
+		MaterialHeader header;
+		header.hashSize = sizeof(char) * texturePaths.size();
+
+		materialStream.write((char*)&header,sizeof(MaterialHeader));
+		materialStream.write((char*)&material, sizeof(MaterialDescription));
+		materialStream.write(texturePaths.data(), header.hashSize);
+
+		materialStream.flush();
+		materialStream.close();
+	}
+
+	auto currentScene = sceneManager->get_current_scene();
+	sceneManager->serialize_scene(std::filesystem::path(m_selectedProject->get_project_path()) / "Scene0.gscene", currentScene);
+	return true;
+}
 
 bool GProjectManager::is_path_gproject_path(std::filesystem::path path)
 {
@@ -173,6 +298,21 @@ void GProjectManager::unload_selected_project()
 void GProjectManager::load_project(GProject* project)
 {
 	m_selectedProject = project;
+
+
+	//X Load meshes
+	{
+		auto meshPath = get_asset_mesh_path(project);
+		for (auto& iter : std::filesystem::directory_iterator(meshPath))
+		{
+			auto path = iter.path();
+			if (std::filesystem::is_directory(path))
+				continue;
+			if (strcmp(path.extension().string().c_str(), ".gmesh") != 0)
+				continue;
+			
+		}
+	}
 }
 
 GProject* GProjectManager::get_selected_project() const noexcept

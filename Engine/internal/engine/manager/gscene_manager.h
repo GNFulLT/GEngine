@@ -55,6 +55,8 @@ public:
 
 	virtual Scene* get_current_scene() const noexcept override;
 	virtual std::span<MaterialDescription> get_current_scene_materials() override;
+	virtual std::string get_material_name_by_id(uint32_t materialId) override;
+
 	virtual void set_material_by_index(const MaterialDescription* material, uint32_t index) override;
 
 	virtual uint32_t register_texture_to_scene(IGTextureResource* textureRes) override;
@@ -138,7 +140,7 @@ private:
 
 
 	// Inherited via IGSceneManager
-	virtual uint32_t get_draw_id_of_node(uint32_t nodeId) override;
+	virtual uint32_t get_draw_id_of_node(uint32_t nodeId) const noexcept override;
 
 
 	// Inherited via IGSceneManager
@@ -172,7 +174,7 @@ private:
 
 
 	// Inherited via IGSceneManager
-	virtual GEntity* get_entity_by_id(uint32_t id) override;
+	virtual GEntity* get_entity_by_id(uint32_t id) const noexcept override;
 
 
 	// Inherited via IGSceneManager
@@ -185,6 +187,26 @@ private:
 
 	// Inherited via IGSceneManager
 	virtual uint32_t add_meshlet_to_scene(const GMeshletDataExtra* meshlet) override;
+
+
+	// Inherited via IGSceneManager
+	virtual bool save_loaded_mesh(std::filesystem::path path, const char* fileName, uint32_t meshIndex) override;
+
+
+	// Inherited via IGSceneManager
+	virtual std::string get_mesh_name(uint32_t meshIndex) const noexcept override;
+
+	virtual void set_mesh_name(uint32_t meshIndex, const char* name) override;
+
+	virtual uint32_t get_mesh_count() const noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual uint32_t get_saved_texture_count() const noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual bool serialize_scene(std::filesystem::path path, Scene* scene) const noexcept override;
 
 };
 

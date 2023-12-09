@@ -71,7 +71,7 @@ public:
 
 	virtual bool is_renderer_active() = 0;
 	
-	virtual GEntity* get_entity_by_id(uint32_t id) = 0;
+	virtual GEntity* get_entity_by_id(uint32_t id) const noexcept = 0;
 
 	virtual IGVulkanDeferredRenderer* get_deferred_renderer() const noexcept = 0;
 	
@@ -89,7 +89,8 @@ public:
 	virtual uint32_t add_meshlet_to_scene(const GMeshletData* meshlet) = 0;
 	//X Unsafe to use for private usage. Use load scene instead
 	virtual uint32_t add_meshlet_to_scene(const GMeshletDataExtra* meshlet) = 0;
-	
+	virtual std::string get_material_name_by_id(uint32_t materialId) = 0;
+
 	virtual uint32_t add_material_to_scene(const MaterialDescription* material) = 0;
 	virtual Scene* get_current_scene() const noexcept = 0;
 
@@ -105,7 +106,7 @@ public:
 
 	virtual void set_cull_enabled(bool cullEnabled) = 0;
 	
-	virtual uint32_t get_draw_id_of_node(uint32_t nodeId) = 0;
+	virtual uint32_t get_draw_id_of_node(uint32_t nodeId) const noexcept = 0;
 
 	virtual uint32_t get_gpu_transform_index(uint32_t nodeId) const noexcept = 0;
 	virtual const DrawData* get_draw_data_by_id(uint32_t drawId) const noexcept = 0;
@@ -126,5 +127,16 @@ public:
 	virtual void update_entities(float dt) = 0;
 
 	virtual bool load_scene(std::filesystem::path path) = 0;
+
+	virtual std::string get_mesh_name(uint32_t meshIndex) const noexcept = 0;
+	virtual void set_mesh_name(uint32_t meshIndex, const char* name) = 0;
+	virtual uint32_t get_mesh_count() const noexcept = 0;
+
+	//X TODO : MOVE THIS FUNCTION  TO ANOTHER CLASS. Given path should be directory and fileName shouldn have extension
+	virtual bool save_loaded_mesh(std::filesystem::path path,const char* fileName,uint32_t meshIndex) = 0;
+
+	virtual uint32_t get_saved_texture_count() const noexcept = 0;
+
+	virtual bool serialize_scene(std::filesystem::path path,Scene* scene) const noexcept = 0;
 };
 #endif // ISCENE_MANAGER_H

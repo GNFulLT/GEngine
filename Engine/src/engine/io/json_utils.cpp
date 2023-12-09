@@ -3,8 +3,9 @@
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
-#include <fstream>
 #include <rapidjson/ostreamwrapper.h>
+#include <fstream>
+
 #include "internal/engine/resource/json/gjson_simdjson.h"
 
 bool GJsonUtils::serialize_igobject(std::filesystem::path path, IGObject* object)

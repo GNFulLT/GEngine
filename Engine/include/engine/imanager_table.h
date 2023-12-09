@@ -3,7 +3,12 @@
 
 #include "GEngine_EXPORT.h"
 #include <cstdint>
+#include "public/core/templates/shared_ptr.h"
 
+
+class GEngine;
+
+#define GET_MANAGER(MANAGER_TYPE,ENUM_NAME) ((GSharedPtr<MANAGER_TYPE>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENUM_NAME))->get()
 //X TODO : USE BETTER ENUM
 enum ENGINE_MANAGER : uint8_t 
 {

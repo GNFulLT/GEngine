@@ -14,9 +14,17 @@
 #include <queue>
 #include <engine/scene/component/script_group_component.h>
 #include "internal/engine/scene/scene_loader.h"
-
+#include <spdlog/fmt/fmt.h>
 #include <assimp/scene.h>
 #include <meshoptimizer.h>
+#include "rapidjson/document.h"
+#include "rapidjson/filewritestream.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#include <rapidjson/ostreamwrapper.h>
+#include <fstream>
+#include "engine/scene/component/transform_component.h"
+
 
 struct AABB
 {
@@ -760,6 +768,14 @@ std::span<MaterialDescription> GSceneManager::get_current_scene_materials()
 	return std::span<MaterialDescription>(m_globalMaterialData.cpuVector.data(), m_globalMaterialData.inUsage);
 }
 
+std::string GSceneManager::get_material_name_by_id(uint32_t materialId)
+{
+	if (materialId >= m_globalMaterialData.inUsage)
+		return "";
+
+	return fmt::format("Material{}",materialId);
+}
+
 uint32_t GSceneManager::register_texture_to_scene(IGTextureResource* textureRes)
 {
 	uint32_t currentIndex = m_inUsageTextures;
@@ -892,7 +908,7 @@ void GSceneManager::set_cull_enabled(bool cullEnabled)
 	m_globalCullData.cullEnabled = cullEnabled;
 }
 
-uint32_t GSceneManager::get_draw_id_of_node(uint32_t nodeId)
+uint32_t GSceneManager::get_draw_id_of_node(uint32_t nodeId) const noexcept
 {
 	if (auto iter = m_nodeToDrawID.find(nodeId); iter != m_nodeToDrawID.end())
 	{
@@ -963,7 +979,7 @@ const GlobalUniformBuffer* GSceneManager::get_global_data() const noexcept
 	return &m_globalData;
 }
 
-GEntity* GSceneManager::get_entity_by_id(uint32_t id)
+GEntity* GSceneManager::get_entity_by_id(uint32_t id) const noexcept
 {
 	return m_currentScene->get_entity_by_id(id);
 }
@@ -979,6 +995,7 @@ void GSceneManager::update_entities(float dt)
 		queue.pop();
 
 		auto entity = get_entity_by_id(iter);
+	
 		if (entity != nullptr)
 		{
 			if (entity->has_component<ScriptGroupComponent>())
@@ -1009,6 +1026,179 @@ bool GSceneManager::load_scene(std::filesystem::path path)
 uint32_t GSceneManager::add_meshlet_to_scene(const GMeshletDataExtra* meshlet)
 {
 	return m_deferredRenderer->add_meshlet_to_scene(meshlet);
+}
+
+bool GSceneManager::save_loaded_mesh(std::filesystem::path path, const char* fileName, uint32_t meshIndex)
+{
+
+	if (!std::filesystem::is_directory(path))
+		return false;
+
+
+	auto savedPath = path / fmt::format("{}{}",fileName, MeshConstants::MESH_FILE_EXTENSION);
+
+	auto meshErr = m_deferredRenderer->get_mesh(meshIndex);
+
+	if (!meshErr.has_value())
+		return false;
+	
+	auto mesh = meshErr.value();
+	auto [ vertices,indices,meshData ] = mesh;
+	std::vector<float> verti(vertices.begin(),vertices.end());
+	std::vector<uint32_t> indi(indices.begin(), indices.end());
+
+	return SceneLoader::save_mesh(savedPath,verti,indi,meshData);
+}
+
+std::string GSceneManager::get_mesh_name(uint32_t meshIndex) const noexcept
+{
+	return m_deferredRenderer->get_mesh_resources()->get_mesh_name(meshIndex);
+}
+
+void GSceneManager::set_mesh_name(uint32_t meshIndex, const char* name)
+{
+	m_deferredRenderer->get_mesh_resources()->set_mesh_name(meshIndex,name);
+}
+
+uint32_t GSceneManager::get_mesh_count() const noexcept
+{
+	return m_deferredRenderer->get_mesh_resources()->get_mesh_count();
+}
+
+uint32_t GSceneManager::get_saved_texture_count() const noexcept
+{
+	return m_inUsageTextures;
+}
+
+struct SceneHeader
+{
+	uint32_t sizeOfHierarchy;
+	uint32_t sizeOfTransform;
+	uint32_t sizeOfDraw;
+	uint32_t sizeOfLight;
+
+};
+
+bool GSceneManager::serialize_scene(std::filesystem::path path, Scene* scene) const noexcept
+{
+	//X ITERATE SCENE
+	std::queue<uint32_t> queue;
+	queue.push(0);
+	std::vector<std::pair<uint32_t, glm::mat4>> transformMap;
+	std::vector<std::pair<uint32_t,DrawData>> drawMap;
+	std::vector<uint32_t> lightMap;
+
+	while (!queue.empty())
+	{
+		auto iter = queue.front();
+		queue.pop();
+
+		auto entity = get_entity_by_id(iter);
+		
+		if (entity->has_component<TransformComponent>())
+		{
+			auto& comp = entity->get_component<TransformComponent>();
+			auto localTransform = comp.get_local_transform();
+			transformMap.emplace_back(iter, localTransform);
+		}
+
+		auto drawId = get_draw_id_of_node(iter);
+		auto drawData = get_draw_data_by_id(drawId);
+		if (drawData != nullptr)
+		{
+			drawMap.emplace_back(iter,*drawData);
+		}
+
+		auto isLight = is_node_light(iter);
+		if(isLight)
+			lightMap.push_back(iter);
+
+		uint32_t child = scene->hierarchy[iter].firstChild;
+		while (child != UINT32_MAX)
+		{
+			queue.push(child);
+			child = scene->hierarchy[child].nextSibling;
+		}
+	}
+
+	std::ofstream ofstream(path);
+	bool failed = false;
+	ofstream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+	SceneHeader header;
+	header.sizeOfHierarchy = scene->hierarchy.size() * sizeof(Hierarchy);
+	header.sizeOfTransform = transformMap.size() * sizeof(transformMap[0]);
+	header.sizeOfDraw = drawMap.size() * sizeof(DrawData);
+	header.sizeOfLight = lightMap.size() * sizeof(lightMap);
+
+	try
+	{
+		ofstream.write((char*)&header, sizeof(SceneHeader));
+		ofstream.write((char*)scene->hierarchy.data(), header.sizeOfHierarchy);
+		ofstream.write((char*)transformMap.data(), header.sizeOfTransform);
+		ofstream.write((char*)drawMap.data(), header.sizeOfDraw);
+		ofstream.write((char*)lightMap.data(), header.sizeOfLight);
+		ofstream.flush();
+
+	}
+	catch (const std::ofstream::failure& e)
+	{
+		failed = true;
+	}
+	catch (const std::exception& e)
+	{
+		failed = true;
+	}
+	ofstream.close();
+	return true;
+
+	/*using namespace rapidjson;
+
+	Document document;
+	document.SetObject();
+
+	std::queue<uint32_t> queue;
+	queue.push(0);
+
+
+	Value hierarchyArray(kArrayType);
+
+
+	while (!queue.empty())
+	{
+		auto iter = queue.front();
+		queue.pop();
+		
+		Value nodeObject(kObjectType);
+		nodeObject.AddMember("firstChild", scene->hierarchy[iter].firstChild, document.GetAllocator());
+		nodeObject.AddMember("nextSibling", scene->hierarchy[iter].nextSibling, document.GetAllocator());
+
+		hierarchyArray.PushBack(nodeObject, document.GetAllocator());
+
+		uint32_t child = scene->hierarchy[iter].firstChild;
+		while (child != UINT32_MAX)
+		{
+			queue.push(child);
+			child = scene->hierarchy[child].nextSibling;
+		}
+
+	}
+
+	document.AddMember("hierarchy", hierarchyArray, document.GetAllocator());
+	StringBuffer buffer;
+	Writer<StringBuffer> writer(buffer);
+
+	std::ofstream outFile(path);
+
+	document.Accept(writer);
+	
+	outFile << buffer.GetString();
+
+	outFile.flush();
+
+	outFile.close();
+
+	return true;*/
 }
 
 

@@ -1,6 +1,8 @@
 #include "internal/menu/gproject_menu.h"
 #include "imgui/imgui.h"
 #include "engine/globals.h"
+#include "editor/editor_application_impl.h"
+#include "internal/manager/gproject_manager.h"
 
 bool GProjectMenu::init()
 {
@@ -18,6 +20,14 @@ void GProjectMenu::render()
 	if (ImGui::MenuItem("Open Project"))
 	{
 
+	}
+	if (ImGui::MenuItem("Save Project"))
+	{
+		GProjectManager* projManager = EditorApplicationImpl::get_instance()->get_project_manager();
+		if (projManager->get_selected_project())
+		{
+			projManager->save_project(projManager->get_selected_project());
+		}
 	}
 	if (ImGui::MenuItem("Create Project"))
 	{

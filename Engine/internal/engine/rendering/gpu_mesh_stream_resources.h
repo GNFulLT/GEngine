@@ -30,6 +30,10 @@ public:
 	uint32_t add_mesh_data(const MeshData* meshData);
 	uint32_t add_mesh_data(const MeshData2* meshData);
 
+	std::string get_mesh_name(uint32_t meshIndex);
+	void set_mesh_name(uint32_t meshIndex,const char* name);
+	uint32_t get_mesh_count() const noexcept;
+
 	uint32_t add_mesh_data(const GMeshletData* meshlet);
 
 	uint32_t create_draw_data(uint32_t meshIndex,uint32_t materialIndex,uint32_t transformIndex);
@@ -57,6 +61,7 @@ private:
 	void update_draw_data_sets();
 	void update_compute_sets();
 private:
+	std::unordered_map<uint32_t, std::string> m_meshName;
 	//X Should be in another class
 	CPUGPUData<GMeshMeshletData> m_mergedMeshlet;
 	CPUGPUData<GMeshlet> m_mergedGMeshlet;

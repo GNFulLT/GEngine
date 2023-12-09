@@ -16,7 +16,7 @@
 #include "engine/manager/igcamera_manager.h"
 #include "engine/manager/igscene_manager.h"
 #include "internal/engine/rendering/gpu_meshlet_stream_resources.h"
-
+#include <utility>
 #include <span>
 struct VkDescriptorPool_T;
 struct VkPipelineLayout_T;
@@ -55,10 +55,16 @@ public:
 
 	uint32_t add_mesh_to_scene(const MeshData* meshData, uint32_t shapeID = 0);
 	uint32_t add_mesh_to_scene(const MeshData2* meshData);
+	std::expected<std::tuple<std::span<float>,std::span<uint32_t>,GMeshData>,uint32_t> get_mesh(uint32_t meshIndex);
 
 	uint32_t add_meshlet_to_scene(const GMeshletData* meshlet);
 	uint32_t add_meshlet_to_scene(const GMeshletDataExtra* meshlet);
 
+	inline GPUMeshStreamResources* get_mesh_resources()
+	{
+		return m_meshStreamResources;
+	}
+	
 	uint32_t create_draw_data(uint32_t meshIndex, uint32_t materialIndex, uint32_t transformIndex);
 
 	VkDescriptorSet_T* get_bindless_set();

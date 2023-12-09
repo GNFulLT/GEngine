@@ -7,7 +7,8 @@
 #include "engine/gengine.h"
 #include "engine/rendering/vulkan/ivulkan_device.h"
 #include "engine/rendering/vulkan/ivulkan_app.h"
-
+#include <spdlog/fmt/fmt.h>
+	
 GPUMeshStreamResources::GPUMeshStreamResources(IGVulkanLogicalDevice* dev,uint32_t floatCountPerVertex, uint32_t framesInFlight, IGPipelineObjectManager* mng)
 {
 	m_drawStreamSetLayout = nullptr;
@@ -281,6 +282,30 @@ uint32_t GPUMeshStreamResources::add_mesh_data(const MeshData2* meshData)
 	}
 	uint32_t beginMeshIndex = m_mergedMesh.add_to_buffer(gmeshes);
 	return beginMeshIndex;
+}
+std::string GPUMeshStreamResources::get_mesh_name(uint32_t meshIndex)
+{
+	if (auto nameIter = m_meshName.find(meshIndex); nameIter != m_meshName.end())
+	{
+		return nameIter->second;
+	}
+	return fmt::format("Mesh{}",meshIndex);
+}
+void GPUMeshStreamResources::set_mesh_name(uint32_t meshIndex, const char* name)
+{
+	if (auto nameIter = m_meshName.find(meshIndex); nameIter == m_meshName.end())
+	{
+		m_meshName.emplace(meshIndex,name);
+	}
+	else
+	{
+		m_meshName[meshIndex] = name;
+
+	}
+}
+uint32_t GPUMeshStreamResources::get_mesh_count() const noexcept
+{
+	return m_mergedMesh.inUsage;
 }
 uint32_t GPUMeshStreamResources::add_mesh_data(const GMeshletData* meshData)
 {

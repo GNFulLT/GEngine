@@ -13,6 +13,4 @@ TEST(GObjectDBTest, Register)
 	GType type = GTypeUtils::get_type_of<First>();
 	auto props = type.get_properties();
 	int a = 5;
-	
-	std::cin >> x;
-}
+	}

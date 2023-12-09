@@ -1412,6 +1412,8 @@ void GSceneRenderer2::begin_and_end_fill_cmd_for_shadow(GVulkanCommandBuffer* cm
 
 const DrawData* GSceneRenderer2::get_draw_data_by_id(uint32_t drawId) const noexcept
 {
+	if (drawId >= m_meshStreamResources->m_globalDrawData.inUsage)
+		return nullptr;
 	return &m_meshStreamResources->m_globalDrawData.cpuVector[drawId];
 }
 
@@ -1583,6 +1585,24 @@ uint32_t GSceneRenderer2::add_mesh_to_scene(const MeshData* meshData, uint32_t r
 uint32_t GSceneRenderer2::add_mesh_to_scene(const MeshData2* meshData)
 {
 	return m_meshStreamResources->add_mesh_data(meshData);
+}
+
+std::expected<std::tuple<std::span<float>, std::span<uint32_t>,GMeshData>,uint32_t> GSceneRenderer2::get_mesh(uint32_t meshIndex)
+{
+	if (meshIndex >= m_meshStreamResources->m_mergedMesh.inUsage)
+	{
+		return std::unexpected(0);
+	}
+
+	auto meshData = m_meshStreamResources->m_mergedMesh.cpuVector[meshIndex];
+	std::span<float> vertexArr(&m_meshStreamResources->m_mergedVertex.cpuVector[meshData.vertexOffset],meshData.vertexCount);
+	auto indexCount = meshData.lodOffset[meshData.lodCount];
+	std::span<uint32_t> indexArr(&m_meshStreamResources->m_mergedIndex.cpuVector[meshData.indexOffset], indexCount);
+
+	meshData.indexOffset = 0;
+	meshData.vertexOffset = 0;
+
+	return std::tuple<std::span<float>, std::span<uint32_t>, GMeshData>(vertexArr,indexArr,meshData);
 }
 
 uint32_t GSceneRenderer2::add_meshlet_to_scene(const GMeshletData* meshlet)

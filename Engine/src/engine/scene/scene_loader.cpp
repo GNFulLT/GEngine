@@ -10,6 +10,10 @@
 #include "engine/rendering/scene/scene.h"
 #include <volk.h>
 #include "engine/resource/igtexture_resource.h"
+#include <fstream>
+#include "engine/rendering/mesh/mesh_constants.h"
+#include "engine/rendering/mesh/gmesh_file.h"
+
 
 //X TODO MAKE GENERIC HERE
 #define MESHLET_VERTEX_COUNT 64
@@ -38,6 +42,36 @@ bool SceneLoader::load_scene(std::filesystem::path path,IGSceneManager* sceneMan
 	if (std::filesystem::is_directory(path))
 		return false;
 	return load_scene_meshlet(path, sceneManager,resourceMng,meshletEnable);
+}
+
+bool SceneLoader::save_mesh(std::filesystem::path path, const std::vector<float>& vertices, const std::vector<uint32_t>& indices, const GMeshData& gmeshData)
+{
+	const GMeshFileHeader header = { .magicValue = MeshConstants::MESH_FILE_HEADER_MAGIC_VALUE,    .meshCount = 1,    .dataBlockStartOffset = (uint32_t)(sizeof(GMeshFileHeader) + 1 * sizeof(GMeshData)),
+	.indexDataSize = std::uint32_t(indices.size()) * sizeof(uint32_t),    .vertexDataSize = uint32_t(vertices.size()) * sizeof(float) };
+
+
+	std::ofstream ofstream(path, std::ios::trunc | std::ios::binary | std::ios::out);
+	bool failed = false;
+	ofstream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	try 
+	{
+		ofstream.write((char*)&header, sizeof(GMeshFileHeader));
+		ofstream.write((char*)&gmeshData, sizeof(GMeshData));
+		ofstream.write((char*)vertices.data(), header.vertexDataSize);
+		ofstream.write((char*)indices.data(), header.indexDataSize);
+		ofstream.flush();
+
+	}
+	catch (const std::ofstream::failure& e)
+	{
+		failed = true;
+	}
+	catch (const std::exception& e)
+	{
+		failed = true;
+	}
+	ofstream.close();
+	return true;
 }
 
 bool SceneLoader::load_scene_mesh(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng)
@@ -163,11 +197,11 @@ bool SceneLoader::load_scene_meshlet(std::filesystem::path path, IGSceneManager*
 	//----------------------------------------
 	if (meshletEnable)
 	{
-		transfer_to_gpu(gscene, *meshletData, transforms, desc, textureFiles, sceneMng,resourceMng,& gdata.gmeshletData);
+		transfer_to_gpu(path,gscene, *meshletData, transforms, desc, textureFiles, sceneMng,resourceMng,& gdata.gmeshletData);
 	}
 	else
 	{
-		transfer_to_gpu(gscene, *meshletData, transforms, desc, textureFiles, sceneMng, resourceMng);
+		transfer_to_gpu(path,gscene, *meshletData, transforms, desc, textureFiles, sceneMng, resourceMng);
 
 	}
 }
@@ -653,7 +687,7 @@ MaterialDescription SceneLoader::aimaterial_to_gmaterial(const aiMaterial* m, st
 	return desc;
 }
 
-void SceneLoader::transfer_to_gpu(Scene* scene, MeshData2& meshData, std::unordered_map<uint32_t, glm::mat4>& outTransforms, std::vector<MaterialDescription>& materials, const std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& texturePaths, IGSceneManager* sceneManager, IGResourceManager* resourceManager, GMeshletDataExtra* meshlet)
+void SceneLoader::transfer_to_gpu(std::filesystem::path base,Scene* scene, MeshData2& meshData, std::unordered_map<uint32_t, glm::mat4>& outTransforms, std::vector<MaterialDescription>& materials, const std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& texturePaths, IGSceneManager* sceneManager, IGResourceManager* resourceManager, GMeshletDataExtra* meshlet)
 {
 	//X First load all meshes
 
@@ -677,11 +711,12 @@ void SceneLoader::transfer_to_gpu(Scene* scene, MeshData2& meshData, std::unorde
 			//X Load the texture
 			//X Albedo
 			auto itr = paths->second.find(TEXTURE_MAP_TYPE_ALBEDO);
+			std::filesystem::path basePath = base.parent_path();
+
 			if (itr != paths->second.end())
 			{
 				auto albedo = itr->second;
-				std::string albedoTexturePath = "./";
-				albedoTexturePath += albedo;
+				std::string albedoTexturePath = (basePath / albedo).string();
 				auto textureRes = resource->create_texture_resource(albedo, "editor", albedoTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
 				assert(RESOURCE_INIT_CODE_OK == textureRes->load());
 				//X Save the texture to the scene
@@ -693,8 +728,7 @@ void SceneLoader::transfer_to_gpu(Scene* scene, MeshData2& meshData, std::unorde
 			if (itr != paths->second.end())
 			{
 				auto normal = itr->second;
-				std::string normalTexturePath = "./";
-				normalTexturePath += normal;
+				std::string normalTexturePath = (basePath / normal).string();
 				auto textureRes = resource->create_texture_resource(normal, "editor", normalTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
 				assert(RESOURCE_INIT_CODE_OK == textureRes->load());
 				//X Save the texture to the scene
@@ -706,8 +740,7 @@ void SceneLoader::transfer_to_gpu(Scene* scene, MeshData2& meshData, std::unorde
 			if (itr != paths->second.end())
 			{
 				auto ao = itr->second;
-				std::string aoTexturePath = "./";
-				aoTexturePath += ao;
+				std::string aoTexturePath = (basePath / ao).string();
 				auto textureRes = resource->create_texture_resource(ao, "editor", aoTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
 				assert(RESOURCE_INIT_CODE_OK == textureRes->load());
 				auto aoId = sceneManager->register_texture_to_scene(textureRes);
@@ -718,8 +751,7 @@ void SceneLoader::transfer_to_gpu(Scene* scene, MeshData2& meshData, std::unorde
 			if (itr != paths->second.end())
 			{
 				auto roughness = itr->second;
-				std::string roughnessTexturePath = "./";
-				roughnessTexturePath += roughness;
+				std::string roughnessTexturePath = (basePath / roughness).string();
 				auto textureRes = resource->create_texture_resource(roughness, "editor", roughnessTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
 				assert(RESOURCE_INIT_CODE_OK == textureRes->load());
 				auto roughnesssId = sceneManager->register_texture_to_scene(textureRes);
@@ -730,8 +762,7 @@ void SceneLoader::transfer_to_gpu(Scene* scene, MeshData2& meshData, std::unorde
 			if (itr != paths->second.end())
 			{
 				auto metallic = itr->second;
-				std::string metallicTexturePath = "./";
-				metallicTexturePath += metallic;
+				std::string metallicTexturePath = (basePath / metallic).string();
 				auto textureRes = resource->create_texture_resource(metallic, "editor", metallicTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
 				assert(RESOURCE_INIT_CODE_OK == textureRes->load());
 				auto metallicId = sceneManager->register_texture_to_scene(textureRes);
@@ -742,8 +773,7 @@ void SceneLoader::transfer_to_gpu(Scene* scene, MeshData2& meshData, std::unorde
 			if (itr != paths->second.end())
 			{
 				auto emissive = itr->second;
-				std::string emissiveTexturePath = "./";
-				emissiveTexturePath += emissive;
+				std::string emissiveTexturePath = (basePath / emissiveTexturePath).string();
 				auto textureRes = resource->create_texture_resource(emissive, "editor", emissiveTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
 				assert(RESOURCE_INIT_CODE_OK == textureRes->load());
 				auto emissiveId = sceneManager->register_texture_to_scene(textureRes);

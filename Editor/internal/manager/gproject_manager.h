@@ -25,6 +25,8 @@ public:
 
 	std::expected<GProject*, GPROJECT_CREATE_ERROR> create_project(std::string path, std::string projectName,std::string projectNamespace);
 
+	bool save_project(GProject* project);
+
 	bool is_path_gproject_path(std::filesystem::path path);
 
 	void swap_selected_project(GProject* project);
@@ -64,7 +66,22 @@ public:
 		assert(proj != nullptr);
 		return get_script_path(proj) / INCLUDE_FOLDER_NAME;
 	}
+	inline static std::filesystem::path get_asset_mesh_path(GProject* proj)
+	{
+		assert(proj != nullptr);
+		return std::filesystem::path(proj->get_project_path()) / "Assets" / "Meshes";
 
+	}
+	inline static std::filesystem::path get_asset_texture_path(GProject* proj)
+	{
+		assert(proj != nullptr);
+		return std::filesystem::path(proj->get_project_path()) / "Assets" / "Textures";
+	}
+	inline static std::filesystem::path get_asset_material_path(GProject* proj)
+	{
+		assert(proj != nullptr);
+		return std::filesystem::path(proj->get_project_path()) / "Assets" / "Materials";
+	}
 	const std::string& get_vs22_path() const noexcept;
 private:
 	bool add_file_to_project_cmake(GProject* project,std::filesystem::path file);
