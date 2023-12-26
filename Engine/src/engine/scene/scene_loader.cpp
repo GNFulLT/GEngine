@@ -74,6 +74,177 @@ bool SceneLoader::save_mesh(std::filesystem::path path, const std::vector<float>
 	return true;
 }
 
+void SceneLoader::load_basic_meshes(IGSceneManager* scene,IGResourceManager* res, bool meshletEnable)
+{
+	auto pth = std::filesystem::current_path() / "assets"/"Meshes"/"cube.obj";
+	load_scene(pth, scene, res, meshletEnable);
+}
+
+uint32_t SceneLoader::load_gmesh_file(IGSceneManager* mng,std::filesystem::path path,bool meshletEnable)
+{
+	if (std::filesystem::is_directory(path) || path.extension() != ".gmesh")
+		return -1;
+
+	std::ifstream ifstream(path,  std::ios::binary | std::ios::in);
+	GMeshFileHeader header;
+	GMeshData gmeshData;
+	MeshData2 meshData;
+
+	ifstream.read((char*)&header, sizeof(GMeshFileHeader));
+
+	meshData.indexData_.resize(header.indexDataSize / sizeof(uint32_t));
+	meshData.vertexData_.resize(header.vertexDataSize / sizeof(float));
+
+	ifstream.read((char*)&gmeshData, sizeof(GMeshData));
+	ifstream.read((char*)meshData.vertexData_.data(), header.vertexDataSize);
+	ifstream.read((char*)meshData.indexData_.data(), header.indexDataSize);
+
+	ifstream.close();
+	uint32_t elementPerVertex = calculateVertexElementCount(gmeshData.meshFlag);
+
+	std::vector<BoundingBox> boxes;
+	boxes.push_back(calculate_aabb_for_mesh(meshData.vertexData_, meshData.indexData_, elementPerVertex));
+
+	meshData.boxes_ = boxes;
+	meshData.meshes_.push_back(gmeshData);
+
+	uint32_t meshIndex = mng->add_mesh_to_scene(&meshData);
+
+	if (meshletEnable)
+	{
+		
+		uint32_t meshletVertOff = 0;
+		uint32_t meshletTriangleOff = 0;
+		GMeshletDataExtra meshlet;
+
+		process_meshlets(meshData.indexData_, meshData.vertexData_, meshlet.gmeshlets_, meshlet.meshletVertexData_, meshlet.meshletTriangleData_,
+			elementPerVertex, meshletVertOff, meshletTriangleOff);
+		
+		GMeshletExtra extra;
+		extra.meshletCount = meshlet.gmeshlets_.size();
+		extra.meshletOffset = 0;
+		extra.meshletTrianglesCount = meshlet.meshletTriangleData_.size();
+		extra.meshletTrianglesOffset = 0;
+		extra.meshletVerticesCount = meshlet.meshletVertexData_.size();
+		extra.meshletVerticesOffset = 0;
+
+		meshlet.gmeshletExtra_.push_back(extra);
+
+		uint32_t meshletIndex = mng->add_meshlet_to_scene(&meshlet);
+		assert(meshIndex == meshletIndex);
+
+
+	}
+	return meshIndex;
+}
+
+struct MaterialHeader
+{
+	uint32_t hashSize;
+};
+
+std::vector<std::string> split(std::string s, std::string delimiter) {
+	size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+	std::string token;
+	std::vector<std::string> res;
+
+	while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+		token = s.substr(pos_start, pos_end - pos_start);
+		pos_start = pos_end + delim_len;
+		res.push_back(token);
+	}
+
+	res.push_back(s.substr(pos_start));
+	return res;
+}
+
+uint32_t SceneLoader::load_gmaterial_file(IGSceneManager* scene, IGResourceManager* resourceMng, std::filesystem::path path)
+{
+	if (std::filesystem::is_directory(path) || path.extension() != ".gmaterial")
+		return -1;
+	
+	MaterialHeader header;
+	MaterialDescription desc;
+	std::string texturePaths;
+	
+	std::ifstream ifstream(path, std::ios::binary | std::ios::in);
+	
+	ifstream.read((char*)&header, sizeof(MaterialHeader));
+	
+	texturePaths.resize(header.hashSize+1);
+
+	ifstream.read((char*)&desc, sizeof(MaterialDescription));
+	ifstream.read(texturePaths.data(), header.hashSize);
+
+	ifstream.close();
+
+	//X Load Textures
+	
+	if (texturePaths.size() != 1)
+	{	
+		if (texturePaths[0] == '\0')
+		{
+			texturePaths = std::string(texturePaths.begin()+1, texturePaths.end());
+			texturePaths[texturePaths.size()-1] = 'g';
+			texturePaths += '\0';
+		}
+		auto paths = split(texturePaths, "/");
+		for (auto typeAndPath : paths)
+		{
+			auto typeAndPath2 = split(typeAndPath,"=");
+			if (typeAndPath2.size() != 2)
+				assert(false);
+
+			auto& type = typeAndPath2[0];
+			auto& tpath = typeAndPath2[1];
+
+			auto textureRes = resourceMng->create_texture_resource(tpath, "SCENE_RESOURCE", tpath, nullptr, VK_FORMAT_R8G8B8A8_UNORM);
+			if (!textureRes.has_value())
+			{
+				//X LOG
+				continue;
+			}
+
+			auto texture = textureRes.value();
+			assert(texture->load() == RESOURCE_INIT_CODE_OK);
+			auto textureId = scene->register_texture_to_scene(texture);
+
+			if (type == "ALBEDO")
+			{
+				desc.albedoMap_ = textureId;
+			}
+			else if (type == "AO")
+			{
+				desc.ambientOcclusionMap_ = textureId;
+
+			}
+			else if (type == "EMISSIVE")
+			{
+				desc.emissiveMap_ = textureId;
+			}
+			else if (type == "METALLIC")
+			{
+				desc.metallicyMap_ = textureId;
+			}
+			else if (type == "ROUGHNESS")
+			{
+				desc.roughnessMap_ = textureId;
+			}
+			else
+			{
+				assert(false);
+			}
+		}
+	}
+
+	//X Load description to scene
+
+	auto materialId = scene->add_material_to_scene(&desc);
+
+	return materialId;
+}
+
+
 bool SceneLoader::load_scene_mesh(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng)
 {
 	return false;
@@ -773,7 +944,7 @@ void SceneLoader::transfer_to_gpu(std::filesystem::path base,Scene* scene, MeshD
 			if (itr != paths->second.end())
 			{
 				auto emissive = itr->second;
-				std::string emissiveTexturePath = (basePath / emissiveTexturePath).string();
+				std::string emissiveTexturePath = (basePath / emissive).string();
 				auto textureRes = resource->create_texture_resource(emissive, "editor", emissiveTexturePath, nullptr, VK_FORMAT_R8G8B8A8_UNORM).value();
 				assert(RESOURCE_INIT_CODE_OK == textureRes->load());
 				auto emissiveId = sceneManager->register_texture_to_scene(textureRes);

@@ -15,6 +15,14 @@ class IGSceneManager;
 class GImGuiCompositionPortWindow : public IGImGuiWindowImpl
 {
 public:
+	enum TRANSFORM_TYPE
+	{
+		TRANSFORM_TYPE_TRANSLATE,
+		TRANSFORM_TYPE_SCALE,
+		TRANSFORM_TYPE_ROTATE
+	};
+
+
 	GImGuiCompositionPortWindow();
 	// Inherited via IGImGuiWindowImpl
 	virtual bool init() override;
@@ -25,7 +33,12 @@ public:
 	virtual void on_data_update() override;
 	virtual void destroy() override;
 	virtual const char* get_window_name() override;
+
+
 private:
+	uint32_t transformTypeToImgui(TRANSFORM_TYPE type);
+private:
+	TRANSFORM_TYPE tType = TRANSFORM_TYPE_TRANSLATE;
 	std::string m_name;
 	bool m_resizedAtThisFrame = false;
 	GImGuiWindowStorage* m_storage;

@@ -205,7 +205,7 @@ bool GProjectManager::save_project(GProject* project)
 
 			if (auto texturePathIter = newTexturePathsById.find(material.albedoMap_); texturePathIter != newTexturePathsById.end())
 			{
-				texturePaths += fmt::format("{}={}", material.albedoMap_,texturePathIter->second);
+				texturePaths += fmt::format("{}={}", "ALBEDO", texturePathIter->second);
 				texturePaths += "/";
 			}
 		}
@@ -213,7 +213,7 @@ bool GProjectManager::save_project(GProject* project)
 		{
 			if (auto texturePathIter = newTexturePathsById.find(material.ambientOcclusionMap_); texturePathIter != newTexturePathsById.end())
 			{
-				texturePaths += fmt::format("{}={}", material.ambientOcclusionMap_, texturePathIter->second);
+				texturePaths += fmt::format("{}={}", "AO", texturePathIter->second);
 
 				texturePaths += "/";
 			}
@@ -222,7 +222,7 @@ bool GProjectManager::save_project(GProject* project)
 		{
 			if (auto texturePathIter = newTexturePathsById.find(material.emissiveMap_); texturePathIter != newTexturePathsById.end())
 			{
-				texturePaths += fmt::format("{}={}", material.emissiveMap_, texturePathIter->second);
+				texturePaths += fmt::format("{}={}", "EMISSIVE", texturePathIter->second);
 
 				texturePaths += "/";
 			}
@@ -231,7 +231,7 @@ bool GProjectManager::save_project(GProject* project)
 		{
 			if (auto texturePathIter = newTexturePathsById.find(material.metallicyMap_); texturePathIter != newTexturePathsById.end())
 			{
-				texturePaths += fmt::format("{}={}", material.metallicyMap_, texturePathIter->second);
+				texturePaths += fmt::format("{}={}", "METALLIC", texturePathIter->second);
 
 				texturePaths += "/";
 			}
@@ -240,7 +240,7 @@ bool GProjectManager::save_project(GProject* project)
 		{
 			if (auto texturePathIter = newTexturePathsById.find(material.roughnessMap_); texturePathIter != newTexturePathsById.end())
 			{
-				texturePaths += fmt::format("{}={}", material.roughnessMap_, texturePathIter->second);
+				texturePaths += fmt::format("{}={}", "ROUGHNESS", texturePathIter->second);
 
 				texturePaths += "/";
 			}
@@ -298,20 +298,110 @@ void GProjectManager::unload_selected_project()
 void GProjectManager::load_project(GProject* project)
 {
 	m_selectedProject = project;
-
-
-	//X Load meshes
+	
+	//X Load scene
 	{
-		auto meshPath = get_asset_mesh_path(project);
-		for (auto& iter : std::filesystem::directory_iterator(meshPath))
+		auto path = std::filesystem::path(project->get_project_path());
+		auto scenePath = path / "Scene0.gscene";
+
+		if (!std::filesystem::exists(scenePath))
 		{
-			auto path = iter.path();
-			if (std::filesystem::is_directory(path))
-				continue;
-			if (strcmp(path.extension().string().c_str(), ".gmesh") != 0)
-				continue;
-			
+			return;
 		}
+
+		auto sceneManager = GET_MANAGER(IGSceneManager, ENGINE_MANAGER_SCENE);
+		auto sceneResEx = sceneManager->deserialize_scene(scenePath);
+		if (!sceneResEx.has_value())
+			return;
+		auto sceneRes = sceneResEx.value();
+		auto scene = sceneRes.scene;
+
+		std::unordered_map<uint32_t,uint32_t> loadedMeshes;
+		std::unordered_map<uint32_t, uint32_t> loadedMaterials;
+
+		std::unordered_map<uint32_t, uint32_t> oldToNewMesh;
+		std::unordered_map<uint32_t, uint32_t> oldToNewMaterial;
+
+		std::unordered_map<uint32_t, uint32_t> nodeToMesh;
+		std::unordered_map<uint32_t, uint32_t> nodeToMaterial;
+
+		//X Load meshes
+		for (auto pair : sceneRes.drawDataMap)
+		{
+			auto meshID = pair.second.mesh;
+			if (auto iter = loadedMeshes.find(meshID); iter == loadedMeshes.end())
+			{
+				auto meshPath = std::filesystem::path(get_asset_mesh_path(m_selectedProject) / fmt::format("Mesh{}.gmesh", meshID));
+
+				uint32_t newMeshId = sceneManager->load_gmesh_file(meshPath);
+				oldToNewMesh.emplace(meshID, newMeshId);
+				nodeToMesh.emplace(pair.first,newMeshId);
+			}
+
+			
+			
+			auto materialID = pair.second.material;
+			if (auto iter = loadedMaterials.find(materialID); iter == loadedMaterials.end())
+			{
+				if (materialID == 0)
+					continue;
+				auto materialPath = std::filesystem::path(get_asset_material_path(m_selectedProject) / fmt::format("Material{}.gmaterial", materialID));
+			
+				auto newMaterialId = sceneManager->load_gmaterial_file(materialPath);
+
+				oldToNewMaterial.emplace(materialID, newMaterialId);
+				nodeToMaterial.emplace(pair.first, newMaterialId);
+
+			}
+		}
+
+
+		//X Iterate scene hieararchy
+		std::queue<uint32_t> queue;
+		std::unordered_map<uint32_t, uint32_t> virtual_to_scene;
+		queue.push(0);
+
+		while (!queue.empty())
+		{
+			auto iter = queue.front();
+			queue.pop();
+			uint32_t nodeIndex = -1;
+			if (auto mesh = nodeToMesh.find(iter); mesh != nodeToMesh.end())
+			{
+				auto materialId = 0;
+				if (auto material = nodeToMaterial.find(iter); material != nodeToMaterial.end())
+				{
+					materialId = material->second;
+				}
+
+				if (auto transform = sceneRes.transformMap.find(iter); transform != sceneRes.transformMap.end())
+				{
+					auto nodeId = sceneManager->add_node_with_mesh_and_material_and_transform(mesh->second, materialId,&transform->second);
+				}
+				else
+				{
+					auto nodeId = sceneManager->add_node_with_mesh_and_material(mesh->second, materialId);
+				}
+				
+			}
+			else
+			{
+				//X IS LIGHT ?
+			}
+
+			uint32_t child = scene->hierarchy[iter].firstChild;
+			while (child != UINT32_MAX)
+			{
+				queue.push(child);
+				if (nodeIndex != -1)
+				{
+					virtual_to_scene.emplace(child, nodeIndex);
+				}
+				child = scene->hierarchy[child].nextSibling;
+			}
+		}
+		
+
 	}
 }
 

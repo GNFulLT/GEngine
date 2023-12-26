@@ -19,10 +19,13 @@ bool IResource::before_load()
 
 RESOURCE_INIT_CODE IResource::load()
 {
+	auto stage = m_loadingState.load();
+	if (stage == RESOURCE_LOADING_STATE_LOADED)
+		return RESOURCE_INIT_CODE_OK;
+
 	bool prepared = before_load();
 	if (!prepared)
 	{
-		auto stage = m_loadingState.load();
 		if (stage != RESOURCE_LOADING_STATE_UNLOADED)
 		{
 			return RESOURCE_INIT_CODE_UNKNOWN_EX;

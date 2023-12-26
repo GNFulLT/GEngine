@@ -208,6 +208,22 @@ private:
 	// Inherited via IGSceneManager
 	virtual bool serialize_scene(std::filesystem::path path, Scene* scene) const noexcept override;
 
+
+	// Inherited via IGSceneManager
+	virtual std::expected<SceneRes, uint32_t> deserialize_scene(std::filesystem::path path) noexcept override;
+
+
+	// Inherited via IGSceneManager
+	virtual uint32_t load_gmesh_file(std::filesystem::path path) override;
+
+
+	// Inherited via IGSceneManager
+	virtual uint32_t load_gmaterial_file(std::filesystem::path path) override;
+
+
+	// Inherited via IGSceneManager
+	virtual IGVulkanNamedDeferredViewport* get_current_viewport() override;
+
 };
 
 #endif // GSCENE_MANAGER_H

@@ -13,6 +13,7 @@
 #include <vector>
 #include <span>
 #include <filesystem>
+#include <expected>
 
 struct VkDescriptorSet_T;
 enum VkFormat;
@@ -53,6 +54,14 @@ struct GlobalUniformBuffer
 struct GPointLight;
 struct GMeshletData;
 struct GMeshletDataExtra;
+
+struct SceneRes
+{
+	Scene* scene = nullptr;
+	std::unordered_map<uint32_t, glm::mat4> transformMap;
+	std::unordered_map<uint32_t, DrawData> drawDataMap;
+	std::vector<uint32_t> lightMap;
+};
 
 class ENGINE_API IGSceneManager
 {
@@ -138,5 +147,13 @@ public:
 	virtual uint32_t get_saved_texture_count() const noexcept = 0;
 
 	virtual bool serialize_scene(std::filesystem::path path,Scene* scene) const noexcept = 0;
+
+	virtual std::expected<SceneRes, uint32_t> deserialize_scene(std::filesystem::path path) noexcept = 0;
+
+	virtual uint32_t load_gmesh_file(std::filesystem::path path) = 0;
+
+	virtual uint32_t load_gmaterial_file(std::filesystem::path path) = 0;
+
+	virtual IGVulkanNamedDeferredViewport* get_current_viewport() = 0;
 };
 #endif // ISCENE_MANAGER_H

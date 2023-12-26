@@ -1595,7 +1595,10 @@ std::expected<std::tuple<std::span<float>, std::span<uint32_t>,GMeshData>,uint32
 	}
 
 	auto meshData = m_meshStreamResources->m_mergedMesh.cpuVector[meshIndex];
-	std::span<float> vertexArr(&m_meshStreamResources->m_mergedVertex.cpuVector[meshData.vertexOffset],meshData.vertexCount);
+	
+	auto elementPerVertex = calculateVertexElementCount(meshData.meshFlag);
+
+	std::span<float> vertexArr(&m_meshStreamResources->m_mergedVertex.cpuVector[meshData.vertexOffset],meshData.vertexCount* elementPerVertex);
 	auto indexCount = meshData.lodOffset[meshData.lodCount];
 	std::span<uint32_t> indexArr(&m_meshStreamResources->m_mergedIndex.cpuVector[meshData.indexOffset], indexCount);
 

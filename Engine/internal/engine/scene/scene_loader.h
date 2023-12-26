@@ -36,6 +36,10 @@ public:
 
 	static bool load_scene(std::filesystem::path path,IGSceneManager* scene,IGResourceManager* resourceMng,bool meshletEnable = true);
 	static bool save_mesh(std::filesystem::path path,const std::vector<float>& vertices,const std::vector<uint32_t>& indices,const GMeshData& gmeshData);
+	static void load_basic_meshes(IGSceneManager* scene,IGResourceManager* resourceMng,bool meshletEnable);
+	static uint32_t load_gmesh_file(IGSceneManager* scene,std::filesystem::path path, bool meshletEnable);
+	static uint32_t load_gmaterial_file(IGSceneManager* scene, IGResourceManager* resourceMng,std::filesystem::path path);
+
 private:
 	static bool load_scene_mesh(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng);
 	static bool load_scene_meshlet(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng,bool meshletEnable);

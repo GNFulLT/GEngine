@@ -666,6 +666,14 @@ bool GSceneManager::init(uint32_t framesInFlight)
 	m_editorScene = Scene::create_scene_with_default_material(desc);
 	m_currentScene = m_editorScene;
 	add_materials_to_scene(&desc);
+
+
+	auto res = ((GSharedPtr<IGResourceManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_RESOURCE))->get();
+	auto dev = ((GSharedPtr<IGVulkanDevice>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_GRAPHIC_DEVICE))->get()->as_logical_device().get();
+
+	//X Add basic meshes
+	SceneLoader::load_basic_meshes(this,res,dev->use_meshlet());
+	
 	return true;
 }
 
@@ -1121,16 +1129,16 @@ bool GSceneManager::serialize_scene(std::filesystem::path path, Scene* scene) co
 		}
 	}
 
-	std::ofstream ofstream(path);
+	std::ofstream ofstream(path, std::ios::out | std::ios::binary);
 	bool failed = false;
 	ofstream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
 	SceneHeader header;
 	header.sizeOfHierarchy = scene->hierarchy.size() * sizeof(Hierarchy);
-	header.sizeOfTransform = transformMap.size() * sizeof(transformMap[0]);
-	header.sizeOfDraw = drawMap.size() * sizeof(DrawData);
+	header.sizeOfTransform = transformMap.size() * sizeof(std::pair<uint32_t, glm::mat4>);
+	header.sizeOfDraw = drawMap.size() * sizeof(std::pair<uint32_t, DrawData>);
 	header.sizeOfLight = lightMap.size() * sizeof(lightMap);
-
+	
 	try
 	{
 		ofstream.write((char*)&header, sizeof(SceneHeader));
@@ -1199,6 +1207,77 @@ bool GSceneManager::serialize_scene(std::filesystem::path path, Scene* scene) co
 	outFile.close();
 
 	return true;*/
+}
+
+std::expected<SceneRes, uint32_t> GSceneManager::deserialize_scene(std::filesystem::path path) noexcept
+{
+	if (std::filesystem::is_directory(path) || path.extension().string() != ".gscene")
+	{
+		return std::unexpected(0);
+	}
+
+	std::ifstream ifstream(path, std::ios::in | std::ios::binary);
+
+	SceneHeader header;
+	ifstream.read((char*)&header, sizeof(SceneHeader));
+	
+	std::vector<MaterialDescription> materials;
+	Scene* scene = Scene::create_scene_with_default_material(materials);
+
+	std::vector<std::pair<uint32_t, glm::mat4>> transformMap;
+	std::vector<std::pair<uint32_t, DrawData>> drawMap;
+	std::vector<uint32_t> lightMap;
+	
+	transformMap.resize(header.sizeOfTransform / sizeof(std::pair<uint32_t, glm::mat4>));
+	drawMap.resize(header.sizeOfDraw / sizeof(std::pair<uint32_t, DrawData>));
+	lightMap.resize(header.sizeOfLight / sizeof(uint32_t));
+	
+	scene->hierarchy.resize(header.sizeOfHierarchy / sizeof(Hierarchy));
+
+	ifstream.read((char*)scene->hierarchy.data(),header.sizeOfHierarchy);
+	ifstream.read((char*)transformMap.data(), header.sizeOfTransform);
+	ifstream.read((char*)drawMap.data(), header.sizeOfDraw);
+	ifstream.read((char*)lightMap.data(), header.sizeOfLight);
+
+	ifstream.close();
+
+
+	SceneRes res;
+
+	res.scene = scene;
+
+	for (auto pair : transformMap)
+	{
+		res.transformMap.emplace(pair.first, pair.second);
+	}
+
+	for (auto pair : drawMap)
+	{
+		res.drawDataMap.emplace(pair.first, pair.second);
+	}
+
+	res.lightMap = lightMap;
+
+	return res;
+}
+
+uint32_t GSceneManager::load_gmesh_file(std::filesystem::path path)
+{
+	auto dev = GET_MANAGER(IGVulkanDevice, ENGINE_MANAGER_GRAPHIC_DEVICE)->as_logical_device().get();
+
+	return SceneLoader::load_gmesh_file(this,path,dev->use_meshlet());
+}
+
+uint32_t GSceneManager::load_gmaterial_file(std::filesystem::path path)
+{
+	auto resMng = GET_MANAGER(IGResourceManager, ENGINE_MANAGER_RESOURCE);
+
+	return SceneLoader::load_gmaterial_file(this,resMng,path);
+}
+
+IGVulkanNamedDeferredViewport* GSceneManager::get_current_viewport()
+{
+	return m_deferredTargetedViewport;
 }
 
 

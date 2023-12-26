@@ -47,6 +47,29 @@ bool GImGuiCompositionPortWindow::need_render()
 
 void GImGuiCompositionPortWindow::render()
 {
+	auto winSize = ImGui::GetWindowSize();
+	
+	auto oldX = ImGui::GetCursorPosX();
+	auto size = ImGui::CalcTextSize("Transform");
+	ImGui::SetCursorPosX((winSize.x / 2) - size.x);
+	
+	if (ImGui::Button("Transform"))
+	{
+		tType = TRANSFORM_TYPE_TRANSLATE;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Scale"))
+	{
+		tType = TRANSFORM_TYPE_SCALE;
+
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Rotate"))
+	{
+		tType = TRANSFORM_TYPE_ROTATE;
+	}
+
+
 	if (EditorApplicationImpl::get_instance()->compositionPortSet == nullptr)
 		return;
 	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
@@ -70,7 +93,7 @@ void GImGuiCompositionPortWindow::render()
 			float height = ImGui::GetWindowHeight();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, width,height);
 			auto camProj = glm::make_mat4(m_cameraManager->get_camera_proj_matrix());
-			bool isChanged = ImGuizmo::Manipulate(m_cameraManager->get_camera_view_matrix(), glm::value_ptr(camProj), ImGuizmo::TRANSLATE,
+			bool isChanged = ImGuizmo::Manipulate(m_cameraManager->get_camera_view_matrix(), glm::value_ptr(camProj), ImGuizmo::OPERATION(transformTypeToImgui(tType)),
 				ImGuizmo::LOCAL, glm::value_ptr(mtrx));
 
 			if (isChanged)
@@ -145,4 +168,19 @@ void GImGuiCompositionPortWindow::destroy()
 const char* GImGuiCompositionPortWindow::get_window_name()
 {
 	return m_name.c_str();
+}
+
+uint32_t GImGuiCompositionPortWindow::transformTypeToImgui(TRANSFORM_TYPE type)
+{
+	switch (type)
+	{
+	case GImGuiCompositionPortWindow::TRANSFORM_TYPE_TRANSLATE:
+		return ImGuizmo::TRANSLATE;
+	case GImGuiCompositionPortWindow::TRANSFORM_TYPE_SCALE:
+		return ImGuizmo::SCALE;
+	case GImGuiCompositionPortWindow::TRANSFORM_TYPE_ROTATE:
+		return ImGuizmo::ROTATE;
+	default:
+		return ImGuizmo::TRANSLATE;
+	}
 }

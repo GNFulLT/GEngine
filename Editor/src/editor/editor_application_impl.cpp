@@ -32,6 +32,7 @@
 #include "internal/manager/geditor_texture_debug_manager.h"
 #include "internal/manager/gproject_manager.h"
 #include "engine/globals.h"
+#include "internal/rendering/vulkan/gscene_renderer.h"
 
 IGVulkanLogicalDevice* s_device;
 
@@ -202,6 +203,23 @@ bool EditorApplicationImpl::init(GEngine* engine)
     disable_update();
 
     return true;    
+}
+
+GVulkanCommandBuffer* EditorApplicationImpl::begin_draw_scene(uint32_t frameIndex)
+{
+    return m_imguiLayer->get_scene_renderer()->begin_draw_scene(frameIndex);
+}
+
+void EditorApplicationImpl::end_draw_scene(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+    m_imguiLayer->get_scene_renderer()->end_draw_scene(cmd,frameIndex);
+
+}
+
+void EditorApplicationImpl::post_render(GVulkanCommandBuffer* cmd, uint32_t frameIndex)
+{
+    m_imguiLayer->get_scene_renderer()->post_render(cmd, frameIndex);
+
 }
 
 GEditorTextureDebugManager* EditorApplicationImpl::get_texture_debug_manager()

@@ -50,7 +50,7 @@ public:
 private:
 	bool add_image_loader(IImageLoader* loader);
 	
-	ankerl::unordered_dense::map<std::string, GResourcePtr> m_resourceMap;
+	ankerl::unordered_dense::map<std::string, IGTextureResource*> m_textureResourceMap;
 	std::mutex m_resourceMutex;
 	GSharedPtr<IOwningGLogger> m_logger;
 

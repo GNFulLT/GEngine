@@ -2,9 +2,11 @@
 #define GAPPLICATION_IMPL_H
 
 #include "GEngine_EXPORT.h"
+#include <cstdint>
 
 class GEngine;
 class IInjectManagerHelper;
+class GVulkanCommandBuffer;
 
 class ENGINE_API GApplicationImpl
 {
@@ -28,6 +30,12 @@ public:
 	virtual void destroy() = 0;
 
 	virtual void inject_managers(IInjectManagerHelper* helper) {}
+
+	virtual GVulkanCommandBuffer* begin_draw_scene(uint32_t frameIndex);
+
+	virtual void end_draw_scene(GVulkanCommandBuffer* cmd,uint32_t frameIndex);
+
+	virtual void post_render(GVulkanCommandBuffer* cmd, uint32_t frameIndex) {};
 private:
 };
 

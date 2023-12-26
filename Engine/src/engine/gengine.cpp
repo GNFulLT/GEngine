@@ -226,9 +226,41 @@ void GEngine::tick(double deltaTime)
 		if (before_render() && m_impl->before_render())
 		{
 			s_sceneManager->reconstruct_global_buffer_for_frame(m_currentFrame);
-			m_impl->render();
-			after_render();
-			m_impl->after_render();
+			
+			//X Render Frame
+			if (auto viewport = s_sceneManager->get_current_viewport();viewport != nullptr)
+			{
+				auto renderer = s_sceneManager->get_deferred_renderer();
+				if (renderer != nullptr)
+				{
+					auto currentIndex = get_current_frame();
+					auto frameData = get_frame_data_by_index(currentIndex);
+
+					
+					
+
+					auto frameCmd = m_impl->begin_draw_scene(currentIndex);
+					renderer->fill_compute_cmd(frameCmd, currentIndex);
+					renderer->begin_and_end_fill_cmd_for_shadow(frameCmd, currentIndex);
+					
+					viewport->begin_draw_cmd(frameCmd);
+					renderer->fill_deferred_cmd(frameCmd, currentIndex);
+					viewport->end_draw_cmd(frameCmd);
+					
+					viewport->begin_composition_draw_cmd(frameCmd);
+					renderer->fill_composition_cmd(frameCmd, currentIndex);
+
+					m_impl->post_render(frameCmd,currentIndex);
+					
+					viewport->end_draw_cmd(frameCmd);
+
+					m_impl->end_draw_scene(frameCmd,currentIndex);
+
+					m_impl->render();
+					after_render();
+					m_impl->after_render();
+				}		
+			}
 		}
 
 		//X DoSmth and AfterDoSmth are inside the brackets of BeforeDoSmth  and Befores returns bool and check with if the return bool value 
@@ -516,4 +548,17 @@ ENGINE_API GEngine* create_the_engine()
 {
 	s_engine = new GEngine();
 	return s_engine;
+}
+
+GVulkanCommandBuffer* GApplicationImpl::begin_draw_scene(uint32_t frameIndex)
+{
+	auto gengine = GEngine::get_instance();
+	auto currentIndex= gengine->get_current_frame();
+	auto frameData = gengine->get_frame_data_by_index(currentIndex);
+	return frameData->get_the_main_cmd();
+}
+
+void GApplicationImpl::end_draw_scene(GVulkanCommandBuffer* cmd,uint32_t frameIndex)
+{
+
 }

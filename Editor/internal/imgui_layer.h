@@ -39,6 +39,11 @@ public:
 	GImGuiSceneWindow* get_scene_window();
 
 	GImGuiLogWindow* get_log_window();
+
+	inline GSceneRenderer* get_scene_renderer()
+	{
+		return m_sceneRenderer;
+	}
 private:
 	IGVulkanDevice* m_dev;
 	Window* m_window;

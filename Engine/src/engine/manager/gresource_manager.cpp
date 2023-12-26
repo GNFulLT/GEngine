@@ -62,6 +62,13 @@ std::expected<IGTextureResource*, RESOURCE_ERROR> GResourceManager::create_textu
 	if (name.empty() || groupName.empty())
 		return std::unexpected(RESOURCE_ERROR::RESOURCE_ERROR_NAME_OR_GROUP_NAME_IS_NULL);
 
+	if (auto res = m_textureResourceMap.find(std::string(name)); res != m_textureResourceMap.end())
+	{
+		m_logger->log_d(fmt::format("Selected Already Created Texture Resource : [{}]{}", groupName, name).c_str());
+
+		return res->second;
+	}
+
 	m_logger->log_d(fmt::format("A Texture resource created by name : [{}]{}", groupName, name).c_str());
 	GTextureResource* res;
 	if (format != -1)
@@ -73,6 +80,8 @@ std::expected<IGTextureResource*, RESOURCE_ERROR> GResourceManager::create_textu
 		res = new GTextureResource(filePath, customLoader, GVulkanLogicalDevice::get_instance(), m_defaultSamplerCreator, descriptorCreator);
 	}
 	res->m_creatorOwner = this;
+
+	m_textureResourceMap.emplace(std::string(name), res);
 	return res;
 }
 std::expected<IGTextureResource*, RESOURCE_ERROR> GResourceManager::create_texture_resource(std::string_view name, std::string_view groupName,std::string_view filePath, IGVulkanDescriptorCreator* descriptorCreator,int format)
@@ -98,7 +107,7 @@ std::expected<IGShaderResource*, RESOURCE_ERROR> GResourceManager::create_shader
 
 void GResourceManager::destroy_texture_resource(IGTextureResource* texture)
 {
-	
+		
 }
 
 void GResourceManager::destroy_shader_resource(IGShaderResource* shader)

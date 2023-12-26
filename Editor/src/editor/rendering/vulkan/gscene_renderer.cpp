@@ -52,98 +52,98 @@ GSceneRenderer::GSceneRenderer(IGVulkanNamedDeferredViewport* viewport,IGVulkanD
 void GSceneRenderer::render_the_scene()
 {
 
-	auto currIndex = EditorApplicationImpl::get_instance()->m_engine->get_current_frame();
-	auto frameData = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(currIndex);
-	auto cmdIndex = m_currentCmdIndex[currIndex];
-	auto frameCmd = m_frameCmds[currIndex][cmdIndex];
+	//auto currIndex = EditorApplicationImpl::get_instance()->m_engine->get_current_frame();
+	//auto frameData = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(currIndex);
+	//auto cmdIndex = m_currentCmdIndex[currIndex];
+	//auto frameCmd = m_frameCmds[currIndex][cmdIndex];
 
-	frameData->add_wait_semaphore_for_this_frame(m_frameSemaphores[currIndex], (int)VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-	frameCmd->reset();
+	//frameData->add_wait_semaphore_for_this_frame(m_frameSemaphores[currIndex], (int)VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	//frameCmd->reset();
 
-	auto vp = m_viewport;
-	auto deferredRenderer = m_sceneManager->get_deferred_renderer();
+	//auto vp = m_viewport;
+	//auto deferredRenderer = m_sceneManager->get_deferred_renderer();
 
-	frameCmd->begin();
-	deferredRenderer->fill_compute_cmd(frameCmd, currIndex);
-	deferredRenderer->begin_and_end_fill_cmd_for_shadow(frameCmd, currIndex);
-	vp->begin_draw_cmd(frameCmd);
-	deferredRenderer->fill_deferred_cmd(frameCmd, currIndex);
-
-
+	//frameCmd->begin();
+	//deferredRenderer->fill_compute_cmd(frameCmd, currIndex);
+	//deferredRenderer->begin_and_end_fill_cmd_for_shadow(frameCmd, currIndex);
+	//vp->begin_draw_cmd(frameCmd);
+	//deferredRenderer->fill_deferred_cmd(frameCmd, currIndex);
 
 
-	//vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
-	////X TODO : Layout Cache
-	//m_graphicPipeline->bind_sets(frameCmd,currIndex);
 
-	//vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
-	//vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
+
+	////vkCmdBindPipeline(frameCmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->get_pipeline());
+	//////X TODO : Layout Cache
+	////m_graphicPipeline->bind_sets(frameCmd,currIndex);
+
+	////vkCmdSetViewport(frameCmd->get_handle(), 0, 1, vp->get_viewport_area());
+	////vkCmdSetScissor(frameCmd->get_handle(), 0, 1, vp->get_scissor_area());
+	////
+	////VkDeviceSize offset = 0;
+	////VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();
+	////vkCmdBindVertexBuffers(frameCmd->get_handle(), 0, 1,&buff, &offset);
 	//
-	//VkDeviceSize offset = 0;
-	//VkBuffer buff = triangle->get_vertex_buffer()->get_vk_buffer();
-	//vkCmdBindVertexBuffers(frameCmd->get_handle(), 0, 1,&buff, &offset);
-	
-	//auto& modelMatrix = triangle->get_model_matrix();
+	////auto& modelMatrix = triangle->get_model_matrix();
 
-	//glm::vec3 camPos = { 0.f,0.f,-2.f };
+	////glm::vec3 camPos = { 0.f,0.f,-2.f };
 
-	//glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-	////camera projection
-	//glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-	//projection[1][1] *= -1;
-	////model rotation
-	//glm::mat4 model = glm::mat4(1.f);
+	////glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+	//////camera projection
+	////glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+	////projection[1][1] *= -1;
+	//////model rotation
+	////glm::mat4 model = glm::mat4(1.f);
 
-	////calculate final mesh matrix
-	//glm::mat4 mesh_matrix = projection * view * model;
+	//////calculate final mesh matrix
+	////glm::mat4 mesh_matrix = projection * view * model;
 
-	/*auto& modelMatrix = triangle->get_model_matrix();
-	vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &modelMatrix);
+	///*auto& modelMatrix = triangle->get_model_matrix();
+	//vkCmdPushConstants(frameCmd->get_handle(), m_graphicPipeline->get_pipeline_layout()->get_vk_pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(gmat4), &modelMatrix);
 
-	vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);*/
+	//vkCmdDraw(frameCmd->get_handle(), 3, 1, 0, 0);*/
 
 
-	vp->end_draw_cmd(frameCmd);
+	//vp->end_draw_cmd(frameCmd);
 
-	vp->begin_composition_draw_cmd(frameCmd);
-	deferredRenderer->fill_composition_cmd(frameCmd, currIndex);
+	//vp->begin_composition_draw_cmd(frameCmd);
+	//deferredRenderer->fill_composition_cmd(frameCmd, currIndex);
 
-	m_cubemapRenderer->render(frameCmd, currIndex,vp);
+	//m_cubemapRenderer->render(frameCmd, currIndex,vp);
 
-	auto sceneWindow = EditorApplicationImpl::get_instance()->get_editor_layer()->get_scene_window();
-	if (auto selectedNode = sceneWindow->get_selected_entity(); selectedNode != -1)
-	{
-		auto drawId = m_sceneManager->get_draw_id_of_node(selectedNode);
-		if (drawId != -1)
-		{
-			deferredRenderer->fill_aabb_cmd_for(frameCmd, currIndex, selectedNode);
-		}
-	}
+	//auto sceneWindow = EditorApplicationImpl::get_instance()->get_editor_layer()->get_scene_window();
+	//if (auto selectedNode = sceneWindow->get_selected_entity(); selectedNode != -1)
+	//{
+	//	auto drawId = m_sceneManager->get_draw_id_of_node(selectedNode);
+	//	if (drawId != -1)
+	//	{
+	//		deferredRenderer->fill_aabb_cmd_for(frameCmd, currIndex, selectedNode);
+	//	}
+	//}
 
-	if (m_gridRenderer->wants_render())
-	{
-		m_gridRenderer->render(frameCmd, currIndex);
-	}
-	vp->end_draw_cmd(frameCmd);
-	frameCmd->end();
+	//if (m_gridRenderer->wants_render())
+	//{
+	//	m_gridRenderer->render(frameCmd, currIndex);
+	//}
+	//vp->end_draw_cmd(frameCmd);
+	//frameCmd->end();
 
-	auto cmd = frameCmd->get_handle();
-	auto smph = m_frameSemaphores[currIndex]->get_semaphore();
-	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	//auto cmd = frameCmd->get_handle();
+	//auto smph = m_frameSemaphores[currIndex]->get_semaphore();
+	//VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-	VkSubmitInfo inf = {};
-	inf.pNext = nullptr;
-	inf.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	inf.commandBufferCount = 1;
-	inf.pCommandBuffers = &cmd;
-	inf.waitSemaphoreCount = 0;
-	inf.signalSemaphoreCount = 1;
-	inf.pSignalSemaphores = &smph;
-	inf.pWaitDstStageMask = &waitStage;
+	//VkSubmitInfo inf = {};
+	//inf.pNext = nullptr;
+	//inf.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	//inf.commandBufferCount = 1;
+	//inf.pCommandBuffers = &cmd;
+	//inf.waitSemaphoreCount = 0;
+	//inf.signalSemaphoreCount = 1;
+	//inf.pSignalSemaphores = &smph;
+	//inf.pWaitDstStageMask = &waitStage;
 
 
 
-	m_device->execute_cmd_from_main(frameCmd,&inf,nullptr);
+	//m_device->execute_cmd_from_main(frameCmd,&inf,nullptr);
 
 	//m_currentCmdIndex[currIndex] = (m_currentCmdIndex[currIndex] + 1) % perFrameCmd;
 }
@@ -339,6 +339,65 @@ void GSceneRenderer::destroy()
 		m_device->destroy_semaphore(m_frameSemaphores[i]);
 	}
 	
+}
+
+void GSceneRenderer::post_render(GVulkanCommandBuffer* frameCmd, uint32_t frameIndex)
+{
+	auto vp = m_viewport;
+	auto deferredRenderer = m_sceneManager->get_deferred_renderer();
+
+	m_cubemapRenderer->render(frameCmd, frameIndex, vp);
+
+	auto sceneWindow = EditorApplicationImpl::get_instance()->get_editor_layer()->get_scene_window();
+	if (auto selectedNode = sceneWindow->get_selected_entity(); selectedNode != -1)
+	{
+		auto drawId = m_sceneManager->get_draw_id_of_node(selectedNode);
+		if (drawId != -1)
+		{
+			deferredRenderer->fill_aabb_cmd_for(frameCmd, frameIndex, selectedNode);
+		}
+	}
+
+	if (m_gridRenderer->wants_render())
+	{
+		m_gridRenderer->render(frameCmd, frameIndex);
+	}
+}
+
+GVulkanCommandBuffer* GSceneRenderer::begin_draw_scene(uint32_t frameIndex)
+{
+	auto currIndex = EditorApplicationImpl::get_instance()->m_engine->get_current_frame();
+	auto frameData = EditorApplicationImpl::get_instance()->m_engine->get_frame_data_by_index(currIndex);
+	auto cmdIndex = m_currentCmdIndex[currIndex];
+	auto frameCmd = m_frameCmds[currIndex][cmdIndex];
+
+	frameData->add_wait_semaphore_for_this_frame(m_frameSemaphores[currIndex], (int)VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	frameCmd->reset();
+	frameCmd->begin();
+
+	return frameCmd;
+}
+
+void GSceneRenderer::end_draw_scene(GVulkanCommandBuffer* frameCmd, uint32_t frameIndex)
+{
+	frameCmd->end();
+
+	auto cmd = frameCmd->get_handle();
+	auto smph = m_frameSemaphores[frameIndex]->get_semaphore();
+	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	VkSubmitInfo inf = {};
+	inf.pNext = nullptr;
+	inf.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	inf.commandBufferCount = 1;
+	inf.pCommandBuffers = &cmd;
+	inf.waitSemaphoreCount = 0;
+	inf.signalSemaphoreCount = 1;
+	inf.pSignalSemaphores = &smph;
+	inf.pWaitDstStageMask = &waitStage;
+
+
+	m_device->execute_cmd_from_main(frameCmd, &inf, nullptr);
 }
 
 void GSceneRenderer::set_the_viewport(IGVulkanNamedDeferredViewport* viewport)

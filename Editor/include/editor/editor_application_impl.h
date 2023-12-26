@@ -46,6 +46,13 @@ public:
 
 	virtual bool init(GEngine* engine) override;
 
+	virtual GVulkanCommandBuffer* begin_draw_scene(uint32_t frameIndex) override;
+
+	virtual void end_draw_scene(GVulkanCommandBuffer* cmd, uint32_t frameIndex) override;
+
+	virtual void post_render(GVulkanCommandBuffer* cmd, uint32_t frameIndex) override;
+
+
 	GEditorTextureDebugManager* get_texture_debug_manager();
 
 	GEngine* m_engine;

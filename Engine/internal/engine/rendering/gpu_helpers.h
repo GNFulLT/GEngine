@@ -247,7 +247,7 @@ inline void CPURGPUData<T>::destroy()
 template<typename T>
 inline uint32_t CPURGPUData<T>::add_to_buffer(const std::vector<T>& buff)
 {
-	uint32_t currentPosIndex = inUsage / sizeof(T);
+	uint32_t currentPosIndex = inUsage;
 	if ((buff.size()) * sizeof(T) > gpuBuffer->get_size())
 	{
 		//X No space resize

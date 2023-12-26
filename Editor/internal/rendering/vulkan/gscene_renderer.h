@@ -28,6 +28,11 @@ public:
 	bool init();
 	void destroy();
 
+	void post_render(GVulkanCommandBuffer* cmd,uint32_t frameIndex);
+
+
+	GVulkanCommandBuffer* begin_draw_scene(uint32_t frameIndex);
+	void end_draw_scene(GVulkanCommandBuffer* cmd,uint32_t frameIndex);
 
 	void set_the_viewport(IGVulkanNamedDeferredViewport* viewport);
 private:
