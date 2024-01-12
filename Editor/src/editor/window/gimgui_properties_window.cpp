@@ -263,6 +263,13 @@ void GImGuiPropertiesWindow::render()
 		m_sceneManager->set_cull_enabled(cullEnabled);
 	}
 
+	bool debugModeEnabled = renderer->is_debug_mode_enabled();
+
+	if (ImGui::Checkbox("Debug Mode Enabled", &debugModeEnabled))
+	{
+		renderer->set_debug_mode(debugModeEnabled);
+	}
+
 	if (sunLightChanged)
 	{
 		m_sceneManager->update_sun_properties(&sunProps);

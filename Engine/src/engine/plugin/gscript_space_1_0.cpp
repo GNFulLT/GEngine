@@ -9,6 +9,10 @@ GScriptSpace_1_0::GScriptSpace_1_0(const std::string& spaceName, const std::stri
 	m_dllName = dllName;
 }
 
+GScriptSpace_1_0::~GScriptSpace_1_0()
+{
+}
+
 const char* GScriptSpace_1_0::get_script_space_name()
 {
 	return m_scriptSpaceName.c_str();

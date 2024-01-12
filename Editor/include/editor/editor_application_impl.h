@@ -7,6 +7,7 @@
 #include <memory>
 #include "engine/rendering/vulkan/named/igvulkan_named_viewport.h"
 #include "engine/rendering/vulkan/named/viewports/igvulkan_named_deferred_viewport.h"
+#include "engine/manager/igproject_manager.h"
 
 class GProjectManager;
 class GEngine;
@@ -69,7 +70,7 @@ public:
 
 	uint32_t get_total_frame();
 
-	GProjectManager* get_project_manager();
+	IGProjectManager* get_project_manager();
 
 	IGVulkanDescriptorSet* pbrPortSet = nullptr;
 	IGVulkanDescriptorSet* normalPortSet = nullptr;

@@ -10,6 +10,7 @@
 #include "engine/manager/igpipeline_object_manager.h"
 #include "engine/manager/igscene_manager.h"
 #include "engine/manager/igscript_manager.h"
+#include "engine/manager/igproject_manager.h"
 
 void* ManagerTable::get_engine_manager_managed(ENGINE_MANAGER manager)
 {
@@ -70,6 +71,9 @@ void* ManagerTable::swap_and_get_managed(ENGINE_MANAGER mng, void* ptr)
 	case ENGINE_MANAGER_SCRIPT:
 		managedPtr = new GSharedPtr<IGScriptManager>((IGScriptManager*)ptr);
 		break;
+	case ENGINE_MANAGER_PROJECT:
+		managedPtr = new GSharedPtr<IGProjectManager>((IGProjectManager*)ptr);
+		break;
 	default:
 		break;
 	}
@@ -112,6 +116,9 @@ void ManagerTable::delete_and_swap(ENGINE_MANAGER mng, void* ptr)
 	case ENGINE_MANAGER_SCRIPT:
 		managedPtr = new GSharedPtr<IGScriptManager>((IGScriptManager*)ptr);
 		break;
+	case ENGINE_MANAGER_PROJECT:
+		managedPtr = new GSharedPtr<IGProjectManager>((IGProjectManager*)ptr);
+		break;
 	default:
 		break;
 	}
@@ -153,6 +160,9 @@ void ManagerTable::delete_manager(ENGINE_MANAGER manager)
 		break;
 	case ENGINE_MANAGER_SCRIPT:
 		delete (GSharedPtr<IGScriptManager>*)mng;
+		break;
+	case ENGINE_MANAGER_PROJECT:
+		delete (GSharedPtr<IGProjectManager>*)mng;
 		break;
 	default:
 		break;
@@ -204,5 +214,9 @@ void ManagerTable::delete_managers()
 	if (auto script = get_engine_manager_managed(ENGINE_MANAGER_SCRIPT); script != nullptr)
 	{
 		delete (GSharedPtr<IGScriptManager>*)script;
+	}
+	if (auto project = get_engine_manager_managed(ENGINE_MANAGER_PROJECT); project != nullptr)
+	{
+		delete (GSharedPtr<IGProjectManager>*)project;
 	}
 }

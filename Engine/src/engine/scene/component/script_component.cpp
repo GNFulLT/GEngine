@@ -6,8 +6,6 @@ ScriptComponent::ScriptComponent(Scene* scene, uint32_t nodeID, GEntity* entity,
 	m_boundedScene = scene;
 	m_script = script;
 	m_entity = entity;
-
-	m_script->m_entityID = entity;
 }
 
 IGScript* ScriptComponent::get_script()

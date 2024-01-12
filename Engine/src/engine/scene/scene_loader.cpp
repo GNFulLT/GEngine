@@ -37,11 +37,11 @@ glm::vec2 octahedral_encode(const glm::vec3& n) {
 	return (n.z < 0.0f) ? oct_wrap(n) : n;
 }
 
-bool SceneLoader::load_scene(std::filesystem::path path,IGSceneManager* sceneManager, IGResourceManager* resourceMng, bool meshletEnable)
+bool SceneLoader::load_scene(std::filesystem::path path,IGSceneManager* sceneManager, IGResourceManager* resourceMng, bool meshletEnable,bool createDraw)
 {
 	if (std::filesystem::is_directory(path))
 		return false;
-	return load_scene_meshlet(path, sceneManager,resourceMng,meshletEnable);
+	return load_scene_meshlet(path, sceneManager,resourceMng,meshletEnable,createDraw);
 }
 
 bool SceneLoader::save_mesh(std::filesystem::path path, const std::vector<float>& vertices, const std::vector<uint32_t>& indices, const GMeshData& gmeshData)
@@ -76,8 +76,8 @@ bool SceneLoader::save_mesh(std::filesystem::path path, const std::vector<float>
 
 void SceneLoader::load_basic_meshes(IGSceneManager* scene,IGResourceManager* res, bool meshletEnable)
 {
-	auto pth = std::filesystem::current_path() / "assets"/"Meshes"/"cube.obj";
-	load_scene(pth, scene, res, meshletEnable);
+	//auto pth = std::filesystem::current_path() / "assets"/"Meshes"/"cube.obj";
+	//load_scene(pth, scene, res, meshletEnable,false);
 }
 
 uint32_t SceneLoader::load_gmesh_file(IGSceneManager* mng,std::filesystem::path path,bool meshletEnable)
@@ -250,7 +250,7 @@ bool SceneLoader::load_scene_mesh(std::filesystem::path path, IGSceneManager* sc
 	return false;
 }
 
-bool SceneLoader::load_scene_meshlet(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng, bool meshletEnable)
+bool SceneLoader::load_scene_meshlet(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng, bool meshletEnable, bool createDraw)
 {
 	auto scene = load_scene_ai(path);
 	if (scene == nullptr)
@@ -368,11 +368,11 @@ bool SceneLoader::load_scene_meshlet(std::filesystem::path path, IGSceneManager*
 	//----------------------------------------
 	if (meshletEnable)
 	{
-		transfer_to_gpu(path,gscene, *meshletData, transforms, desc, textureFiles, sceneMng,resourceMng,& gdata.gmeshletData);
+		transfer_to_gpu(path,gscene, *meshletData, transforms, desc, textureFiles, sceneMng,resourceMng,& gdata.gmeshletData,createDraw);
 	}
 	else
 	{
-		transfer_to_gpu(path,gscene, *meshletData, transforms, desc, textureFiles, sceneMng, resourceMng);
+		transfer_to_gpu(path,gscene, *meshletData, transforms, desc, textureFiles, sceneMng, resourceMng,nullptr, createDraw);
 
 	}
 }
@@ -858,7 +858,7 @@ MaterialDescription SceneLoader::aimaterial_to_gmaterial(const aiMaterial* m, st
 	return desc;
 }
 
-void SceneLoader::transfer_to_gpu(std::filesystem::path base,Scene* scene, MeshData2& meshData, std::unordered_map<uint32_t, glm::mat4>& outTransforms, std::vector<MaterialDescription>& materials, const std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& texturePaths, IGSceneManager* sceneManager, IGResourceManager* resourceManager, GMeshletDataExtra* meshlet)
+void SceneLoader::transfer_to_gpu(std::filesystem::path base,Scene* scene, MeshData2& meshData, std::unordered_map<uint32_t, glm::mat4>& outTransforms, std::vector<MaterialDescription>& materials, const std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& texturePaths, IGSceneManager* sceneManager, IGResourceManager* resourceManager, GMeshletDataExtra* meshlet,bool createDraw)
 {
 	//X First load all meshes
 
@@ -954,8 +954,9 @@ void SceneLoader::transfer_to_gpu(std::filesystem::path base,Scene* scene, MeshD
 			aiMatToSceneMat.emplace(i, materialIndex);
 		}
 	}
-
-
+	//X TODO : RETURN MESH MATERIAL BEGIN
+	if (!createDraw)
+		return;
 	//X NOW CREATE NODES
 	std::queue<uint32_t> queue;
 	std::unordered_map<uint32_t, uint32_t> virtual_to_scene;

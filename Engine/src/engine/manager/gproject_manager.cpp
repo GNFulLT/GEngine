@@ -1,4 +1,4 @@
-#include "internal/manager/gproject_manager.h"
+#include "internal/engine/manager/gproject_manager.h"
 #include <filesystem>
 #include <fstream>
 #include <spdlog/fmt/fmt.h>
@@ -7,6 +7,7 @@
 #include "engine/imanager_table.h"
 #include "engine/manager/igscene_manager.h"
 #include "engine/rendering/scene/scene.h"
+#include "public/os_func.h"
 
 inline static constexpr const std::string_view exportString = R"(#include "{}_EXPORT.h"
 #include <engine/plugin/gplugin.h> 
@@ -44,7 +45,7 @@ extern "C" API_DEF GSCRIPT_REGISTRATION
 std::string replaced_path(std::filesystem::path path)
 {
 	auto str = path.string();
-	std::replace(str.begin(),str.end(),'\\', '/');
+	std::replace(str.begin(), str.end(), '\\', '/');
 	return str;
 }
 
@@ -57,7 +58,7 @@ GProjectManager::GProjectManager()
 
 std::expected<GProject*, GPROJECT_CREATE_ERROR> GProjectManager::create_project(std::string path, std::string projectName)
 {
-	return create_project(path,projectName, projectName);
+	return create_project(path, projectName, projectName);
 }
 
 std::expected<GProject*, GPROJECT_CREATE_ERROR> GProjectManager::create_project(std::string path, std::string projectName, std::string projectNamespace)
@@ -85,14 +86,14 @@ set(GENGINE_DIR "{}")
 set(GSCRIPT_NAMESPACE_NAME "{}")
 set(GSCRIPT_TARGETED_CPP "src/{}/main.cpp" )
 )", projectName, replaced_path(std::filesystem::current_path()), projectNamespace, projectName);
-	
 
-	
+
+
 
 	auto scriptPath = get_script_path(gproject);
-	
+
 	std::filesystem::path pth = scriptPath / "gscript.cmake";
-	
+
 	std::filesystem::create_directories(scriptPath);
 
 	std::ofstream ofstream(pth, std::ios::trunc | std::ios::binary | std::ios::out);
@@ -123,7 +124,7 @@ set(GSCRIPT_TARGETED_CPP "src/{}/main.cpp" )
 		return std::unexpected(GPROJECT_CREATE_ERROR_UNKNOWN);
 	}
 
-	auto outPath = projectFolderPath / fmt::format("{}.gproject",projectName);
+	auto outPath = projectFolderPath / fmt::format("{}.gproject", projectName);
 
 	if (!GJsonUtils::serialize_igobject(outPath, gproject))
 	{
@@ -133,14 +134,40 @@ set(GSCRIPT_TARGETED_CPP "src/{}/main.cpp" )
 	auto includeDir = scriptPath / INCLUDE_FOLDER_NAME / gproject->get_project_name();
 	auto srcDir = scriptPath / SRC_FOLDER_NAME / gproject->get_project_name();
 
+	std::filesystem::create_directories(get_asset_texture_path(gproject));
+	std::filesystem::create_directories(get_asset_mesh_path(gproject));
+	std::filesystem::create_directories(get_asset_material_path(gproject));
 
 	std::filesystem::create_directories(includeDir);
 	std::filesystem::create_directories(srcDir);
-	
+
 	create_source_cpp_file(gproject, srcDir / "main.cpp");
 
 
 	return gproject;
+}
+bool GProjectManager::build_script(bool debug)
+{
+	if (m_selectedProject == nullptr)
+		return false;
+
+	auto scriptPath = get_script_path(m_selectedProject);
+	auto buildFilePath = scriptPath / "build.bat";
+	auto buildCommand = std::string("/k ");
+	buildCommand += replaced_path(buildFilePath);
+
+	if (debug)
+	{
+		buildCommand += " Debug";
+	}
+	GString str(buildCommand.c_str());
+	auto res = PlatformFunctions::execute_shell_command(str);
+	if (res.has_value())
+		return true;
+
+	auto errGStr = res.error();
+	std::string errStr = GString::convert_gstring_to_string(errGStr);
+	return false;
 }
 struct MaterialHeader
 {
@@ -183,15 +210,15 @@ bool GProjectManager::save_project(GProject* project)
 
 		stream.close();
 
-		std::filesystem::copy_file(path, savedPath,std::filesystem::copy_options::overwrite_existing);
+		std::filesystem::copy_file(path, savedPath, std::filesystem::copy_options::overwrite_existing);
 
 		newTexturePathsById.emplace(textureIndex, savedPath.string());
 	}
 
 	//X Serialize Materials
 	auto materials = sceneManager->get_current_scene_materials();
-	
-	for (int i = 0;i<materials.size();i++)
+
+	for (int i = 0; i < materials.size(); i++)
 	{
 		auto& material = materials[i];
 
@@ -247,11 +274,11 @@ bool GProjectManager::save_project(GProject* project)
 		}
 		if (texturePaths.size() != 0)
 			texturePaths.pop_back();
-		
+
 		MaterialHeader header;
 		header.hashSize = sizeof(char) * texturePaths.size();
 
-		materialStream.write((char*)&header,sizeof(MaterialHeader));
+		materialStream.write((char*)&header, sizeof(MaterialHeader));
 		materialStream.write((char*)&material, sizeof(MaterialDescription));
 		materialStream.write(texturePaths.data(), header.hashSize);
 
@@ -298,7 +325,7 @@ void GProjectManager::unload_selected_project()
 void GProjectManager::load_project(GProject* project)
 {
 	m_selectedProject = project;
-	
+
 	//X Load scene
 	{
 		auto path = std::filesystem::path(project->get_project_path());
@@ -316,7 +343,7 @@ void GProjectManager::load_project(GProject* project)
 		auto sceneRes = sceneResEx.value();
 		auto scene = sceneRes.scene;
 
-		std::unordered_map<uint32_t,uint32_t> loadedMeshes;
+		std::unordered_map<uint32_t, uint32_t> loadedMeshes;
 		std::unordered_map<uint32_t, uint32_t> loadedMaterials;
 
 		std::unordered_map<uint32_t, uint32_t> oldToNewMesh;
@@ -335,18 +362,18 @@ void GProjectManager::load_project(GProject* project)
 
 				uint32_t newMeshId = sceneManager->load_gmesh_file(meshPath);
 				oldToNewMesh.emplace(meshID, newMeshId);
-				nodeToMesh.emplace(pair.first,newMeshId);
+				nodeToMesh.emplace(pair.first, newMeshId);
 			}
 
-			
-			
+
+
 			auto materialID = pair.second.material;
 			if (auto iter = loadedMaterials.find(materialID); iter == loadedMaterials.end())
 			{
 				if (materialID == 0)
 					continue;
 				auto materialPath = std::filesystem::path(get_asset_material_path(m_selectedProject) / fmt::format("Material{}.gmaterial", materialID));
-			
+
 				auto newMaterialId = sceneManager->load_gmaterial_file(materialPath);
 
 				oldToNewMaterial.emplace(materialID, newMaterialId);
@@ -376,13 +403,13 @@ void GProjectManager::load_project(GProject* project)
 
 				if (auto transform = sceneRes.transformMap.find(iter); transform != sceneRes.transformMap.end())
 				{
-					auto nodeId = sceneManager->add_node_with_mesh_and_material_and_transform(mesh->second, materialId,&transform->second);
+					auto nodeId = sceneManager->add_node_with_mesh_and_material_and_transform(mesh->second, materialId, &transform->second);
 				}
 				else
 				{
 					auto nodeId = sceneManager->add_node_with_mesh_and_material(mesh->second, materialId);
 				}
-				
+
 			}
 			else
 			{
@@ -400,7 +427,7 @@ void GProjectManager::load_project(GProject* project)
 				child = scene->hierarchy[child].nextSibling;
 			}
 		}
-		
+
 
 	}
 }
@@ -431,7 +458,7 @@ bool GProjectManager::create_script(const std::string& className)
 {
 	if (!m_selectedProject)
 		return false;
-	
+
 	std::string snakeCase;
 	for (char ch : className) {
 		if (std::isupper(ch)) {
@@ -501,8 +528,8 @@ void {}::update(float dt)
 	std::transform(snakeCase.begin(), snakeCase.end(), upperSnakeCase.begin(), ::toupper);
 	{
 		auto projectName = m_selectedProject->get_project_name();
-		const std::string frmatStr = fmt::format(header.data(), upperSnakeCase, upperSnakeCase, className,className,
-			className,className,className,className,className,className, className);
+		const std::string frmatStr = fmt::format(header.data(), upperSnakeCase, upperSnakeCase, className, className,
+			className, className, className, className, className, className, className);
 		classHeaderStream.write(frmatStr.c_str(), frmatStr.size());
 	}
 	classHeaderStream.flush();
@@ -511,7 +538,7 @@ void {}::update(float dt)
 	auto cppPath = projectSrcPath / fmt::format("{}.cpp", snakeCase);
 	std::ofstream classCppStream(cppPath);
 	{
-		auto frmatStr = fmt::format(cpp.data(), m_selectedProject->get_project_name(),snakeCase, className);
+		auto frmatStr = fmt::format(cpp.data(), m_selectedProject->get_project_name(), snakeCase, className);
 		classCppStream.write(frmatStr.c_str(), frmatStr.size());
 	}
 	classCppStream.flush();
@@ -519,8 +546,8 @@ void {}::update(float dt)
 	std::error_code err;
 
 
-	auto relativeCppPath = std::filesystem::relative(cppPath, scriptPath,err );
-	if(!err)
+	auto relativeCppPath = std::filesystem::relative(cppPath, scriptPath, err);
+	if (!err)
 		add_file_to_project_cmake(m_selectedProject, replaced_path(relativeCppPath));
 	else
 		add_file_to_project_cmake(m_selectedProject, replaced_path(cppPath));
@@ -581,19 +608,19 @@ bool GProjectManager::add_file_to_project_cmake(GProject* project, std::filesyst
 	return true;
 }
 
-bool GProjectManager::create_source_cpp_file(GProject* project,std::filesystem::path filePath)
+bool GProjectManager::create_source_cpp_file(GProject* project, std::filesystem::path filePath)
 {
 	std::ofstream fileStream(filePath);
 	if (!fileStream.is_open()) {
 		return false;
 	}
 	auto projName = project->get_project_name();
-	fileStream << fmt::format(exportString.data(), projName, projName,"","").c_str();
+	fileStream << fmt::format(exportString.data(), projName, projName, "", "").c_str();
 
 	return true;
 }
 
-bool GProjectManager::add_script_to_registration(std::filesystem::path mainCppPath,std::filesystem::path scriptHeaderPath, std::string className)
+bool GProjectManager::add_script_to_registration(std::filesystem::path mainCppPath, std::filesystem::path scriptHeaderPath, std::string className)
 {
 	std::ifstream mainFile(mainCppPath);
 	if (!mainFile.is_open()) {
@@ -627,14 +654,14 @@ bool GProjectManager::add_script_to_registration(std::filesystem::path mainCppPa
 	}
 	std::string newContent;
 	newContent = fileContent.insert(iter, fmt::format(R"(	{}_REGISTER_FUNC(registration,&scriptRegister);
-)",className));
+)", className));
 
-	
+
 	auto scriptPath = get_script_include_path(m_selectedProject);
 	std::error_code errCode;
 	auto relativeHPath = std::filesystem::relative(scriptHeaderPath, scriptPath, errCode);
 	auto relativeHStr = replaced_path(relativeHPath);
-	newContent = newContent.insert(0,fmt::format("#include <{}>\n", relativeHStr));
+	newContent = newContent.insert(0, fmt::format("#include <{}>\n", relativeHStr));
 
 	std::ofstream mainOutput(mainCppPath);
 	if (!mainOutput.is_open()) {

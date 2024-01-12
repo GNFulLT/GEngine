@@ -1,4 +1,5 @@
 #include "internal/engine/plugin/gscript_object_1_0.h"
+#include "internal/engine/plugin/gscript_instance_1_0.h"
 
 GScriptObject_1_0::GScriptObject_1_0(IGScriptSpace* boundedScriptSpace, const std::string& name, GNFScriptClassConstructor scriptCtor, GNFScriptClassDestructor scriptDtor)
 {
@@ -10,6 +11,11 @@ GScriptObject_1_0::GScriptObject_1_0(IGScriptSpace* boundedScriptSpace, const st
 	m_scriptCtor = scriptCtor;
 	m_scriptDtor = scriptDtor;
 
+}
+
+GScriptObject_1_0::~GScriptObject_1_0()
+{
+	destroy();
 }
 
 const IGScriptSpace* GScriptObject_1_0::get_bounded_script_space()
@@ -29,15 +35,21 @@ const GNFPluginVersion* GScriptObject_1_0::get_plugin_version()
 
 void GScriptObject_1_0::destroy()
 {
+	for (int i = 0; i < m_createdScriptInstances.size(); i++)
+	{
+		((GScriptInstance_1_0*)m_createdScriptInstances[i])->destroy_internal();
+	}
 }
 
-IGScript* GScriptObject_1_0::create_script()
+IGScriptInstance* GScriptObject_1_0::create_script()
 {
-	auto ptr =  ((*m_scriptCtor)(nullptr));
-	return (IGScript*)ptr;
+	auto instance = new GScriptInstance_1_0(this, m_scriptCtor, m_scriptDtor);
+	if (!instance->is_valid())
+	{
+		delete instance;
+		return nullptr;
+	}
+	m_createdScriptInstances.push_back(instance);
+	return instance;
 }
 
-void GScriptObject_1_0::destroy_script(IGScript* script)
-{
-	(m_scriptDtor)((pGNFScriptObject)script);
-}

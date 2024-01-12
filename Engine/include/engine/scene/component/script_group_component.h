@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include "engine/plugin/igscript_object.h"
 #include "engine/GEngine_EXPORT.h"
-
+#include "engine/plugin/igscript_instance.h"
 class IGScript;
 class GEntity;
 
@@ -24,8 +24,8 @@ public:
 	bool try_to_register_script(IGScriptObject* obj);
 private:
 	GEntity* m_boundedEntity;
-	std::unordered_map<std::size_t, IGScript*> m_scriptMap;
-	std::vector<IGScript*> m_scripts;
+	std::unordered_map<std::size_t, IGScriptInstance*> m_scriptMap;
+	std::vector<IGScriptInstance*> m_scripts;
 };
 
 #endif // SCRIPT_GROUP_COMPONENT_H

@@ -38,6 +38,8 @@
 #include "engine/imanager_table.h"
 #include "internal/engine/manager/gscene_manager.h"
 
+static uint32_t index = 1;
+
 GVulkanLogicalDevice::GVulkanLogicalDevice(IGVulkanDevice* owner,GWeakPtr<IGVulkanPhysicalDevice> physicalDev, bool debugEnabled) : m_physicalDev(physicalDev),m_debugEnabled(debugEnabled)
 {
 	m_destroyed = true;
@@ -56,7 +58,7 @@ GVulkanLogicalDevice::~GVulkanLogicalDevice()
 
 bool GVulkanLogicalDevice::init()
 {
-	m_tryToUseMeshlet = false;
+	m_tryToUseMeshlet = true;
 
 	auto physicalDevice = m_physicalDev.as_shared();
 	if (!physicalDevice.is_valid())
@@ -399,7 +401,7 @@ std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice
 	VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	bufferInfo.size = size;
 	bufferInfo.usage = bufferUsageFlag;
-
+	auto indexData = index++;
 	VmaAllocationCreateInfo allocInfo = {};
 	if (memoryUsageFlag == 0)
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -414,6 +416,7 @@ std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice
 		buff->m_inited = true;
 		buff->m_allocationBlock = allocation;
 		buff->m_buffer = buffer;
+		vmaSetAllocationName(allocator, allocation, fmt::format("BUFFER_{}", indexData).c_str());
 		return buff;
 	}
 	else
@@ -426,6 +429,7 @@ std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice
 std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::create_image(const VkImageCreateInfo* imageCreateInfo, VmaMemoryUsage memoryUsageFlag)
 {
 	GVulkanImage* image = new GVulkanImage(this, allocator);
+	auto indexData = index++;
 
 	VmaAllocationCreateInfo dimg_allocinfo = {};
 	if (memoryUsageFlag == 0)
@@ -435,13 +439,16 @@ std::expected<IVulkanImage*, VULKAN_IMAGE_CREATION_ERROR> GVulkanLogicalDevice::
 	
 	VkImage vkImage;
 	VmaAllocation allocation;
+	
 	auto code = vmaCreateImage(allocator, imageCreateInfo, &dimg_allocinfo, &vkImage, &allocation, nullptr);
+	
 	if (VK_SUCCESS == code)
 	{
 		image->m_inited = true;
 		image->m_allocationBlock = allocation;
 		image->m_image = vkImage;
 		image->m_creationInfo = *imageCreateInfo;
+		vmaSetAllocationName(allocator,allocation,fmt::format("BUFFER_{}",indexData).c_str());
 		return image;
 	}
 	else
@@ -663,7 +670,7 @@ std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice
 	}
 	bufferInfo.pQueueFamilyIndices = vkqueues.data();
 	bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-
+	auto indexData = index++;
 	VmaAllocationCreateInfo allocInfo = {};
 	if (memoryUsageFlag == 0)
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -678,6 +685,7 @@ std::expected<IVulkanBuffer*, VULKAN_BUFFER_CREATION_ERROR> GVulkanLogicalDevice
 		buff->m_inited = true;
 		buff->m_allocationBlock = allocation;
 		buff->m_buffer = buffer;
+		vmaSetAllocationName(allocator, allocation, fmt::format("BUFFER_{}", indexData).c_str());
 		return buff;
 	}
 	else

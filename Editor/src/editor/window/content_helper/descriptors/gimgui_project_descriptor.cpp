@@ -4,7 +4,6 @@
 #include <spdlog/fmt/fmt.h>
 #include <fstream>
 #include "editor/editor_application_impl.h"
-#include "internal/manager/gproject_manager.h"
 #include "engine/gproject.h"
 #include <imgui/imgui_internal.h>
 #include "internal/imgui_layer.h"

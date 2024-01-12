@@ -42,6 +42,10 @@ public:
 	virtual void begin_and_end_fill_cmd_for_shadow(GVulkanCommandBuffer* cmd, uint32_t frame) = 0;
 
 	virtual IVulkanImage* get_sun_shadow_attachment() = 0;
+
+	virtual void set_debug_mode(bool debugMode) = 0;
+
+	virtual bool is_debug_mode_enabled() = 0;
 private:
 };
 

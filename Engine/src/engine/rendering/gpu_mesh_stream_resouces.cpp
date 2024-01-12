@@ -441,11 +441,6 @@ void GPUMeshStreamResources::destroy()
 		m_mergedVertex.destroy();
 		m_mergedIndex.destroy();
 
-		for (int i = 0; i < m_framesInFlight; i++)
-		{
-			m_globalIndirectCommandBuffers[i]->unload();
-			m_globalIndirectCommandBuffers[i].reset();
-		}
 	}
 
 }

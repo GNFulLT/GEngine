@@ -11,6 +11,7 @@ class IGScriptSpace;
 enum GSCRIPT_SPACE_LOAD_ERROR
 {
 	GSCRIPT_SPACE_LOAD_ERROR_DLL_ERROR,
+	GSCRIPT_SPACE_LOAD_ERROR_SPACE_ALREADY_LOADED,
 	GSCRIPT_SPACE_LOAD_ERROR_ALREADY_LOADED
 };
 
@@ -21,6 +22,8 @@ public:
 	virtual bool register_script(const GNFScriptRegisterArgs* args) = 0;
 	virtual bool register_script_space(const GNFScriptSpaceRegisterArgs* args) = 0;
 	virtual const std::vector<IGScriptSpace*>* get_loaded_script_spaces() const noexcept = 0;
+	virtual bool unregister_script(const std::string& path ) = 0;
+
 private:
 };
 

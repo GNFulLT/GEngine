@@ -26,7 +26,7 @@ const char* GSpirvShader::get_entry_point_name()
 
 uint32_t GSpirvShader::get_size()
 {
-	return 0;
+	return m_byteSize;
 }
 
 bool GSpirvShader::is_failed_to_compile()

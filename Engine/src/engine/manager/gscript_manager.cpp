@@ -28,8 +28,9 @@ GScriptManager::~GScriptManager()
 	{
 		delete m_scriptSpaces[i];
 	}
-	for (auto lib : m_libs)
+	for (auto libPair : m_libMaps)
 	{
+		auto lib = libPair.second;
 		auto ptr = (dylib*)lib;
 		delete ptr;
 	}
@@ -42,6 +43,11 @@ const std::vector<IGScriptSpace*>* GScriptManager::get_loaded_script_spaces() co
 
 std::expected<IGScriptSpace*, GSCRIPT_SPACE_LOAD_ERROR> GScriptManager::load_script_space(std::filesystem::path path)
 {
+	if (auto pathLib = m_libMaps.find(path.string()); pathLib != m_libMaps.end())
+	{
+
+	}
+
 	auto pathAsStr = path.filename().string();
 	for (auto space : m_scriptSpaces)
 	{
@@ -71,7 +77,7 @@ std::expected<IGScriptSpace*, GSCRIPT_SPACE_LOAD_ERROR> GScriptManager::load_scr
 
 		if (currSpace != prevSpace)
 		{
-			m_libs.push_back((void*)lib);
+			m_libMaps.emplace(path.string(), (void*)lib);
 			return m_currentStartedSpace;
 		}
 		return std::unexpected(GSCRIPT_SPACE_LOAD_ERROR_ALREADY_LOADED);
@@ -103,14 +109,31 @@ bool GScriptManager::register_script_space(const GNFScriptSpaceRegisterArgs* arg
 	auto vers = args->pluginVersion;
 	if (auto mapIter = m_scriptSpaceMap.find(namesSpace); mapIter != m_scriptSpaceMap.end())
 	{
+		//X Should Update ?
 		return false;
 	}
 	if (vers.version_major == 1 && vers.version_minor == 0)
 	{
 		m_currentStartedSpace = new GScriptSpace_1_0(namesSpace,m_currentDllPath);
 		m_scriptSpaceMap.emplace(namesSpace, m_currentStartedSpace);
+		m_scriptSpaceDllMap.emplace(namesSpace, m_currentStartedSpace);
 		m_scriptSpaces.push_back(m_currentStartedSpace);
 		return true;
+	}
+	return false;
+}
+
+bool GScriptManager::unregister_script(const std::string& path)
+{
+	if (auto scriptSpace = m_scriptSpaceDllMap.find(path); scriptSpace != m_scriptSpaceDllMap.end())
+	{
+		if (auto scriptSpace2 = m_scriptSpaceMap.find(scriptSpace->second->get_dll_name()); scriptSpace2 == m_scriptSpaceMap.end())
+		{
+			assert(false);
+		}
+		m_scriptSpaceDllMap.erase(path);
+		m_scriptSpaceMap.erase(path);
+		delete scriptSpace->second;
 	}
 	return false;
 }

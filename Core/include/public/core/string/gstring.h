@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string_view>
+#include <string>
 
 class CORE_API GString
 {
@@ -16,6 +17,9 @@ class CORE_API GString
 	CharArray m_data;
 
 public:
+	
+	static std::string convert_gstring_to_string(const GString& str);
+
 	//X Defaults
 	GString(void) = default;
 	GString(GString&&) = default;

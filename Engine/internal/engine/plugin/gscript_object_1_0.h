@@ -4,11 +4,13 @@
 #include "engine/plugin/igscript_object.h"
 #include <string>
 #include "engine/plugin/gplugin.h"
+#include <vector>
 
 class GScriptObject_1_0 : public IGScriptObject
 {
 public:
 	GScriptObject_1_0(IGScriptSpace* boundedScriptSpace,const std::string& name, GNFScriptClassConstructor scriptCtor, GNFScriptClassDestructor scriptDtor);
+	~GScriptObject_1_0();
 	virtual const IGScriptSpace* get_bounded_script_space() override;
 	virtual const char* get_script_name() override;
 	virtual const GNFPluginVersion* get_plugin_version() override;
@@ -16,9 +18,8 @@ public:
 	virtual void destroy() override;
 
 
-	virtual IGScript* create_script() override;
+	virtual IGScriptInstance* create_script() override;
 
-	virtual void destroy_script(IGScript* script) override;
 private:
 	IGScriptSpace* m_scriptSpace;
 	GNFPluginVersion m_version;
@@ -27,6 +28,7 @@ private:
 	GNFScriptClassConstructor m_scriptCtor;
 	GNFScriptClassDestructor m_scriptDtor;
 
+	std::vector<IGScriptInstance*> m_createdScriptInstances;
 
 };
 

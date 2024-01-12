@@ -62,12 +62,6 @@ private:
 	void update_compute_sets();
 private:
 	std::unordered_map<uint32_t, std::string> m_meshName;
-	//X Should be in another class
-	CPUGPUData<GMeshMeshletData> m_mergedMeshlet;
-	CPUGPUData<GMeshlet> m_mergedGMeshlet;
-	CPUGPUData<uint32_t> m_mergedMeshletVertex;
-	CPUGPUData<uint8_t> m_mergedMeshletTriangles;
-	CPUGPUData<GMeshletExtra> m_meshletExtraData;
  	IGVulkanNamedSetLayout* m_drawletStreamSetLayout;
 
 	//--------------

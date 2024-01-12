@@ -103,12 +103,16 @@ private:
 	VkDescriptorSet_T* m_cullDataSet;
 	VkDescriptorSet_T* m_sunShadowSet;
 private:
+	bool m_debugModeEnabled = false;
+
 	bool m_useMeshlet = false;
 	IGVulkanNamedPipelineLayout* m_deferredletLayout;
 	IGShaderResource* m_deferredletVertexShaderRes;
 	IGShaderResource* m_deferredTaskShaderRes;
 	IGShaderResource* m_deferredMeshShaderRes;
 	IGShaderResource* m_deferredMeshFragmentShaderRes;
+	IGShaderResource* m_deferredDebugMeshShaderRes;
+	IGShaderResource* m_deferredDebugMeshFragmentShaderRes;
 
 	VkPipeline_T* m_compMeshletPipeline;
 	IGVulkanNamedPipelineLayout* m_computeMeshletPipelineLayout;
@@ -177,6 +181,7 @@ private:
 	GVulkanNamedGraphicPipeline* m_selectedCompositionPipeline;
 	GVulkanNamedGraphicPipeline* m_deferredPipeline;
 	GVulkanNamedGraphicPipeline* m_deferredMeshletPipeline;
+	GVulkanNamedGraphicPipeline* m_deferredDebugMeshletPipeline;
 
 	GVulkanNamedGraphicPipeline* m_compositionPBRPipeline;
 
@@ -199,6 +204,10 @@ private:
 
 	// Inherited via IGVulkanDeferredRenderer
 	virtual IVulkanImage* get_sun_shadow_attachment() override;
+
+	// Inherited via IGVulkanDeferredRenderer
+	virtual void set_debug_mode(bool debugMode) override;
+	virtual bool is_debug_mode_enabled() override;
 };
 
 #endif // GSCENE_RENDERER_2_H

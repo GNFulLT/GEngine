@@ -5,12 +5,11 @@
 #include "entt/entt.hpp"
 #include "engine/scene/gentity.h"
 
-class ScriptComponent;
-class ScriptGroupComponent;
+class IGScriptInstance;
+
 class ENGINE_API IGScript
 {
-	friend class ScriptComponent;
-	friend class ScriptGroupComponent;
+	friend class IGScriptInstance;
 public:
 	IGScript();
 	virtual ~IGScript() = default;

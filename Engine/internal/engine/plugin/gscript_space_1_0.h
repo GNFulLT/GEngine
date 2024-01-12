@@ -11,6 +11,7 @@ class GScriptSpace_1_0 : public IGScriptSpace
 {
 public:
 	GScriptSpace_1_0(const std::string& spaceName, const std::string& dllName);
+	~GScriptSpace_1_0();
 	// Inherited via IGScriptSpace
 	virtual const char* get_script_space_name() override;
 	virtual const GNFPluginVersion* get_plugin_version() override;

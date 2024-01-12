@@ -577,7 +577,8 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			m_deferredMeshFragmentShaderRes = p_resourceManager->create_shader_resource("deferredMeshFrag", "SceneRenderer", "./data/shader/deferred_meshlet.glsl_frag").value();
 			m_sunShadowMeshShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_mesh").value();
 			m_sunShadowTaskShaderRes = p_resourceManager->create_shader_resource("sunShadowVertex", "SceneRenderer", "./data/shader/sun_shadow.glsl_task").value();
-
+			m_deferredDebugMeshShaderRes = p_resourceManager->create_shader_resource("deferredMeshDebug", "SceneRenderer", "./data/shader/meshlet_task_debug.glsl_mesh").value();
+			m_deferredDebugMeshFragmentShaderRes = p_resourceManager->create_shader_resource("deferredMeshFragmmentDebug", "SceneRenderer", "./data/shader/deferred_meshlet_debug.glsl_frag").value();
 		}
 		
 		m_compositionVertexShaderRes = p_resourceManager->create_shader_resource("compositionVertex", "SceneRenderer", "./data/shader/composition.glsl_vert").value();
@@ -615,6 +616,8 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			assert(m_deferredTaskShaderRes->load() == RESOURCE_INIT_CODE_OK);
 			assert(m_deferredMeshShaderRes->load() == RESOURCE_INIT_CODE_OK);
 			assert(m_deferredMeshFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
+			assert(m_deferredDebugMeshShaderRes->load() == RESOURCE_INIT_CODE_OK);
+			assert(m_deferredDebugMeshFragmentShaderRes->load() == RESOURCE_INIT_CODE_OK);
 		}
 	}
 	assert(load_shadow_resources());
@@ -727,6 +730,16 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 
 				m_deferredMeshletPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_deferredPass, "deferred_meshlet_pipeline");
 				m_deferredMeshletPipeline->init(m_deferredletLayout, stages, states);
+
+				delete stages[1];
+				delete stages[2];
+
+				stages[1] = p_shaderManager->create_shader_stage_from_shader_res(m_deferredDebugMeshShaderRes).value();
+				stages[2] = p_shaderManager->create_shader_stage_from_shader_res(m_deferredDebugMeshFragmentShaderRes).value();
+
+				m_deferredDebugMeshletPipeline = new GVulkanNamedGraphicPipeline(p_boundedDevice, m_deferredPass, "deferred_meshlet_debug_pipeline");
+				m_deferredDebugMeshletPipeline->init(m_deferredletLayout, stages, states);
+				
 				delete stages[0];
 				delete stages[1];
 				delete stages[2];
@@ -964,6 +977,24 @@ void GSceneRenderer2::destroy()
 			vkDestroyPipeline(p_boundedDevice->get_vk_device(), m_compPipeline, nullptr);
 			m_compPipeline = nullptr;
 		}
+	}
+	if (m_meshletStreamResources != nullptr)
+	{
+		m_meshletStreamResources->destroy();
+		delete m_meshletStreamResources;
+		m_meshletStreamResources = nullptr;
+	}
+	if (m_jitterImage != nullptr)
+	{
+		m_jitterImage->unload();
+		delete m_jitterImage;
+		m_jitterImage = nullptr;
+	}
+	if (m_shadowAttachment != nullptr)
+	{
+		m_shadowAttachment->unload();
+		delete m_shadowAttachment;
+		m_shadowAttachment = nullptr;
 	}
 }
 
@@ -1243,6 +1274,16 @@ IVulkanImage* GSceneRenderer2::get_sun_shadow_attachment()
 	return m_shadowAttachment;
 }
 
+void GSceneRenderer2::set_debug_mode(bool debugMode)
+{
+	m_debugModeEnabled = debugMode;
+}
+
+bool GSceneRenderer2::is_debug_mode_enabled()
+{
+	return m_debugModeEnabled;
+}
+
 void GSceneRenderer2::fill_compute_cmd(GVulkanCommandBuffer* cmd, uint32_t frame)
 {
 	if (m_useMeshlet)
@@ -1443,7 +1484,14 @@ void GSceneRenderer2::fill_deferred_cmd(GVulkanCommandBuffer* cmd,uint32_t frame
 	m_meshStreamResources->handle_gpu_datas(cmd, frame);
 	if (m_useMeshlet)
 	{
-		vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_deferredMeshletPipeline->get_vk_pipeline());
+		GVulkanNamedGraphicPipeline* selectedMeshletPipeline = m_deferredMeshletPipeline;
+		
+		if (m_debugModeEnabled)
+		{
+			selectedMeshletPipeline = m_deferredDebugMeshletPipeline;
+		}
+		
+		vkCmdBindPipeline(cmd->get_handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, selectedMeshletPipeline->get_vk_pipeline());
 		std::array<VkDescriptorSet, 5> descriptorSets;
 		descriptorSets[0] = p_sceneManager->get_global_set_for_frame(frame);
 		descriptorSets[1] = this->m_meshStreamResources->get_draw_set_by_index(frame);

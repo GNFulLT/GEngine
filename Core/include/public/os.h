@@ -56,5 +56,4 @@ namespace PlatformTypes
 }
 
 
-
 #endif // OS_H

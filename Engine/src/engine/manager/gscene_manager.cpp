@@ -712,6 +712,11 @@ void GSceneManager::destroy()
 		m_globalPointLightTiles[i].destroy();
 		m_globalPointLightIndices[i].destroy();
 	}
+	for (auto ptr : m_registeredTextures)
+	{
+		ptr->unload();
+		delete ptr;
+	}
 }
 
 bool GSceneManager::init_deferred_renderer(IGVulkanNamedDeferredViewport* deferred)

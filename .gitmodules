@@ -56,3 +56,6 @@
 [submodule "ThirdParty/rapidjson"]
 	path = ThirdParty/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "ThirdParty/bullet3"]
+	path = ThirdParty/bullet3
+	url = https://github.com/bulletphysics/bullet3.git

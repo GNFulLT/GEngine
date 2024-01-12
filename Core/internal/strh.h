@@ -24,6 +24,16 @@ inline void create_gstr(const CharType* src, std::vector<GCharT::type>& dst)
 }
 
 template<typename CharType>
+inline void convert_gstr_to_str(const CharType* src, std::string& dst)
+{
+	auto len = PlatformTypes::strlen<CharType>(src); // Null - terminated
+	auto dstLen = GEngine::Core::API::get_converted_length((const CharType*)src, (const PlatformTypes::_ASCII*)nullptr) + 1;
+	std::vector<char> arr(dstLen);
+	GEngine::Core::API::convert_str(src, arr, dstLen);
+	dst = std::string(arr.data());
+}
+
+template<typename CharType>
 inline void create_gstr(const CharType* src, std::vector<GCharT::type>& dst,uint32_t customSize)
 {
 	auto len = PlatformTypes::strlen<CharType>(src); // Null - terminated

@@ -23,6 +23,13 @@ GString::GString(const PlatformTypes::_WCHAR* pStr)
 	create_gstr(pStr, this->m_data);
 }
 
+std::string GString::convert_gstring_to_string(const GString& str)
+{
+	std::string dst;
+	convert_gstr_to_str(str.get_data(), dst);
+	return dst;
+}
+
 GString::GString(const PlatformTypes::_ASCII* pStr, uint32_t extendAlloc)
 {
 	create_gstr(pStr, this->m_data,extendAlloc);

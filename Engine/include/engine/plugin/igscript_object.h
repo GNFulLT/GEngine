@@ -4,7 +4,7 @@
 #include "engine/plugin/gapi_general_types.h"
 
 class IGScriptSpace;
-class IGScript;
+class IGScriptInstance;
 
 class IGScriptObject
 {
@@ -19,9 +19,7 @@ public:
 	
 	virtual void destroy() = 0;
 
-	virtual IGScript* create_script() = 0;
-
-	virtual void destroy_script(IGScript* script) = 0;
+	virtual IGScriptInstance* create_script() = 0;
 private: 
 };
 

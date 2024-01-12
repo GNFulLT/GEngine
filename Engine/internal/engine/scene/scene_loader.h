@@ -34,7 +34,7 @@ public:
 		TEXTURE_MAP_TYPE_EMISSIVE
 	};
 
-	static bool load_scene(std::filesystem::path path,IGSceneManager* scene,IGResourceManager* resourceMng,bool meshletEnable = true);
+	static bool load_scene(std::filesystem::path path,IGSceneManager* scene,IGResourceManager* resourceMng,bool meshletEnable = true, bool createDraw = true);
 	static bool save_mesh(std::filesystem::path path,const std::vector<float>& vertices,const std::vector<uint32_t>& indices,const GMeshData& gmeshData);
 	static void load_basic_meshes(IGSceneManager* scene,IGResourceManager* resourceMng,bool meshletEnable);
 	static uint32_t load_gmesh_file(IGSceneManager* scene,std::filesystem::path path, bool meshletEnable);
@@ -42,7 +42,7 @@ public:
 
 private:
 	static bool load_scene_mesh(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng);
-	static bool load_scene_meshlet(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng,bool meshletEnable);
+	static bool load_scene_meshlet(std::filesystem::path path, IGSceneManager* sceneMng, IGResourceManager* resourceMng,bool meshletEnable,bool createDraw);
 
 
 	//X Helpers
@@ -64,7 +64,7 @@ private:
 	//X Material
 	static MaterialDescription aimaterial_to_gmaterial(const aiMaterial* m, std::unordered_map<TEXTURE_MAP_TYPE, std::string>& textureFiles);
 
-	static void transfer_to_gpu(std::filesystem::path path,Scene* scene, MeshData2& meshData, std::unordered_map<uint32_t, glm::mat4>& outTransforms, std::vector<MaterialDescription>& materials,const std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, IGSceneManager* sceneManager, IGResourceManager* resManager,GMeshletDataExtra* meshlet = nullptr);
+	static void transfer_to_gpu(std::filesystem::path path,Scene* scene, MeshData2& meshData, std::unordered_map<uint32_t, glm::mat4>& outTransforms, std::vector<MaterialDescription>& materials,const std::unordered_map<uint32_t, std::unordered_map<TEXTURE_MAP_TYPE, std::string>>& textureFiles, IGSceneManager* sceneManager, IGResourceManager* resManager,GMeshletDataExtra* meshlet = nullptr,bool createDraw = true);
 
 };
 

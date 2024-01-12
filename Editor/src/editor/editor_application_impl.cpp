@@ -30,7 +30,6 @@
 #include "engine/manager/igcamera_manager.h"
 #include "engine/manager/igscene_manager.h"
 #include "internal/manager/geditor_texture_debug_manager.h"
-#include "internal/manager/gproject_manager.h"
 #include "engine/globals.h"
 #include "internal/rendering/vulkan/gscene_renderer.h"
 
@@ -257,10 +256,9 @@ uint32_t EditorApplicationImpl::get_total_frame()
     return m_totalFrame;
 }
 
-GProjectManager* EditorApplicationImpl::get_project_manager()
+IGProjectManager* EditorApplicationImpl::get_project_manager()
 {
-    static GProjectManager gproject_manager;
-    return &gproject_manager;
+    return  ((GSharedPtr<IGProjectManager>*)m_engine->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_PROJECT))->get();
 }
 
 EDITOR_API GApplicationImpl* create_the_editor()

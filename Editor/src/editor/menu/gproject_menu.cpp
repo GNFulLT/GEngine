@@ -2,7 +2,9 @@
 #include "imgui/imgui.h"
 #include "engine/globals.h"
 #include "editor/editor_application_impl.h"
-#include "internal/manager/gproject_manager.h"
+#include "internal/imgui_layer.h"
+#include "internal/modal/gimgui_function_modal.h"
+#include "internal/imgui_window_manager.h"
 
 bool GProjectMenu::init()
 {
@@ -23,7 +25,7 @@ void GProjectMenu::render()
 	}
 	if (ImGui::MenuItem("Save Project"))
 	{
-		GProjectManager* projManager = EditorApplicationImpl::get_instance()->get_project_manager();
+		IGProjectManager* projManager = EditorApplicationImpl::get_instance()->get_project_manager();
 		if (projManager->get_selected_project())
 		{
 			projManager->save_project(projManager->get_selected_project());
@@ -31,7 +33,35 @@ void GProjectMenu::render()
 	}
 	if (ImGui::MenuItem("Create Project"))
 	{
-		
+		IGProjectManager* projManager = EditorApplicationImpl::get_instance()->get_project_manager();
+
+		EditorApplicationImpl::get_instance()->get_editor_layer()->get_window_manager()->add_modal_to_queue(new GImGuiFunctionModal("Create Project", [&, projMng = projManager,buf = std::vector<char>(50)]() {
+			auto chr = (char*)&buf[0];
+			ImGui::InputText("Class Name",chr , 50);
+				if (ImGui::Button("Create"))
+				{
+					std::string className = buf.data();
+					auto size = className.size();
+					auto currPath = std::filesystem::current_path() / className;
+
+					projMng->create_project(currPath.string(), className);
+					return false;
+					
+				}
+				if (ImGui::Button("Close"))
+				{
+					return false;
+				}
+				return true;
+			}));
+	}
+	if (ImGui::MenuItem("Build Project(Debug)"))
+	{
+		IGProjectManager* projManager = EditorApplicationImpl::get_instance()->get_project_manager();
+		if (projManager->get_selected_project())
+		{
+			auto res = projManager->build_script(true);
+		}
 	}
 	if (ImGui::MenuItem("Run"))
 	{

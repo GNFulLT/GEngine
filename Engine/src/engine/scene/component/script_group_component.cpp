@@ -11,7 +11,7 @@ ScriptGroupComponent::~ScriptGroupComponent()
 	for (auto pair : m_scriptMap)
 	{
 		auto scriptObj = (IGScriptObject*)pair.first;
-		scriptObj->destroy_script(pair.second);
+		delete pair.second;
 	}
 }
 
@@ -32,6 +32,6 @@ bool ScriptGroupComponent::try_to_register_script(IGScriptObject* obj)
 		return false;
 	m_scriptMap.emplace(std::size_t(obj), createdScript);
 	m_scripts.push_back(createdScript);
-	createdScript->m_entityID = m_boundedEntity;
+	createdScript->set_id(m_boundedEntity);
 	return true;
 }

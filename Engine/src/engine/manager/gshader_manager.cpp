@@ -70,7 +70,7 @@ std::expected<ISpirvShader*, SHADER_COMPILE_ERROR> GShaderManager::compile_shade
 
 	glslang_program_SPIRV_get(program, words);
 
-	GSpirvShader* spirvShader = new GSpirvShader(size, words, input);
+	GSpirvShader* spirvShader = new GSpirvShader(size * sizeof(uint32_t), words, input);
 	
 	//X TODO : CAN GET SPIRV OUTPUT MESSAGES
 

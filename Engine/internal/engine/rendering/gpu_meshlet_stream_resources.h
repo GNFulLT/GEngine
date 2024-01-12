@@ -10,6 +10,7 @@ public:
 	GPUMeshletStreamResources(IGVulkanLogicalDevice* boundedDevice, IGPipelineObjectManager* pipelineManager,uint32_t frameInFlight);
 
 	bool init(uint32_t beginMeshCount,uint32_t beginGMeshletCount,uint32_t beginMeshletIndicesCount,uint32_t beginPrimitiveIndicesCount);
+	void destroy();
 
 	IGVulkanNamedSetLayout* get_meshlet_set_layout() const noexcept;
 

@@ -96,7 +96,7 @@ add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.
  "include/engine/igobject.h" "include/engine/gproject.h" "src/engine/gproject.cpp" "include/engine/io/json_utils.h" "src/engine/io/json_utils.cpp" "src/engine/scene/component/igscript.cpp" 
  "include/engine/manager/igscript_manager.h" "include/engine/plugin/gplugin.h" "include/engine/plugin/gplugin_types.h" "include/engine/plugin/gscript_types.h"
  "include/engine/plugin/gapi_general_types.h" "include/engine/plugin/igscript_space.h" "include/engine/plugin/igscript_object.h" "internal/engine/plugin/gscript_space_1_0.h" 
- "src/engine/plugin/gscript_space_1_0.cpp" "internal/engine/plugin/gscript_object_1_0.h" "src/engine/plugin/gscript_object_1_0.cpp" "internal/engine/manager/gscript_manager.h" "src/engine/manager/gscript_manager.cpp" "include/engine/scene/component/script_group_component.h" "src/engine/scene/component/script_group_component.cpp" "internal/engine/resource/gmesh_resource.h" "src/engine/resource/gmesh_resource.cpp" "include/engine/io/gmesh_loader.h" "internal/engine/scene/scene_loader.h" "src/engine/scene/scene_loader.cpp")
+ "src/engine/plugin/gscript_space_1_0.cpp" "internal/engine/plugin/gscript_object_1_0.h" "src/engine/plugin/gscript_object_1_0.cpp" "internal/engine/manager/gscript_manager.h" "src/engine/manager/gscript_manager.cpp" "include/engine/scene/component/script_group_component.h" "src/engine/scene/component/script_group_component.cpp" "internal/engine/resource/gmesh_resource.h" "src/engine/resource/gmesh_resource.cpp" "include/engine/io/gmesh_loader.h" "internal/engine/scene/scene_loader.h" "src/engine/scene/scene_loader.cpp" "internal/engine/manager/gphysics_manager.h" "src/engine/manager/gphysics_manager.cpp" "internal/engine/plugin/gscript_instance_1_0.h" "src/engine/plugin/gscript_instance_1_0.cpp" "include/engine/plugin/igscript_instance.h" "internal/engine/manager/gproject_manager.h" "src/engine/manager/gproject_manager.cpp" "include/engine/manager/igproject_manager.h" "internal/engine/rendering/vulkan/named/viewports/gvulkan_swapchain_deferred_viewport.h" "src/engine/rendering/vulkan/named/viewports/gvulkan_swapchain_deferred_viewport.cpp")
 
  set(RAPIDJSON_BUILD_TESTS OFF)
 
@@ -119,6 +119,7 @@ target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/rapidjson/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer/src")
+target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/bullet3/src")
 
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
@@ -143,6 +144,12 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/dylib/" DYLIB)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/rapidjson/" RAPIDJSON)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer" MESHOPTIMIZER)
 
+set(BUILD_CPU_DEMOS OFF)
+set(BUILD_BULLET2_DEMOS OFF)
+set(BUILD_UNIT_TESTS  OFF)
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/bullet3" BULLET3)
+
 set(BUILD_SHARED_LIBS ON)
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/assimp" ASSIMP)
@@ -163,6 +170,7 @@ target_link_libraries(GEngine_Engine PUBLIC glslang MachineIndependent glslang-d
 target_link_libraries(GEngine_Engine PUBLIC SPIRV-Tools-static)
 target_link_libraries(GEngine_Engine PUBLIC spirv-cross-core spirv-cross-hlsl spirv-cross-hlsl)
 target_link_libraries(GEngine_Engine PUBLIC spirv-reflect-static)
+target_link_libraries(GEngine_Engine PRIVATE BulletDynamics BulletCollision LinearMath)
 
 include(GenerateExportHeader)
 

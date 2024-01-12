@@ -1,11 +1,19 @@
 #include "editor/editor_application_impl.h"
 #include "engine/gengine.h"
+#include "game.h"
 
 #ifdef WIN32
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
 #endif
+
+#include <filesystem>
+#include <dylib.hpp>
+
+
+typedef void*(GAPPLICATION_CREATION_FUNC_TYPE)();
+
 
 int main()
 {
@@ -15,8 +23,19 @@ int main()
 #endif
 
 	auto engine = create_the_engine();
+	GApplicationImpl* impl = nullptr;
+	bool isEditor = false;
+	auto dllPath = std::filesystem::current_path() / "ExampleProject2" /"ExampleProject.gproject";
 
-	GApplicationImpl* impl = create_the_editor();
+	if (std::filesystem::exists(dllPath))
+	{
+		impl = new GGameInpl(dllPath);
+	}
+	else
+	{
+		impl = create_the_editor();
+	}
+
 
 	engine->init(impl);
 

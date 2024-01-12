@@ -16,12 +16,16 @@ public:
 
 	bool register_script(const GNFScriptRegisterArgs* args) override;
 	bool register_script_space(const GNFScriptSpaceRegisterArgs* args) override;
+	
+	bool unregister_script(const std::string& path) override;
 
 	const std::vector<IGScriptSpace*>* get_loaded_script_spaces() const noexcept override;
 private:
 	std::unordered_map<std::string, IGScriptSpace*> m_scriptSpaceMap;
+	std::unordered_map<std::string, IGScriptSpace*> m_scriptSpaceDllMap;
+
 	std::vector<IGScriptSpace*> m_scriptSpaces;
-	std::vector<void*> m_libs;
+	std::unordered_map<std::string,void*> m_libMaps;
 	IGScriptSpace* m_currentStartedSpace;
 	const char* m_currentDllPath = nullptr;
 };

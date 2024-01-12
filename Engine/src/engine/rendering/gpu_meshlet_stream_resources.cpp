@@ -165,6 +165,14 @@ bool GPUMeshletStreamResources::init(uint32_t beginMeshCount, uint32_t beginGMes
 	return true;
 }
 
+void GPUMeshletStreamResources::destroy()
+{
+	m_mergedGMeshlet.destroy();
+	m_mergedMeshletVertex.destroy();
+	m_mergedMeshletTriangles.destroy();
+	m_meshletExtraData.destroy();
+}
+
 IGVulkanNamedSetLayout* GPUMeshletStreamResources::get_meshlet_set_layout() const noexcept
 {
 	return m_meshletInfoSetLayout;
@@ -217,8 +225,8 @@ uint32_t GPUMeshletStreamResources::add_meshlet_data(const GMeshletDataExtra* gm
 	{
 		auto& gmeshExtraData = gmeshExtra[i];
 
-		gmeshExtraData.meshletTrianglesOffset = beginMeshletTriangle + gmeshlet->gmeshletExtra_[i].meshletTrianglesOffset;
-		gmeshExtraData.meshletVerticesOffset = beginMeshletVertex + gmeshlet->gmeshletExtra_[i].meshletVerticesOffset;
+		gmeshExtraData.meshletTrianglesOffset = beginMeshletTriangle;
+		gmeshExtraData.meshletVerticesOffset = beginMeshletVertex;
 		gmeshExtraData.meshletOffset = beginGMeshlet + gmeshlet->gmeshletExtra_[i].meshletOffset;
 
 		gmeshExtraData.meshletTrianglesCount = gmeshlet->gmeshletExtra_[i].meshletTrianglesCount;
