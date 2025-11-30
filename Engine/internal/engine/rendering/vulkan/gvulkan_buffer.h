@@ -2,7 +2,7 @@
 #define GVULKAN_BUFFER_H
 
 #include "engine/rendering/vulkan/ivulkan_buffer.h"
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 class GVulkanLogicalDevice;
 

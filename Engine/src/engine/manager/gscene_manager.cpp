@@ -7,7 +7,7 @@
 #include "engine/rendering/vulkan/igvulkan_uniform_buffer.h"
 #include <array>
 #include "internal/engine/rendering/vulkan/named/viewports/gvulkan_named_base_deferred_viewport.h"
-#include "vma/vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 #include <glm/ext.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include "engine/rendering/vulkan/ivulkan_queue.h"

@@ -2,7 +2,7 @@
 #define GVULKAN_UNIFORM_BUFFER_H
 
 #include "engine/rendering/vulkan/igvulkan_uniform_buffer.h"
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 class GVulkanUniformBuffer : public IGVulkanUniformBuffer
 {

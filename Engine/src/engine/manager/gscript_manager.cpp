@@ -4,7 +4,6 @@
 #include "engine/imanager_table.h"
 #include "internal/engine/plugin/gscript_space_1_0.h"
 
-
 bool register_scripti(const GNFScriptRegisterArgs* args)
 {
 	auto scriptManager = ((GSharedPtr<IGScriptManager>*)GEngine::get_instance()->get_manager_table()->get_engine_manager_managed(ENGINE_MANAGER_SCRIPT))->get();
@@ -31,7 +30,7 @@ GScriptManager::~GScriptManager()
 	for (auto libPair : m_libMaps)
 	{
 		auto lib = libPair.second;
-		auto ptr = (dylib*)lib;
+		auto ptr = (dylib::library*)lib;
 		delete ptr;
 	}
 }
@@ -54,11 +53,11 @@ std::expected<IGScriptSpace*, GSCRIPT_SPACE_LOAD_ERROR> GScriptManager::load_scr
 		if (strcmp(space->get_dll_name(), pathAsStr.c_str()) == 0)
 			return std::unexpected(GSCRIPT_SPACE_LOAD_ERROR_ALREADY_LOADED);
 	}
-	dylib* lib;
+	dylib::library* lib = nullptr;
 	try
 	{
-		lib = new dylib(path);
-		auto symbolHas = lib->has_symbol(GSCRIPT_REGISTRATION_FUNC_NAME);
+		lib = new dylib::library(path, dylib::decorations::os_default());
+		auto symbolHas = lib->get_symbol(GSCRIPT_REGISTRATION_FUNC_NAME) != nullptr;
 		if (!symbolHas)
 		{
 			delete lib;

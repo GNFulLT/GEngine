@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 4.1)
 
 project(GEditor LANGUAGES CXX)
 
@@ -42,6 +42,8 @@ add_library(GEditor SHARED  "src/editor/editor_application_impl.cpp" "src/editor
  "internal/window/content_helper/descriptors/gimgui_project_descriptor.h" "src/editor/window/content_helper/descriptors/gimgui_project_descriptor.cpp"
  "internal/menu/gproject_menu.h" "src/editor/menu/gproject_menu.cpp" "internal/window/gimgui_file_dialog_window.h" 
  "src/editor/window/gimgui_file_dialog_window.cpp" "internal/gimgui_modal.h" "include/editor/igimgui_modal_impl.h" "src/editor/gimgui_modal.cpp" "internal/modal/gimgui_function_modal.h" "src/editor/modal/gimgui_function_modal.cpp" "internal/project/gproject_info.h" "src/editor/project/gproject_info.cpp" "internal/project/gscript_info.h" "src/editor/project/gscript_info.cpp" "include/editor/igimgui_window_provider.h" "internal/menu/gwindow_menu.h" "src/editor/menu/gwindow_menu.cpp" "internal/window/gimgui_script_window.h" "src/editor/window/gimgui_script_window.cpp" "internal/window/provider/gimgui_script_window_provider.h" "src/editor/window/provider/gimgui_script_window_provider.cpp")
+
+set(BUILD_UNIT_TESTS OFF)
 
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Core/include")
 target_include_directories(GEditor PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../Engine/include")

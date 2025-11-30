@@ -177,7 +177,7 @@ bool GSceneRenderer::init()
 	auto s_shaderManager = ((GSharedPtr<IGShaderManager>*)table->get_engine_manager_managed(ENGINE_MANAGER_SHADER))->get();
 
 
-	auto shaderRes = resourceManager->create_shader_resource("BasicVertex", "EditorResource", "./basic_vertex.glsl_vert");
+	/*auto shaderRes = resourceManager->create_shader_resource("BasicVertex", "EditorResource", "./basic_vertex.glsl_vert");
 	if (shaderRes.has_value())
 	{
 		m_basicVertexShader = GSharedPtr<IGShaderResource>(shaderRes.value());
@@ -200,9 +200,9 @@ bool GSceneRenderer::init()
 	{
 		assert(false);
 	}
-
+	*/
 	auto s_device = dev->get()->as_logical_device().get();
-	auto stageRes = s_shaderManager->create_shader_stage_from_shader_res(m_basicVertexShader.get());
+	/*auto stageRes = s_shaderManager->create_shader_stage_from_shader_res(m_basicVertexShader.get());
 	if (stageRes.has_value())
 	{
 		m_vertexShaderStage = stageRes.value();
@@ -221,7 +221,7 @@ bool GSceneRenderer::init()
 	{
 		assert(false);
 	}
-
+	*/
 	
 	std::vector<IGVulkanGraphicPipelineState*> m_states;
 	
@@ -260,11 +260,11 @@ bool GSceneRenderer::init()
 	m_states.push_back(s_device->create_default_color_blend_state());
 	m_states.push_back(s_device->create_default_viewport_state(1920, 1080));
 	m_states.push_back(s_device->create_default_depth_stencil_state());
-
+	/*
 	std::vector<IVulkanShaderStage*> shaderStages;
 	shaderStages.push_back(m_vertexShaderStage);
 	shaderStages.push_back(m_fragShaderStage);
-
+	*/
 	for (int i = 0; i < m_states.size(); i++)
 	{
 		auto state =  m_states[i];
@@ -315,7 +315,7 @@ void GSceneRenderer::destroy()
 	m_cubemapRenderer->destroy();
 	triangle->destroy();
 	delete triangle;
-	delete m_fragShaderStage;
+/*	delete m_fragShaderStage;
 
 	delete m_vertexShaderStage;
 
@@ -326,7 +326,7 @@ void GSceneRenderer::destroy()
 	if (m_basicVertexShader.is_valid())
 	{
 		m_basicVertexShader->destroy();
-	}
+	}*/
 
 	for (int i = 0; i < m_frameCmds.size(); i++)
 	{

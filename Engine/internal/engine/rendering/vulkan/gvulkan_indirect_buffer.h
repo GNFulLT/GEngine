@@ -2,7 +2,7 @@
 #define GVULKAN_INDIRECT_BUFFER_H
 
 #include "engine/rendering/vulkan/igvulkan_indirect_buffer.h"
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 class GVulkanIndirectBuffer : public IGVulkanIndirectBuffer
 {

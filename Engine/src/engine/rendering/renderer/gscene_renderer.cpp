@@ -3,7 +3,7 @@
 #include "internal/engine/rendering/renderer/gscene_renderer.h"
 #include "engine/manager/igresource_manager.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include "internal/engine/rendering/renderer/gscene_wireframe_renderer_layout.h"
 #include "engine/manager/igshader_manager.h"
 #include "engine/rendering/scene/scene.h"

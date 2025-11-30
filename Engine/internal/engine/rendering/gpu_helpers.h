@@ -2,8 +2,7 @@
 #define GPU_HELPERS_H
 
 #include "volk.h"
-#include "vma/vk_mem_alloc.h"
-
+#include <vk_mem_alloc.h>
 #include "engine/rendering/vulkan/ivulkan_buffer.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "engine/rendering/mesh_data.h"

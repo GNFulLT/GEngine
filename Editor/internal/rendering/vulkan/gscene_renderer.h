@@ -44,12 +44,12 @@ private:
 
 	VkViewport m_vkViewport;
 	VkRect2D m_vkScissor;
-
+	/*
 	GSharedPtr< IGShaderResource> m_basicFragShader;
 	GSharedPtr< IGShaderResource> m_basicVertexShader;
 	IVulkanShaderStage* m_fragShaderStage = nullptr;
 	IVulkanShaderStage* m_vertexShaderStage = nullptr;
-
+	*/
 	GSharedPtr<GCubeRenderer> m_cubemapRenderer;
 	GSharedPtr< GridRenderer> m_gridRenderer;
 	Renderable* triangle;

@@ -1,7 +1,7 @@
 #include "volk.h"
 #include "internal/engine/rendering/renderer/gscene_renderer2.h"
 #include <array>
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include <unordered_map>
 #include "engine/resource/igshader_resource.h"
 #include "engine/rendering/vulkan/ivulkan_image.h"
@@ -75,7 +75,7 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 		{
 			auto maxImage = p_boundedDevice->get_bounded_physical_device()->get_vk_properties()->limits.maxDescriptorSetSampledImages;
 			auto maxStoredImage = p_boundedDevice->get_bounded_physical_device()->get_vk_properties()->limits.maxDescriptorSetStorageImages;
-			if (maxImage == -1)
+			/*if (maxImage == -1)
 			{
 				GLoggerManager::get_instance()->log_e("GSceneRenderer", fmt::format("Your maximum support is {} so it is -1 wtf", maxImage).c_str());
 			}
@@ -83,8 +83,8 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 			{
 				GLoggerManager::get_instance()->log_e("GSceneRenderer", fmt::format("Your maximum storage image support is {} so it is -1 wtf", maxImage).c_str());
 			}
-			else
-			{
+			*/
+			
 				if (maxImage > MAX_BINDLESS_TEXTURE)
 				{
 					GLoggerManager::get_instance()->log_d("GSceneRenderer", fmt::format("Your maximum sampled support was {}. But engine will use {}", maxImage, MAX_BINDLESS_TEXTURE).c_str());
@@ -104,8 +104,6 @@ bool GSceneRenderer2::init(VkDescriptorSetLayout_T* globalUniformSet, IGVulkanNa
 					GLoggerManager::get_instance()->log_d("GSceneRenderer", fmt::format("Engine wanted to use {}. But you maximum storage image support was {}. Please buy a new GPU immediately", MAX_BINDLESS_TEXTURE, maxStoredImage).c_str());
 					MAX_BINDLESS_TEXTURE = maxStoredImage;
 				}
-			}
-			
 
 			VkDescriptorPoolSize pool_sizes_bindless[] =
 			{

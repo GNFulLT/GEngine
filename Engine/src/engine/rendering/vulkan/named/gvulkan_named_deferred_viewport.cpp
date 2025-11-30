@@ -1,7 +1,7 @@
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_deferred_viewport.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "engine/rendering/vulkan/ivulkan_queue.h"
-#include "vma/vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 #include "internal/engine/rendering/vulkan/named/gvulkan_named_renderpass.h"
 
 #define POSITION_TARGET_COLOR_FORMAT VK_FORMAT_R32G32B32A32_SFLOAT

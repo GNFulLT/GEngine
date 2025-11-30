@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 4.1)
 
 project(GEngine_Engine LANGUAGES CXX C)
 
@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../Programs/reflect_script/reflect_generator.py ./ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 include(${CMAKE_CURRENT_SOURCE_DIR}/greflect.cmake)
-
 
 add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.cpp" "include/engine/gapplication_impl.h" "include/engine/globals.h" "src/engine/globals.cpp"
 "src/engine/rendering/vulkan/vulkan_app.cpp" "internal/engine/rendering/vulkan/vulkan_app.h" "internal/engine/rendering/vulkan/vulkan_utils.h" 
@@ -98,14 +97,14 @@ add_library(GEngine_Engine SHARED ${GREFLECT_GENERATED_CPP} "src/engine/gengine.
  "include/engine/plugin/gapi_general_types.h" "include/engine/plugin/igscript_space.h" "include/engine/plugin/igscript_object.h" "internal/engine/plugin/gscript_space_1_0.h" 
  "src/engine/plugin/gscript_space_1_0.cpp" "internal/engine/plugin/gscript_object_1_0.h" "src/engine/plugin/gscript_object_1_0.cpp" "internal/engine/manager/gscript_manager.h" "src/engine/manager/gscript_manager.cpp" "include/engine/scene/component/script_group_component.h" "src/engine/scene/component/script_group_component.cpp" "internal/engine/resource/gmesh_resource.h" "src/engine/resource/gmesh_resource.cpp" "include/engine/io/gmesh_loader.h" "internal/engine/scene/scene_loader.h" "src/engine/scene/scene_loader.cpp" "internal/engine/manager/gphysics_manager.h" "src/engine/manager/gphysics_manager.cpp" "internal/engine/plugin/gscript_instance_1_0.h" "src/engine/plugin/gscript_instance_1_0.cpp" "include/engine/plugin/igscript_instance.h" "internal/engine/manager/gproject_manager.h" "src/engine/manager/gproject_manager.cpp" "include/engine/manager/igproject_manager.h" "internal/engine/rendering/vulkan/named/viewports/gvulkan_swapchain_deferred_viewport.h" "src/engine/rendering/vulkan/named/viewports/gvulkan_swapchain_deferred_viewport.cpp")
 
- set(RAPIDJSON_BUILD_TESTS OFF)
+ set(ENV{VULKAN_SDK} "C:/VulkanSDK/1.4.328.1")
+ find_package(Vulkan REQUIRED)
 
+target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vulkan/include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../GObject/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/volk")
 target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/glm")
-
-target_include_directories(GEngine_Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vulkan/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/simdjson/include")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spdlog/include")
@@ -121,15 +120,23 @@ target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/.
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/meshoptimizer/src")
 target_include_directories(GEngine_Engine PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/bullet3/src")
 
+target_compile_definitions(GEngine_Engine PUBLIC
+    GLM_ENABLE_EXPERIMENTAL
+)
 set(TF_BUILD_TESTS 0)
 set(BUILD_TESTING 0)
 set(ENABLE_HLSL 1)
 set(SPIRV_REFLECT_EXAMPLES 0)
 set(SPIRV_REFLECT_STATIC_LIB 1)
+set(RAPIDJSON_BUILD_EXAMPLES OFF)
+set(TF_BUILD_TESTS OFF)
+set(TF_BUILD_EXAMPLES OFF)
+
+ set(RAPIDJSON_BUILD_TESTS OFF)
+ set(BUILD_UNIT_TESTS OFF)
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../GObject" GOBJECT)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/volk" VOLK)
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vulkan" VULKAN)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/simdjson" SIMDJSON)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/spdlog" SPDLOG)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/vma" VMA)
@@ -171,6 +178,7 @@ target_link_libraries(GEngine_Engine PUBLIC SPIRV-Tools-static)
 target_link_libraries(GEngine_Engine PUBLIC spirv-cross-core spirv-cross-hlsl spirv-cross-hlsl)
 target_link_libraries(GEngine_Engine PUBLIC spirv-reflect-static)
 target_link_libraries(GEngine_Engine PRIVATE BulletDynamics BulletCollision LinearMath)
+target_link_libraries(GEngine_Engine PUBLIC dylib)
 
 include(GenerateExportHeader)
 

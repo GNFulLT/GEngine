@@ -328,7 +328,7 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		if (m_minusTexture.is_valid() && m_minusTexture->get_resource_state() == RESOURCE_LOADING_STATE_LOADED)
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
-			if (ImGui::ImageButton(m_minusTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
+			if (ImGui::ImageButton("image1", m_minusTexture->get_descriptor_set()->get_vk_descriptor(), {16.f,16.f}))
 			{
 				isInsideMainBar = false;
 			}
@@ -347,7 +347,7 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		if (m_smallBiggerTexture.is_valid() && m_smallBiggerTexture->get_resource_state() == RESOURCE_LOADING_STATE_LOADED)
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
-			if (ImGui::ImageButton(m_smallBiggerTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
+			if (ImGui::ImageButton("image2", m_smallBiggerTexture->get_descriptor_set()->get_vk_descriptor(), {16.f,16.f}))
 			{
 				isInsideMainBar = false;
 
@@ -390,7 +390,7 @@ void ImGuiWindowManager::draw_main_menu_bar()
 		if (m_xTexture.is_valid() && m_xTexture->get_resource_state() == RESOURCE_LOADING_STATE_LOADED)
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, { (m_buttonWidth - 16.f) / 2.f,8.f });
-			if (ImGui::ImageButton(m_xTexture->get_descriptor_set()->get_vk_descriptor(), { 16.f,16.f }))
+			if (ImGui::ImageButton("image3", m_xTexture->get_descriptor_set()->get_vk_descriptor(), {16.f,16.f}))
 			{
 				isInsideMainBar = false;
 

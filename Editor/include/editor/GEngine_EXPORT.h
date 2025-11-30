@@ -33,6 +33,7 @@
 #  define GEDITOR_DEPRECATED_NO_EXPORT GEDITOR_NO_EXPORT GEDITOR_DEPRECATED
 #endif
 
+/* NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if) */
 #if 0 /* DEFINE_NO_DEPRECATED */
 #  ifndef GEDITOR_NO_DEPRECATED
 #    define GEDITOR_NO_DEPRECATED

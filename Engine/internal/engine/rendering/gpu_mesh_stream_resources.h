@@ -1,7 +1,7 @@
 #ifndef GPU_MESH_STREAM_RESOURCES_H
 #define GPU_MESH_STREAM_RESOURCES_H
 #include "volk.h"
-#include "vma/vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 #include <memory>
 #include "engine/rendering/vulkan/ivulkan_buffer.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"

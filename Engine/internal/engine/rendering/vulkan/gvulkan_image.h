@@ -3,7 +3,7 @@
 
 #include "engine/rendering/vulkan/ivulkan_image.h"
 
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 class GVulkanLogicalDevice;
 

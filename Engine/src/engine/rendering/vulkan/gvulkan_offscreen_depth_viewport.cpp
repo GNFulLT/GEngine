@@ -1,7 +1,7 @@
 #include "internal/engine/rendering/vulkan/gvulkan_offscreen_depth_viewport.h"
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "engine/rendering/vulkan/ivulkan_pdevice.h"
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include "engine/rendering/vulkan/ivulkan_queue.h"
 #include "engine/rendering/vulkan/ivulkan_image.h"
 #include <vector>

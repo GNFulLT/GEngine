@@ -235,8 +235,9 @@ bool GVulkanLogicalDevice::init()
 	deviceFeatures.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 	deviceFeatures.shaderInt64 = VK_TRUE;
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
-	const VkPhysicalDeviceFeatures2 deviceFeatures2 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,  .pNext = &barycentric,  .features = deviceFeatures };
+	const VkPhysicalDeviceFeatures2 deviceFeatures2 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .features = deviceFeatures };
 	VkPhysicalDeviceVulkan11Features deviceFeatures11 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, .pNext = (void*)&deviceFeatures2 ,.shaderDrawParameters = VK_TRUE};
+	
 	VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderEXT = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,.meshShader = VK_TRUE};
 	meshShaderEXT.taskShader = VK_TRUE;
 	meshShaderEXT.multiviewMeshShader = VK_TRUE;
@@ -249,7 +250,14 @@ bool GVulkanLogicalDevice::init()
 	VkPhysicalDeviceVulkan12Features ftrs = {};
 	ftrs.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 	ftrs.scalarBlockLayout = VK_TRUE;
-	ftrs.pNext = (void*)&meshShaderNV;
+	
+	if (m_meshletsEnabled) {
+		ftrs.pNext = (void*)&meshShaderNV;
+	}
+	else {
+		ftrs.pNext = (void*)&deviceFeatures11;
+	}
+
 	ftrs.storageBuffer8BitAccess = VK_TRUE;
 	ftrs.shaderInt8 = VK_TRUE;
 	ftrs.descriptorIndexing = VK_TRUE;

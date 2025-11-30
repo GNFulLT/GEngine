@@ -4,7 +4,7 @@
 #include "internal/engine/manager/glogger_manager.h"
 #include "internal/engine/rendering/vulkan/vulkan_ldevice.h"
 
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 GVulkanBuffer::GVulkanBuffer(GVulkanLogicalDevice* owner, VmaAllocator allocator,uint32_t size)
 {

@@ -1,7 +1,7 @@
+#define VK_NO_PROTOTYPES
 #include "volk.h"
 #include "internal/manager/geditor_shader_manager.h"
 #include <glslang/Public/resource_limits_c.h>
-#include <glslang/Include/glslang_c_interface.h>
 #include "internal/shader/spirv_shader_utils.h"
 #include "editor/editor_application_impl.h"
 #include "engine/gengine.h"
@@ -11,9 +11,6 @@
 #include "spirv-tools/libspirv.h"
 #include "internal/shader/gspirv_byte_shader.h"
 #include <spdlog/fmt/fmt.h>
-#include <glslang/Public/ShaderLang.h>
-#include <SPIRV/GlslangToSpv.h>
-#include <SPIRV/SpvTools.h>
 #include "MachineIndependent/reflection.h"
 
 std::expected<ISpirvShader*, SHADER_LOAD_ERROR> GEditorShaderManager::load_shader_from_bytes(const std::vector<char>& bytes, SPIRV_SHADER_STAGE stage)

@@ -9,9 +9,8 @@
 
 #include <unordered_map>
 #include <string>
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include <memory>
-
 
 class ITransferOperations;
 class IGVulkanPhysicalDevice;

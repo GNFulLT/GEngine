@@ -1,7 +1,7 @@
 #include "volk.h"
 
 #include "internal/engine/rendering/vulkan/gvulkan_default_sampler_creator.h"
-#include "vma/vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 #include "engine/rendering/vulkan/ivulkan_ldevice.h"
 #include "internal/engine/rendering/vulkan/gvulkan_sampler.h"
 

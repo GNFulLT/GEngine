@@ -1,5 +1,5 @@
-#include <volk/volk.h>
 #define VK_NO_PROTOTYPES
+#include <volk/volk.h>
 #include "internal/imgui_layer.h"
 #include <imgui/imgui.h>
 
@@ -88,12 +88,9 @@ bool ImGuiLayer::init()
 	auto err = vkCreateDescriptorPool((VkDevice)m_dev->as_logical_device()->get_vk_device(), &pool_info, nullptr, &m_descriptorPool);
 
 	VkInstance ins = (VkInstance)m_app->get_vk_instance();
-	ImGui_ImplVulkan_LoadFunctions([](const char* function_name, void* vulkan_instance) {
+	ImGui_ImplVulkan_LoadFunctions(VK_API_VERSION_1_4, [](const char* function_name, void* vulkan_instance) {
 		return vkGetInstanceProcAddr((reinterpret_cast<VkInstance>(vulkan_instance)), function_name);
 		}, ins);
-
-
-
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -111,22 +108,24 @@ bool ImGuiLayer::init()
 	init_info.Queue = queue->get_queue();
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.DescriptorPool = m_descriptorPool;
-	init_info.Subpass = 0;
 	init_info.MinImageCount = 2;
 	init_info.ImageCount = 3;
-	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.Allocator = VK_NULL_HANDLE;
 	init_info.CheckVkResultFn = VK_NULL_HANDLE;
 
-	ImGui_ImplVulkan_Init(&init_info, (VkRenderPass)(m_viewport->get_vk_current_image_renderpass()));
+	init_info.PipelineInfoMain.RenderPass = (VkRenderPass)(m_viewport->get_vk_current_image_renderpass());
+	init_info.PipelineInfoMain.Subpass = 0;
+	init_info.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+	ImGui_ImplVulkan_Init(&init_info);
 	
 	GVulkanCommandBuffer* cmd = m_dev->get_single_time_command_buffer();
 	
-	ImGui_ImplVulkan_CreateFontsTexture(cmd->get_handle());
+	//ImGui_ImplVulkan_CreateFontsTexture(cmd->get_handle());
 
 	m_dev->execute_single_time_command_buffer_and_wait();
 
-	ImGui_ImplVulkan_DestroyFontUploadObjects();
+	//ImGui_ImplVulkan_DestroyFontUploadObjects();
 	//vkDestroyDescriptorPool(device->m_device, imguiPool, nullptr);
 
 

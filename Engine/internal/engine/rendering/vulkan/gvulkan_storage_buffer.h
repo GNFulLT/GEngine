@@ -2,7 +2,7 @@
 #define GVULKAN_STORAGE_BUFFER_H
 
 #include "engine/rendering/vulkan/igvulkan_storage_buffer.h"
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 class GVulkanStorageBuffer : public IGVulkanStorageBuffer
 {
